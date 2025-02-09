@@ -3,12 +3,23 @@ using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.OpenApi.Models;
 using EventPhotos.API.Interfaces;
 using EventPhotos.API.Repositories;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+    });
 builder.Services.AddEndpointsApiExplorer();
+
+// Add response compression
+builder.Services.AddResponseCompression();
+
+// Add memory cache
+builder.Services.AddMemoryCache();
 
 // Configure Swagger/OpenAPI
 builder.Services.AddSwaggerGen(c =>
@@ -46,6 +57,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event Photos API v1"));
 }
+
+// Enable response compression
+app.UseResponseCompression();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
