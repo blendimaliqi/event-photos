@@ -62,7 +62,9 @@ namespace EventPhotos.API.Repositories
 
         public async Task<Event?> GetByIdAsync(int id)
         {
-            return await _context.Events.Include(e => e.Photos).FirstOrDefaultAsync();
+            return await _context.Events
+                .Include(e => e.Photos)
+                .FirstOrDefaultAsync(e => e.Id == id);
         }
 
         public async Task<Event?> UpdateAsync(int id, UpdateEventDto eventDto)
@@ -82,6 +84,5 @@ namespace EventPhotos.API.Repositories
 
             return existingEvent;
         }
-
     }
 }

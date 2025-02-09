@@ -76,11 +76,10 @@ namespace EventPhotos.API.Controllers
 
             if(eventModel == null)
             {
-                NotFound();
+                return NotFound();
             }
 
             return NoContent();
         }
-
     }
 }

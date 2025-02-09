@@ -11,7 +11,7 @@ namespace EventPhotos.API.Interfaces
         Task<List<Photo>> GetPhotosByEventIdAsync(int eventId);
         Task<Photo?> GetPhotoByIdAsync(int id);
         Task<Photo> AddPhotoAsync(CreatePhotoDto photoDto);
-        Task<bool> DeletePhotoAsync(int id);
+        Task<Photo?> DeletePhotoAsync(int id);
         Task<bool> PhotoExists(int id);
     }
 }
