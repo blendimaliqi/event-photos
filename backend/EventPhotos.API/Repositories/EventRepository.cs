@@ -34,9 +34,18 @@ namespace EventPhotos.API.Repositories
             return eventModel;
         }
 
-        public Task<bool> DeleteAsync(int id)
+        public async Task<Event?> DeleteAsync(int id)
         {
-            throw new NotImplementedException();
+            var eventModel = await _context.Events.FirstOrDefaultAsync((e) => e.Id == id);
+
+            if(eventModel == null) {
+                return null;
+            }
+
+            _context.Events.Remove(eventModel);
+            await _context.SaveChangesAsync();
+
+            return eventModel;
         }
 
         public Task<bool> EventExists(int id)
@@ -56,9 +65,23 @@ namespace EventPhotos.API.Repositories
             return await _context.Events.Include(e => e.Photos).FirstOrDefaultAsync();
         }
 
-        public Task<Event?> UpdateAsync(int id, UpdateEventDto eventDto)
+        public async Task<Event?> UpdateAsync(int id, UpdateEventDto eventDto)
         {
-            throw new NotImplementedException();
+            var existingEvent = await _context.Events.FindAsync(id);
+
+            if (existingEvent == null)
+            {
+                return null;
+            }
+
+            existingEvent.Name = eventDto.Name;
+            existingEvent.Date = eventDto.Date;
+            existingEvent.Description = eventDto.Description;
+
+            await _context.SaveChangesAsync();
+
+            return existingEvent;
         }
+
     }
 }
