@@ -18,15 +18,15 @@ interface PhotoCardContent {
 
 const PhotoContent = ({ photo }: { photo: Photo }) => {
   return (
-    <div>
-      <p className="font-bold md:text-4xl text-xl text-white">
-        Photo {photo.id}
+    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
+      <p className="font-serif text-xl md:text-2xl text-gray-800">
+        Moment {photo.id}
       </p>
-      <p className="font-normal text-base text-white">
+      <p className="text-sm text-gray-600">
         {new Date(photo.uploadDate).toLocaleDateString()}
       </p>
-      <p className="font-normal text-base my-4 max-w-lg text-neutral-200">
-        {photo.description || "No description available"}
+      <p className="text-gray-700 my-2">
+        {photo.description || "A beautiful wedding moment"}
       </p>
     </div>
   );
@@ -66,7 +66,9 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
   }, [eventId]);
 
   if (loading) {
-    return <div className="text-center p-4 text-white">Loading photos...</div>;
+    return (
+      <div className="text-center p-4 text-gray-600">Loading moments...</div>
+    );
   }
 
   if (error) {
@@ -75,15 +77,15 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
 
   if (!photos.length) {
     return (
-      <div className="text-center text-white p-4">
-        No photos found for this event.
+      <div className="text-center text-gray-600 p-4">
+        Be the first to share a moment from the wedding!
       </div>
     );
   }
 
   const cards: PhotoCardContent[] = photos.map((photo, index) => {
     const imageUrl = `http://localhost:5035${photo.url}`;
-    console.log("Loading image from:", imageUrl); // Debug image URL
+    console.log("Loading image from:", imageUrl);
     return {
       id: photo.id,
       content: <PhotoContent photo={photo} />,
@@ -93,10 +95,8 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-950 py-8">
-      <div className="container mx-auto px-4">
-        <LayoutGrid cards={cards} />
-      </div>
+    <div className="py-4">
+      <LayoutGrid cards={cards} />
     </div>
   );
 }

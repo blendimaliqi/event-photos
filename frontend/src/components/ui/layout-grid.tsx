@@ -20,17 +20,20 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   return (
     <div
       ref={containerRef}
-      className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-4 p-4 md:grid-cols-3"
+      className="mx-auto grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 max-w-7xl"
     >
       {cards.map((card) => (
-        <div key={card.id} className={`${card.className} h-[400px]`}>
+        <div
+          key={card.id}
+          className={`${card.className} aspect-[4/3] sm:aspect-[3/4] md:aspect-[4/3]`}
+        >
           <motion.div
             layoutId={`card-${card.id}`}
             onClick={() => handleClick(card.id)}
-            className={`relative overflow-hidden rounded-xl cursor-pointer h-full ${
+            className={`relative overflow-hidden rounded-xl cursor-pointer shadow-lg h-full ${
               selected === card.id
-                ? "absolute inset-0 z-50 h-full w-full"
-                : "h-full w-full"
+                ? "fixed inset-0 z-50 m-auto max-w-4xl h-[80vh]"
+                : "w-full"
             }`}
           >
             <motion.div
@@ -48,7 +51,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                 />
               </motion.div>
               <motion.div
-                className={`absolute inset-0 z-20 bg-gradient-to-b from-transparent to-black/50 ${
+                className={`absolute inset-0 z-20 bg-gradient-to-b from-transparent to-black/30 ${
                   selected === card.id ? "opacity-100" : "opacity-0"
                 }`}
               />
