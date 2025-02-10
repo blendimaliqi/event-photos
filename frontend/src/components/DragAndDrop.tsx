@@ -39,9 +39,9 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative px-6 sm:px-0">
       <div
-        className={`border-2 border-dashed rounded-2xl p-16 text-center transition-colors min-h-[240px] flex items-center justify-center backdrop-blur-sm ${
+        className={`border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center transition-colors min-h-[200px] sm:min-h-[240px] flex items-center justify-center backdrop-blur-sm ${
           isDragging
             ? "border-rose-400 bg-rose-50/80"
             : "border-rose-200 hover:border-rose-300 bg-white/40"
@@ -52,14 +52,23 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
       >
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="text-center">
-            <p className="text-2xl font-serif text-rose-800">
-              {isUploading ? "Uploading..." : "Drop your photos here"}
+            <p className="text-xl sm:text-2xl font-serif text-rose-800">
+              {isUploading ? (
+                "Uploading..."
+              ) : (
+                <span>
+                  <span className="hidden sm:inline">
+                    Drop your photos here
+                  </span>
+                  <span className="sm:hidden">Add your photos</span>
+                </span>
+              )}
             </p>
             {!isUploading && (
               <div className="flex items-center justify-center gap-4 my-2">
-                <span className="h-px w-12 bg-rose-200"></span>
+                <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
                 <p className="text-sm font-serif italic text-rose-600">or</p>
-                <span className="h-px w-12 bg-rose-200"></span>
+                <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
               </div>
             )}
           </div>
@@ -76,7 +85,7 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
               />
               <label
                 htmlFor="file-input"
-                className="inline-block px-8 py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif"
+                className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif text-sm sm:text-base"
               >
                 Browse Files
               </label>

@@ -20,15 +20,19 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   return (
     <div
       ref={containerRef}
-      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-4 gap-6"
+      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-4 gap-6 px-6 sm:px-0"
     >
       {cards.map((card) => (
-        <div key={card.id} className="break-inside-avoid mb-4">
+        <div key={card.id} className="break-inside-avoid mb-6">
           <div
             onClick={() => handleClick(card.id)}
-            className="relative overflow-hidden rounded-xl cursor-pointer shadow-lg group"
+            className="relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group"
           >
-            <img src={card.thumbnail} alt="" className="w-full object-cover" />
+            <img
+              src={card.thumbnail}
+              alt=""
+              className="w-full object-cover aspect-square"
+            />
             <div
               className={`absolute inset-0 bg-gradient-to-b from-transparent to-black/50 transition-opacity duration-300 ${
                 selected === card.id
