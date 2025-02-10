@@ -37,14 +37,14 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 
   const containerClassName =
     viewMode === "masonry"
-      ? "columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-4 gap-6"
+      ? "columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-4 gap-4 px-4 sm:px-0"
       : viewMode === "grid"
-      ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
-      : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-2";
+      ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-4 sm:px-0"
+      : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 px-4 sm:px-0";
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end px-6 sm:px-0">
+      <div className="flex justify-end px-4 sm:px-0">
         <button
           onClick={toggleViewMode}
           className="inline-flex items-center px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors"

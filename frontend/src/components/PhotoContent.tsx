@@ -16,20 +16,25 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
 }) => {
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6">
-      <div className="flex justify-between items-start">
-        <p className="text-sm text-gray-600">
+      <div className="flex justify-between items-start mb-2">
+        <p
+          className={`text-sm text-gray-600 ${
+            isCompact ? "w-20" : "truncate"
+          } flex-1 mr-2`}
+        >
           {new Date(photo.uploadDate).toLocaleDateString()}{" "}
-          {new Date(photo.uploadDate).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          {!isCompact &&
+            new Date(photo.uploadDate).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
         </p>
         <button
           onClick={(e) => {
             e.stopPropagation();
             onExpand?.();
           }}
-          className="text-rose-600 hover:text-rose-700 transition-colors"
+          className="text-rose-600 hover:text-rose-700 transition-colors flex-shrink-0"
           title={isExpanded ? "Minimize photo" : "Expand photo"}
         >
           {isExpanded ? (
@@ -66,11 +71,11 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         </button>
       </div>
       {!isCompact && photo.description && (
-        <div className="relative mt-3">
+        <div className="relative mt-2">
           <div
             className={`text-gray-700 whitespace-pre-wrap break-words text-base ${
               photo.description.length > 100
-                ? "max-h-56 overflow-y-auto pr-4 custom-scrollbar"
+                ? "max-h-32 overflow-y-auto pr-4 custom-scrollbar"
                 : ""
             }`}
             style={{
@@ -78,7 +83,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
               scrollbarColor: "#fecdd3 transparent",
             }}
           >
-            <div className="pb-8">
+            <div className="pb-4">
               <p className="px-1">{photo.description}</p>
             </div>
           </div>
