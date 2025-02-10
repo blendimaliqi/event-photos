@@ -35,17 +35,25 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
   );
 
   return (
-    <div
-      className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors min-h-[200px] flex items-center justify-center ${
-        isDragging
-          ? "border-blue-500 bg-blue-50"
-          : "border-gray-300 hover:border-gray-400"
-      }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      {children}
+    <div className="relative">
+      <div
+        className={`border-2 border-dashed rounded-2xl p-16 text-center transition-colors min-h-[240px] flex items-center justify-center backdrop-blur-sm ${
+          isDragging
+            ? "border-rose-400 bg-rose-50/80"
+            : "border-rose-200 hover:border-rose-300 bg-white/40"
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {children}
+      </div>
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-50 px-4">
+        <span className="text-rose-300 text-2xl">❀</span>
+      </div>
+      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-rose-50 px-4">
+        <span className="text-rose-300 text-2xl">❀</span>
+      </div>
     </div>
   );
 };

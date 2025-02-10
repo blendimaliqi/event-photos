@@ -19,11 +19,19 @@ export const PhotoUpload: React.FC = () => {
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="text-center">
             {selectedFile ? (
-              <p className="text-sm">Selected: {selectedFile.name}</p>
+              <p className="text-sm font-serif italic text-rose-700">
+                {selectedFile.name}
+              </p>
             ) : (
               <>
-                <p className="text-lg font-medium">Drop your photo here</p>
-                <p className="text-sm">or</p>
+                <p className="text-2xl font-serif text-rose-800">
+                  Drop your photo here
+                </p>
+                <div className="flex items-center justify-center gap-4 my-2">
+                  <span className="h-px w-12 bg-rose-200"></span>
+                  <p className="text-sm font-serif italic text-rose-600">or</p>
+                  <span className="h-px w-12 bg-rose-200"></span>
+                </div>
               </>
             )}
           </div>
@@ -37,7 +45,7 @@ export const PhotoUpload: React.FC = () => {
           />
           <label
             htmlFor="file-input"
-            className="inline-block px-6 py-2.5 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition-colors"
+            className="inline-block px-8 py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif"
           >
             Browse Files
           </label>
@@ -47,18 +55,24 @@ export const PhotoUpload: React.FC = () => {
               <button
                 onClick={uploadPhoto}
                 disabled={uploadStatus === "uploading"}
-                className="px-6 py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors disabled:opacity-50"
+                className="px-8 py-3 bg-rose-600 text-white rounded-full hover:bg-rose-700 transition-colors disabled:opacity-50 font-serif"
               >
-                {uploadStatus === "uploading" ? "Uploading..." : "Upload Photo"}
+                {uploadStatus === "uploading"
+                  ? "Uploading..."
+                  : "Share This Moment"}
               </button>
             </div>
           )}
 
           {uploadStatus === "success" && (
-            <p className="text-green-500">Upload successful!</p>
+            <p className="text-rose-600 font-serif italic">
+              Moment shared successfully!
+            </p>
           )}
           {uploadStatus === "error" && (
-            <p className="text-red-500">Upload failed. Please try again.</p>
+            <p className="text-red-500 font-serif italic">
+              Upload failed. Please try again.
+            </p>
           )}
         </div>
       </DragAndDrop>
