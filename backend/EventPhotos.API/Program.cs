@@ -3,7 +3,9 @@ using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.OpenApi.Models;
 using EventPhotos.API.Interfaces;
 using EventPhotos.API.Repositories;
+using EventPhotos.API.Services;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,9 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "API for managing event photos"
     });
+    
+    // Enable Swagger annotations
+    c.EnableAnnotations();
 });
 
 // Configure Database
@@ -38,6 +43,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register repositories
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
+
+// Register FileStorageService
+builder.Services.AddScoped<FileStorageService>();
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -60,6 +68,23 @@ if (app.Environment.IsDevelopment())
 
 // Enable response compression
 app.UseResponseCompression();
+
+// Configure static file serving for uploads
+app.UseStaticFiles();
+
+// Create uploads directory if it doesn't exist
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "photos");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Map the uploads directory to a URL path
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads/photos"
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using EventPhotos.API.DTOs;
 using EventPhotos.API.Models;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace EventPhotos.API.Mappers
 {
