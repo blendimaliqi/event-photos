@@ -45,7 +45,7 @@ function App() {
             </div>
           </nav>
 
-          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <main className="max-w-[1600px] mx-auto py-6 sm:px-6 lg:px-8">
             {window.location.pathname === "/admin" ? (
               <AdminRoute />
             ) : (

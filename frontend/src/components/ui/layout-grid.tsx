@@ -20,7 +20,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   return (
     <div
       ref={containerRef}
-      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4"
+      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-4 gap-6"
     >
       {cards.map((card) => (
         <div key={card.id} className="break-inside-avoid mb-4">
