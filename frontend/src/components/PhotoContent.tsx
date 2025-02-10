@@ -16,9 +16,16 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   onToggleCollapse,
   isExpanded,
   isCompact,
-  isCollapsed,
+  isCollapsed: propIsCollapsed,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(!photo.description);
+
+  useEffect(() => {
+    if (propIsCollapsed !== undefined) {
+      setIsCollapsed(propIsCollapsed);
+    }
+  }, [propIsCollapsed]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -34,7 +41,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   return (
     <div
       className={`bg-white backdrop-blur-sm rounded-lg ${
-        isExpanded ? "h-full flex flex-col" : "p-6"
+        isExpanded ? "h-full flex flex-col" : "p-3"
       }`}
     >
       <div className={isExpanded ? "flex-1 min-h-0" : ""}>
@@ -47,14 +54,10 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
             scrollbarColor: "#fecdd3 transparent",
           }}
         >
-          <div
-            className={`flex items-center ${
-              photo.description ? "mb-4" : "mb-0"
-            }`}
-          >
+          <div className="flex items-center mb-2">
             <p
               className={`text-sm text-gray-600 ${
-                isCompact ? "w-20" : "truncate"
+                isCompact ? "w-20" : ""
               } flex-1 mr-2`}
             >
               {new Date(photo.uploadDate).toLocaleDateString()}{" "}
@@ -64,11 +67,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                   minute: "2-digit",
                 })}
             </p>
-            {(!isExpanded ||
-              (isExpanded &&
-                photo.description &&
-                onToggleCollapse &&
-                isMobile)) && (
+            {(!isExpanded || (isExpanded && onToggleCollapse && isMobile)) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -127,15 +126,13 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
               </button>
             )}
           </div>
-          {photo.description && (
-            <p
-              className={`text-gray-700 whitespace-pre-wrap break-words text-base px-1 ${
-                isCollapsed ? "line-clamp-1" : ""
-              }`}
-            >
-              {photo.description}
-            </p>
-          )}
+          <div
+            className={`text-gray-600 whitespace-pre-wrap break-words text-sm px-1 ${
+              !isExpanded && isCollapsed ? "line-clamp-2" : ""
+            }`}
+          >
+            {photo.description || ""}
+          </div>
         </div>
       </div>
     </div>

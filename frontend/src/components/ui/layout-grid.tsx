@@ -225,30 +225,26 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                       className="max-w-full max-h-full object-contain"
                     />
                   </div>
-                  {expanded !== null &&
-                    (cards.find((c) => c.id === expanded)?.content as any)
-                      ?.props?.photo?.description && (
-                      <div
-                        className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
-                        ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
-                        overflow-y-auto relative`}
-                      >
-                        {React.cloneElement(
-                          cards.find((c) => c.id === expanded)
-                            ?.content as React.ReactElement,
-                          {
-                            onExpand: handleCloseExpanded,
-                            isExpanded: true,
-                            isCompact: false,
-                            isCollapsed: isDescriptionCollapsed,
-                            onToggleCollapse: () =>
-                              setIsDescriptionCollapsed(
-                                !isDescriptionCollapsed
-                              ),
-                          }
-                        )}
-                      </div>
-                    )}
+                  {expanded !== null && (
+                    <div
+                      className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
+                      ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
+                      overflow-y-auto relative`}
+                    >
+                      {React.cloneElement(
+                        cards.find((c) => c.id === expanded)
+                          ?.content as React.ReactElement,
+                        {
+                          onExpand: handleCloseExpanded,
+                          isExpanded: true,
+                          isCompact: false,
+                          isCollapsed: isDescriptionCollapsed,
+                          onToggleCollapse: () =>
+                            setIsDescriptionCollapsed(!isDescriptionCollapsed),
+                        }
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
