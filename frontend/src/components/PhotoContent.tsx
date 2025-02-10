@@ -54,19 +54,21 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
             scrollbarColor: "#fecdd3 transparent",
           }}
         >
-          <div className="flex items-center mb-2">
-            <p
-              className={`text-sm text-gray-600 ${
-                isCompact ? "w-20" : ""
-              } flex-1 mr-2`}
-            >
-              {new Date(photo.uploadDate).toLocaleDateString()}{" "}
-              {!isCompact &&
-                new Date(photo.uploadDate).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-            </p>
+          <div
+            className={`flex ${
+              isCompact ? "justify-end" : "items-center mb-2"
+            }`}
+          >
+            {(!isCompact || isExpanded) && (
+              <p className="text-sm text-gray-600 flex-1 mr-2">
+                {new Date(photo.uploadDate).toLocaleDateString()}{" "}
+                {!isCompact &&
+                  new Date(photo.uploadDate).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+              </p>
+            )}
             {(!isExpanded || (isExpanded && onToggleCollapse && isMobile)) && (
               <button
                 onClick={(e) => {
@@ -126,13 +128,15 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
               </button>
             )}
           </div>
-          <div
-            className={`text-gray-600 whitespace-pre-wrap break-words text-sm px-1 ${
-              !isExpanded && isCollapsed ? "line-clamp-2" : ""
-            }`}
-          >
-            {photo.description || ""}
-          </div>
+          {(!isCompact || isExpanded) && (
+            <div
+              className={`text-gray-600 whitespace-pre-wrap break-words text-sm px-1 ${
+                !isExpanded && isCollapsed ? "line-clamp-2" : ""
+              }`}
+            >
+              {photo.description || ""}
+            </div>
+          )}
         </div>
       </div>
     </div>
