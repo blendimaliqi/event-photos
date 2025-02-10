@@ -1,11 +1,12 @@
 import { Photo } from "../types/photo";
+import { config } from "../config/config";
 
 interface PhotoUploadResponse {
   id: string;
   url: string;
 }
 
-const API_URL = "http://localhost:5035/api";
+const API_URL = config.API_ENDPOINT;
 
 export const photoService = {
   async uploadPhoto(file: File, eventId: string): Promise<PhotoUploadResponse> {

@@ -2,6 +2,7 @@ import React from "react";
 import { usePhotos } from "../hooks/usePhotos";
 import { photoService } from "../services/photoService";
 import { Photo } from "../types/photo";
+import { config } from "../config/config";
 
 export function AdminPanel({ eventId }: { eventId: number }) {
   const { data: photos, isLoading, error, refetch } = usePhotos(eventId);
@@ -38,7 +39,7 @@ export function AdminPanel({ eventId }: { eventId: number }) {
         {photos?.map((photo: Photo) => (
           <div key={photo.id} className="border rounded-lg p-4 space-y-2">
             <img
-              src={`http://localhost:5035${photo.url}`}
+              src={config.getImageUrl(photo.url)}
               alt="Wedding photo"
               className="w-full h-48 object-cover rounded"
             />

@@ -2,6 +2,7 @@ import React from "react";
 import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
+import { config } from "../config/config";
 
 interface PhotoCardContent {
   id: number;
@@ -37,7 +38,7 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
   }
 
   const cards: PhotoCardContent[] = photos.map((photo) => {
-    const imageUrl = `http://localhost:5035${photo.url}`;
+    const imageUrl = config.getImageUrl(photo.url);
     return {
       id: photo.id,
       content: <PhotoContent photo={photo} />,

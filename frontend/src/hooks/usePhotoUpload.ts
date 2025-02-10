@@ -1,27 +1,35 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { photoService } from "../services/photoService";
+import { QUERY_KEYS } from "./usePhotos";
 
-export function usePhotoUpload() {
-  const [isUploading, setIsUploading] = useState(false);
+interface UploadPhotoParams {
+  file: File;
+  eventId: string;
+}
 
-  const uploadPhoto = async (file: File, eventId: string) => {
+export function usePhotoUpload(eventId: number) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ file, eventId: eventIdString }: UploadPhotoParams) =>
+      photoService.uploadPhoto(file, eventIdString),
+    onSuccess: () => {
+      // Invalidate and refetch photos query after successful upload
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.photos(eventId) });
+    },
+  });
+
+  const uploadPhoto = async (file: File, eventIdString: string) => {
     if (!file.type.startsWith("image/")) {
       throw new Error("Only image files are allowed");
     }
 
-    try {
-      setIsUploading(true);
-      await photoService.uploadPhoto(file, eventId);
-    } catch (error) {
-      console.error("Upload error:", error);
-      throw error;
-    } finally {
-      setIsUploading(false);
-    }
+    return mutation.mutateAsync({ file, eventId: eventIdString });
   };
 
   return {
     uploadPhoto,
-    isUploading,
+    isUploading: mutation.isPending,
+    error: mutation.error,
   };
 }
