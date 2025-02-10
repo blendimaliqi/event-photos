@@ -1,4 +1,3 @@
-import React from "react";
 import { usePhotos } from "../hooks/usePhotos";
 import { photoService } from "../services/photoService";
 import { Photo } from "../types/photo";

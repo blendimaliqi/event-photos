@@ -1,4 +1,3 @@
-import React from "react";
 import { DragAndDrop } from "./DragAndDrop";
 import { usePhotoUpload } from "../hooks/usePhotoUpload";
 
