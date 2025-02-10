@@ -200,13 +200,15 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                   />
                 </svg>
               </button>
-              <div className="relative w-full h-full flex items-center justify-center bg-black">
-                <img
-                  src={cards.find((c) => c.id === expanded)?.thumbnail}
-                  alt=""
-                  className="max-w-full max-h-full object-contain"
-                />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
+              <div className="relative w-full h-full flex flex-col items-center justify-center bg-black">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={cards.find((c) => c.id === expanded)?.thumbnail}
+                    alt=""
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <div className="w-full bg-white/80 backdrop-blur-sm">
                   {React.cloneElement(
                     cards.find((c) => c.id === expanded)
                       ?.content as React.ReactElement,

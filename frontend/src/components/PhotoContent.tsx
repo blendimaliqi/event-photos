@@ -15,7 +15,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   isCompact,
 }) => {
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
+    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6">
       <div className="flex justify-between items-start">
         <p className="text-sm text-gray-600">
           {new Date(photo.uploadDate).toLocaleDateString()}{" "}
@@ -66,11 +66,11 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         </button>
       </div>
       {!isCompact && photo.description && (
-        <div className="relative mt-2">
+        <div className="relative mt-3">
           <div
-            className={`text-gray-700 whitespace-pre-wrap break-words ${
+            className={`text-gray-700 whitespace-pre-wrap break-words text-base ${
               photo.description.length > 100
-                ? "max-h-32 overflow-y-auto pr-2 custom-scrollbar"
+                ? "max-h-56 overflow-y-auto pr-4 custom-scrollbar"
                 : ""
             }`}
             style={{
@@ -78,7 +78,9 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
               scrollbarColor: "#fecdd3 transparent",
             }}
           >
-            {photo.description}
+            <div className="pb-8">
+              <p className="px-1">{photo.description}</p>
+            </div>
           </div>
         </div>
       )}
