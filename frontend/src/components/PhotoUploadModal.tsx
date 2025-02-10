@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface PhotoUploadModalProps {
   file: File;
@@ -14,21 +14,26 @@ export function PhotoUploadModal({
   isUploading,
 }: PhotoUploadModalProps) {
   const [description, setDescription] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string>(() =>
-    URL.createObjectURL(file)
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
 
-  // Cleanup preview URL when component unmounts
-  React.useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+  // Create preview URL when file changes
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [file]);
 
   const handleConfirm = () => {
     onConfirm(description);
+  };
+
+  const handlePreviewError = () => {
+    setPreviewError(true);
   };
 
   return (
@@ -36,12 +41,19 @@ export function PhotoUploadModal({
       <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4">
         <h3 className="text-xl font-serif text-gray-800">Confirm Upload</h3>
 
-        <div className="aspect-video relative rounded-lg overflow-hidden bg-gray-100">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="w-full h-full object-contain"
-          />
+        <div className="relative rounded-lg overflow-hidden bg-gray-100 h-64">
+          {previewUrl && !previewError ? (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="w-full h-full object-contain"
+              onError={handlePreviewError}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Unable to preview image
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
