@@ -89,7 +89,7 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
     return {
       id: photo.id,
       content: <PhotoContent photo={photo} />,
-      className: index % 3 === 0 ? "md:col-span-2" : "col-span-1",
+      className: "",
       thumbnail: imageUrl,
     };
   });

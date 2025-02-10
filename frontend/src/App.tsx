@@ -7,7 +7,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-rose-50">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-6 md:px-12 lg:px-24 py-6 max-w-[1800px]">
         <h1 className="text-center text-3xl md:text-4xl font-serif text-gray-800 mb-4">
           Wedding Moments
         </h1>
@@ -20,9 +20,7 @@ function App() {
             <PhotoUpload />
           </div>
         </div>
-        <div className="mt-4">
-          <PhotoGrid eventId={eventId} />
-        </div>
+        <PhotoGrid eventId={eventId} />
       </div>
     </div>
   );

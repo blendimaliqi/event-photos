@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Card = {
   id: number;
@@ -20,52 +20,36 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   return (
     <div
       ref={containerRef}
-      className="mx-auto grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 max-w-7xl"
+      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4"
     >
       {cards.map((card) => (
-        <div
-          key={card.id}
-          className={`${card.className} aspect-[4/3] sm:aspect-[3/4] md:aspect-[4/3]`}
-        >
-          <motion.div
-            layoutId={`card-${card.id}`}
+        <div key={card.id} className="break-inside-avoid mb-4">
+          <div
             onClick={() => handleClick(card.id)}
-            className={`relative overflow-hidden rounded-xl cursor-pointer shadow-lg h-full ${
-              selected === card.id
-                ? "fixed inset-0 z-50 m-auto max-w-4xl h-[80vh]"
-                : "w-full"
-            }`}
+            className="relative overflow-hidden rounded-xl cursor-pointer shadow-lg group"
           >
-            <motion.div
-              className="relative z-20 h-full w-full"
-              layoutId={`container-${card.id}`}
-            >
-              <motion.div
-                className="absolute inset-0 z-10 h-full w-full"
-                layoutId={`image-container-${card.id}`}
-              >
-                <img
-                  src={card.thumbnail}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </motion.div>
-              <motion.div
-                className={`absolute inset-0 z-20 bg-gradient-to-b from-transparent to-black/30 ${
-                  selected === card.id ? "opacity-100" : "opacity-0"
-                }`}
-              />
+            <img src={card.thumbnail} alt="" className="w-full object-cover" />
+            <div
+              className={`absolute inset-0 bg-gradient-to-b from-transparent to-black/50 transition-opacity duration-300 ${
+                selected === card.id
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100"
+              }`}
+            />
+            <AnimatePresence>
               {selected === card.id && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 z-30 flex items-end p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 flex items-end p-6"
                 >
                   {card.content}
                 </motion.div>
               )}
-            </motion.div>
-          </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       ))}
     </div>
