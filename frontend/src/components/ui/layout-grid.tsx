@@ -23,10 +23,12 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 
   const handleExpand = (id: number) => {
     setExpanded(id);
+    document.body.style.overflow = "hidden";
   };
 
   const handleCloseExpanded = () => {
     setExpanded(null);
+    document.body.style.overflow = "auto";
   };
 
   const toggleViewMode = () => {
@@ -171,14 +173,14 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm touch-none"
             onClick={handleCloseExpanded}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center"
+              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center touch-pan-y"
               onClick={(e) => e.stopPropagation()}
             >
               <button
