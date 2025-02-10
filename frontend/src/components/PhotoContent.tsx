@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Photo } from "../types/photo";
 
 interface PhotoContentProps {
@@ -18,6 +18,19 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   isCompact,
   isCollapsed,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   return (
     <div
       className={`bg-white backdrop-blur-sm rounded-lg ${
@@ -51,7 +64,11 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                   minute: "2-digit",
                 })}
             </p>
-            {(photo.description || !isExpanded) && (
+            {(!isExpanded ||
+              (isExpanded &&
+                photo.description &&
+                onToggleCollapse &&
+                isMobile)) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -61,7 +78,9 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                     onToggleCollapse?.();
                   }
                 }}
-                className="text-rose-600 hover:text-rose-700 transition-colors flex-shrink-0"
+                className={`text-rose-600 hover:text-rose-700 transition-colors flex-shrink-0 ${
+                  isExpanded ? "sm:hidden" : ""
+                }`}
                 title={
                   !isExpanded
                     ? "Expand photo"

@@ -188,20 +188,27 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             >
               <button
                 onClick={handleCloseExpanded}
-                className="absolute top-4 right-4 z-20 text-white/80 hover:text-white transition-colors"
+                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200"
               >
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
+                  className="w-3 h-3"
                   viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-8 h-8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
+                    d="M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
+                  />
+                  <path
+                    d="M6 6L18 18"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </button>
