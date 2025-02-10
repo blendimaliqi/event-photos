@@ -61,7 +61,7 @@ export function PhotoUploadModal({
         <h3 className="text-xl font-serif text-gray-800">Confirm Upload</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {files.map((file, index) => (
+          {files.map((_file, index) => (
             <div key={index} className="space-y-2">
               <div className="relative rounded-lg overflow-hidden bg-gray-100 h-48">
                 {previews[index] && !previews[index].error ? (
