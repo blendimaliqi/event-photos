@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Card = {
@@ -13,11 +13,20 @@ type ViewMode = "masonry" | "grid" | "compact";
 
 export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("masonry");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleClick = (id: number) => {
     setSelected(id === selected ? null : id);
+  };
+
+  const handleExpand = (id: number) => {
+    setExpanded(id);
+  };
+
+  const handleCloseExpanded = () => {
+    setExpanded(null);
   };
 
   const toggleViewMode = () => {
@@ -97,7 +106,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
           )}
         </button>
       </div>
-      <div ref={containerRef} className={`${containerClassName} px-6 sm:px-0`}>
+      <div ref={containerRef} className={containerClassName}>
         {cards.map((card) => (
           <div
             key={card.id}
@@ -145,7 +154,18 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                         </p>
                       </div>
                     ) : (
-                      card.content
+                      <div
+                        className="w-full"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {React.cloneElement(
+                          card.content as React.ReactElement,
+                          {
+                            onExpand: () => handleExpand(card.id),
+                            isExpanded: false,
+                          }
+                        )}
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -154,6 +174,63 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
           </div>
         ))}
       </div>
+
+      <AnimatePresence>
+        {expanded !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm"
+            onClick={handleCloseExpanded}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={handleCloseExpanded}
+                className="absolute top-4 right-4 z-10 text-white/80 hover:text-white transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-8 h-8"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <img
+                  src={cards.find((c) => c.id === expanded)?.thumbnail}
+                  alt=""
+                  className="max-w-full max-h-full object-contain"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  {React.cloneElement(
+                    cards.find((c) => c.id === expanded)
+                      ?.content as React.ReactElement,
+                    {
+                      onExpand: handleCloseExpanded,
+                      isExpanded: true,
+                    }
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
