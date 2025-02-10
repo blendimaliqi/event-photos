@@ -36,9 +36,13 @@ builder.Services.AddSwaggerGen(c =>
     c.EnableAnnotations();
 });
 
-// Configure Database
+// Configure Database with detailed logging
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.EnableSensitiveDataLogging();
+    options.EnableDetailedErrors();
+});
 
 // Register repositories
 builder.Services.AddScoped<IEventRepository, EventRepository>();
@@ -51,13 +55,18 @@ builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
+    {
         builder
-            .SetIsOriginAllowed(origin => 
-                origin.EndsWith(".blendimaliqi.com") || 
-                origin.StartsWith("http://localhost"))
+            .WithOrigins(
+                "https://c0k84wcg480o0scckc88kggs.blendimaliqi.com",
+                "http://localhost:5173",
+                "http://localhost:5174"
+            )
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials());
+            .WithExposedHeaders("Content-Disposition", "Content-Length")
+            .SetIsOriginAllowed(_ => true);
+    });
 });
 
 var app = builder.Build();
@@ -65,6 +74,12 @@ var app = builder.Build();
 // Always enable Swagger in all environments
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event Photos API v1"));
+
+// Enable detailed error messages in all environments for debugging
+app.UseDeveloperExceptionPage();
+
+// Use CORS before other middleware
+app.UseCors();
 
 // Enable response compression
 app.UseResponseCompression();
@@ -86,12 +101,25 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads/photos"
 });
 
-// Use CORS before other middleware
-app.UseCors();
 app.UseHttpsRedirection();
 app.MapControllers();
 
 // Add health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
+// Ensure database is created and migrated
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
 
 app.Run();
