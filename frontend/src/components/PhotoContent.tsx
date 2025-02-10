@@ -48,7 +48,9 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         <div
           className={`${
             isExpanded ? "h-full" : "max-h-32"
-          } overflow-y-auto pr-4 custom-scrollbar ${isExpanded ? "p-6" : ""}`}
+          } overflow-y-auto custom-scrollbar ${isExpanded ? "p-6" : ""} ${
+            isCompact ? "flex items-center justify-center h-full" : "pr-4"
+          }`}
           style={{
             scrollbarWidth: "thin",
             scrollbarColor: "#fecdd3 transparent",
@@ -56,7 +58,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         >
           <div
             className={`flex ${
-              isCompact ? "justify-end" : "items-center mb-2"
+              isCompact ? "justify-center w-full" : "items-center mb-2"
             }`}
           >
             {(!isCompact || isExpanded) && (
