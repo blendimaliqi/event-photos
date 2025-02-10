@@ -23,7 +23,7 @@ export function usePhotos(eventId: number) {
 export function usePhotoUpload() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (file: File) => photoService.uploadPhoto(file, "1"),
+    mutationFn: (file: File) => photoService.uploadPhoto(file, "1", ""),
     onSuccess: () => {
       // Invalidate the photos query to trigger a refetch
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.photos(1) });
