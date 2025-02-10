@@ -9,10 +9,15 @@ interface PhotoUploadResponse {
 const API_URL = config.API_ENDPOINT;
 
 export const photoService = {
-  async uploadPhoto(file: File, eventId: string): Promise<PhotoUploadResponse> {
+  async uploadPhoto(
+    file: File,
+    eventId: string,
+    description: string
+  ): Promise<PhotoUploadResponse> {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("eventId", eventId);
+    formData.append("description", description);
 
     const response = await fetch(`${API_URL}/photos`, {
       method: "POST",
