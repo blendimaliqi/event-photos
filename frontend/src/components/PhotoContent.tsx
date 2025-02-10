@@ -6,6 +6,7 @@ interface PhotoContentProps {
   onExpand?: () => void;
   isExpanded?: boolean;
   isCompact?: boolean;
+  isCollapsed?: boolean;
 }
 
 export const PhotoContent: React.FC<PhotoContentProps> = ({
@@ -13,6 +14,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   onExpand,
   isExpanded,
   isCompact,
+  isCollapsed,
 }) => {
   return (
     <div
@@ -20,28 +22,30 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         isExpanded ? "h-full flex flex-col" : ""
       }`}
     >
-      {isExpanded ? (
-        <div className="flex-1 min-h-0">
-          <div
-            className="h-full overflow-y-auto pr-4 custom-scrollbar"
-            style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "#fecdd3 transparent",
-            }}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <p
-                className={`text-sm text-gray-600 ${
-                  isCompact ? "w-20" : "truncate"
-                } flex-1 mr-2`}
-              >
-                {new Date(photo.uploadDate).toLocaleDateString()}{" "}
-                {!isCompact &&
-                  new Date(photo.uploadDate).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-              </p>
+      <div className={isExpanded ? "flex-1 min-h-0" : ""}>
+        <div
+          className={`${
+            isExpanded ? "h-full" : "max-h-32"
+          } overflow-y-auto pr-4 custom-scrollbar`}
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "#fecdd3 transparent",
+          }}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <p
+              className={`text-sm text-gray-600 ${
+                isCompact ? "w-20" : "truncate"
+              } flex-1 mr-2`}
+            >
+              {new Date(photo.uploadDate).toLocaleDateString()}{" "}
+              {!isCompact &&
+                new Date(photo.uploadDate).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+            </p>
+            {!isCollapsed && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -82,87 +86,15 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                   </svg>
                 )}
               </button>
-            </div>
-            {photo.description && (
-              <p className="text-gray-700 whitespace-pre-wrap break-words text-base px-1">
-                {photo.description}
-              </p>
             )}
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex justify-between items-start mb-2">
-            <p
-              className={`text-sm text-gray-600 ${
-                isCompact ? "w-20" : "truncate"
-              } flex-1 mr-2`}
-            >
-              {new Date(photo.uploadDate).toLocaleDateString()}{" "}
-              {!isCompact &&
-                new Date(photo.uploadDate).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+          {photo.description && !isCollapsed && (
+            <p className="text-gray-700 whitespace-pre-wrap break-words text-base px-1">
+              {photo.description}
             </p>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onExpand?.();
-              }}
-              className="text-rose-600 hover:text-rose-700 transition-colors flex-shrink-0"
-              title={isExpanded ? "Minimize photo" : "Expand photo"}
-            >
-              {isExpanded ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-          {!isCompact && photo.description && (
-            <div className="mt-4">
-              <div
-                className="max-h-32 overflow-y-auto pr-4 custom-scrollbar"
-                style={{
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "#fecdd3 transparent",
-                }}
-              >
-                <p className="text-gray-700 whitespace-pre-wrap break-words text-base px-1">
-                  {photo.description}
-                </p>
-              </div>
-            </div>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
