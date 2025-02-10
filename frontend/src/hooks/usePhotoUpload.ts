@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { UploadStatus } from "../types/photo";
 import { photoService } from "../services/photoService";
 
-export const usePhotoUpload = () => {
+export const usePhotoUpload = (onUploadSuccess?: () => void) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
 
@@ -20,6 +20,9 @@ export const usePhotoUpload = () => {
       await photoService.uploadPhoto(selectedFile, "1"); // Default eventId for now
       setUploadStatus("success");
       setSelectedFile(null);
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (error) {
       console.error("Upload error:", error);
       setUploadStatus("error");

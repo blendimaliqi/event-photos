@@ -1,10 +1,21 @@
 import React from "react";
 import { DragAndDrop } from "./DragAndDrop";
-import { usePhotoUpload } from "../hooks/usePhotoUpload";
+import { usePhotoUpload } from "../hooks/usePhotos";
 
 export const PhotoUpload: React.FC = () => {
-  const { selectedFile, uploadStatus, handleFileSelect, uploadPhoto } =
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const { uploadPhoto, isUploading, isSuccess, isError, reset } =
     usePhotoUpload();
+
+  const handleFileSelect = React.useCallback(
+    (file: File | null) => {
+      if (file && file.type.startsWith("image/")) {
+        setSelectedFile(file);
+        reset(); // Reset any previous upload state
+      }
+    },
+    [reset]
+  );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -12,6 +23,18 @@ export const PhotoUpload: React.FC = () => {
       handleFileSelect(file);
     }
   };
+
+  const handleUpload = () => {
+    if (selectedFile) {
+      uploadPhoto(selectedFile);
+    }
+  };
+
+  React.useEffect(() => {
+    if (isSuccess) {
+      setSelectedFile(null);
+    }
+  }, [isSuccess]);
 
   return (
     <div className="w-full max-w-xl mx-auto">
@@ -53,23 +76,21 @@ export const PhotoUpload: React.FC = () => {
           {selectedFile && (
             <div className="mt-4">
               <button
-                onClick={uploadPhoto}
-                disabled={uploadStatus === "uploading"}
+                onClick={handleUpload}
+                disabled={isUploading}
                 className="px-8 py-3 bg-rose-600 text-white rounded-full hover:bg-rose-700 transition-colors disabled:opacity-50 font-serif"
               >
-                {uploadStatus === "uploading"
-                  ? "Uploading..."
-                  : "Share This Moment"}
+                {isUploading ? "Uploading..." : "Share This Moment"}
               </button>
             </div>
           )}
 
-          {uploadStatus === "success" && (
+          {isSuccess && (
             <p className="text-rose-600 font-serif italic">
               Moment shared successfully!
             </p>
           )}
-          {uploadStatus === "error" && (
+          {isError && (
             <p className="text-red-500 font-serif italic">
               Upload failed. Please try again.
             </p>

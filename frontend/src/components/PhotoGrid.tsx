@@ -1,13 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { LayoutGrid } from "./ui/layout-grid";
-
-interface Photo {
-  id: number;
-  url: string;
-  description: string;
-  eventId: number;
-  uploadDate: string;
-}
+import { usePhotos } from "../hooks/usePhotos";
+import { Photo } from "../types/photo";
 
 interface PhotoCardContent {
   id: number;
@@ -33,49 +27,24 @@ const PhotoContent = ({ photo }: { photo: Photo }) => {
 };
 
 export function PhotoGrid({ eventId }: { eventId: number }) {
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: photos, isLoading, error } = usePhotos(eventId);
 
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        console.log("Fetching photos from:", `/api/photos/event/${eventId}`);
-        const response = await fetch(`/api/photos/event/${eventId}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("API Error Response:", errorText);
-          throw new Error(
-            `Failed to fetch photos: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-        console.log("Received photos:", data);
-        setPhotos(data);
-      } catch (err) {
-        console.error("Error fetching photos:", err);
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPhotos();
-  }, [eventId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="text-center p-4 text-gray-600">Loading moments...</div>
     );
   }
 
   if (error) {
-    return <div className="text-center text-red-500 p-4">Error: {error}</div>;
+    return (
+      <div className="text-center text-red-500 p-4">
+        Error:{" "}
+        {error instanceof Error ? error.message : "Failed to load photos"}
+      </div>
+    );
   }
 
-  if (!photos.length) {
+  if (!photos?.length) {
     return (
       <div className="text-center text-gray-600 p-4">
         Be the first to share a moment from the wedding!
@@ -83,9 +52,8 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
     );
   }
 
-  const cards: PhotoCardContent[] = photos.map((photo, index) => {
+  const cards: PhotoCardContent[] = photos.map((photo) => {
     const imageUrl = `http://localhost:5035${photo.url}`;
-    console.log("Loading image from:", imageUrl);
     return {
       id: photo.id,
       content: <PhotoContent photo={photo} />,
