@@ -50,21 +50,21 @@ builder.Services.AddScoped<FileStorageService>();
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
-        builder => builder
-            .AllowAnyOrigin()
+    options.AddDefaultPolicy(builder =>
+        builder
+            .SetIsOriginAllowed(origin => 
+                origin.EndsWith(".blendimaliqi.com") || 
+                origin.StartsWith("http://localhost"))
             .AllowAnyMethod()
-            .AllowAnyHeader());
+            .AllowAnyHeader()
+            .AllowCredentials());
 });
 
 var app = builder.Build();
 
-// Configure middleware pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event Photos API v1"));
-}
+// Always enable Swagger in all environments
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event Photos API v1"));
 
 // Enable response compression
 app.UseResponseCompression();
@@ -86,8 +86,9 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads/photos"
 });
 
+// Use CORS before other middleware
+app.UseCors();
 app.UseHttpsRedirection();
-app.UseCors("AllowReactApp");
 app.MapControllers();
 
 // Add health check endpoint
