@@ -4,6 +4,7 @@ import { Photo } from "../types/photo";
 interface PhotoContentProps {
   photo: Photo;
   onExpand?: () => void;
+  onToggleCollapse?: () => void;
   isExpanded?: boolean;
   isCompact?: boolean;
   isCollapsed?: boolean;
@@ -12,13 +13,14 @@ interface PhotoContentProps {
 export const PhotoContent: React.FC<PhotoContentProps> = ({
   photo,
   onExpand,
+  onToggleCollapse,
   isExpanded,
   isCompact,
   isCollapsed,
 }) => {
   return (
     <div
-      className={`bg-white/80 backdrop-blur-sm rounded-lg ${
+      className={`bg-white backdrop-blur-sm rounded-lg ${
         isExpanded ? "h-full flex flex-col" : "p-6"
       }`}
     >
@@ -33,7 +35,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
           }}
         >
           <div
-            className={`flex justify-between items-start ${
+            className={`flex items-center ${
               photo.description ? "mb-4" : "mb-0"
             }`}
           >
@@ -49,16 +51,26 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                   minute: "2-digit",
                 })}
             </p>
-            {(!isExpanded || (isExpanded && photo.description)) && (
+            {(photo.description || !isExpanded) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onExpand?.();
+                  if (!isExpanded) {
+                    onExpand?.();
+                  } else {
+                    onToggleCollapse?.();
+                  }
                 }}
                 className="text-rose-600 hover:text-rose-700 transition-colors flex-shrink-0"
-                title={isExpanded ? "Minimize photo" : "Expand photo"}
+                title={
+                  !isExpanded
+                    ? "Expand photo"
+                    : isCollapsed
+                    ? "Show more"
+                    : "Show less"
+                }
               >
-                {isExpanded ? (
+                {!isExpanded ? (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -70,7 +82,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
                     />
                   </svg>
                 ) : (
@@ -85,7 +97,11 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                      d={
+                        isCollapsed
+                          ? "M4.5 15.75l7.5-7.5 7.5 7.5"
+                          : "M19.5 8.25l-7.5 7.5-7.5-7.5"
+                      }
                     />
                   </svg>
                 )}

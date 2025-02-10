@@ -209,12 +209,8 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                 <div className="relative w-full h-full flex flex-col sm:flex-row">
                   <div
                     className={`${
-                      isDescriptionCollapsed ||
-                      !(cards.find((c) => c.id === expanded)?.content as any)
-                        ?.props?.photo?.description
-                        ? "h-[90vh]"
-                        : "h-[60vh]"
-                    } sm:h-full flex-1 flex items-center justify-center`}
+                      isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
+                    } sm:h-full flex-1 flex items-center justify-center transition-all duration-300`}
                   >
                     <img
                       src={cards.find((c) => c.id === expanded)?.thumbnail}
@@ -226,35 +222,10 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                     (cards.find((c) => c.id === expanded)?.content as any)
                       ?.props?.photo?.description && (
                       <div
-                        className={`w-full sm:w-80 bg-white/80 backdrop-blur-sm transition-all duration-300 sm:h-full
+                        className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
                         ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
                         overflow-y-auto relative`}
                       >
-                        <button
-                          onClick={() =>
-                            setIsDescriptionCollapsed(!isDescriptionCollapsed)
-                          }
-                          className="absolute right-4 top-16 text-rose-600 hover:text-rose-700 transition-colors block sm:hidden z-10"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-5 h-5"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d={
-                                isDescriptionCollapsed
-                                  ? "M19.5 8.25l-7.5 7.5-7.5-7.5"
-                                  : "M4.5 15.75l7.5-7.5 7.5 7.5"
-                              }
-                            />
-                          </svg>
-                        </button>
                         {React.cloneElement(
                           cards.find((c) => c.id === expanded)
                             ?.content as React.ReactElement,
@@ -263,22 +234,10 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                             isExpanded: true,
                             isCompact: false,
                             isCollapsed: isDescriptionCollapsed,
-                          }
-                        )}
-                      </div>
-                    )}
-                  {expanded !== null &&
-                    !(cards.find((c) => c.id === expanded)?.content as any)
-                      ?.props?.photo?.description && (
-                      <div className="w-full sm:w-80 bg-white/80 backdrop-blur-sm h-[10vh] sm:h-full overflow-y-auto relative">
-                        {React.cloneElement(
-                          cards.find((c) => c.id === expanded)
-                            ?.content as React.ReactElement,
-                          {
-                            onExpand: handleCloseExpanded,
-                            isExpanded: true,
-                            isCompact: false,
-                            isCollapsed: false,
+                            onToggleCollapse: () =>
+                              setIsDescriptionCollapsed(
+                                !isDescriptionCollapsed
+                              ),
                           }
                         )}
                       </div>
