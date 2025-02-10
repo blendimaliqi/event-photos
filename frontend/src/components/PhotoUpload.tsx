@@ -9,27 +9,28 @@ interface PhotoUploadProps {
 
 export function PhotoUpload({ eventId }: PhotoUploadProps) {
   const { uploadPhoto, isUploading, error } = usePhotoUpload(eventId);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const handleFileUpload = async (files: FileList) => {
-    if (files.length > 0) {
-      setSelectedFile(files[0]);
-    }
+    setSelectedFiles(Array.from(files));
   };
 
-  const handleConfirm = async (description: string) => {
-    if (selectedFile) {
-      try {
-        await uploadPhoto(selectedFile, eventId.toString(), description);
-        setSelectedFile(null);
-      } catch (error) {
-        console.error("Failed to upload photo:", error);
-      }
+  const handleConfirm = async (descriptions: string[]) => {
+    try {
+      // Upload all photos with their descriptions
+      await Promise.all(
+        selectedFiles.map((file, index) =>
+          uploadPhoto(file, eventId.toString(), descriptions[index] || "")
+        )
+      );
+      setSelectedFiles([]);
+    } catch (error) {
+      console.error("Failed to upload photos:", error);
     }
   };
 
   const handleCancel = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
   };
 
   return (
@@ -40,9 +41,9 @@ export function PhotoUpload({ eventId }: PhotoUploadProps) {
         </div>
       )}
       <DragAndDrop onFilesDrop={handleFileUpload} isUploading={isUploading} />
-      {selectedFile && (
+      {selectedFiles.length > 0 && (
         <PhotoUploadModal
-          file={selectedFile}
+          files={selectedFiles}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           isUploading={isUploading}
