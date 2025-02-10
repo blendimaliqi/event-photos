@@ -36,7 +36,7 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
 
   return (
     <div
-      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+      className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors min-h-[200px] flex items-center justify-center ${
         isDragging
           ? "border-blue-500 bg-blue-50"
           : "border-gray-300 hover:border-gray-400"

@@ -14,10 +14,10 @@ export const PhotoUpload: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-xl mx-auto">
       <DragAndDrop onFileSelect={handleFileSelect}>
-        <div className="space-y-4">
-          <div className="text-gray-600">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="text-center">
             {selectedFile ? (
               <p className="text-sm">Selected: {selectedFile.name}</p>
             ) : (
@@ -37,7 +37,7 @@ export const PhotoUpload: React.FC = () => {
           />
           <label
             htmlFor="file-input"
-            className="inline-block px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition-colors"
+            className="inline-block px-6 py-2.5 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600 transition-colors"
           >
             Browse Files
           </label>
@@ -47,7 +47,7 @@ export const PhotoUpload: React.FC = () => {
               <button
                 onClick={uploadPhoto}
                 disabled={uploadStatus === "uploading"}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors disabled:opacity-50"
               >
                 {uploadStatus === "uploading" ? "Uploading..." : "Upload Photo"}
               </button>
