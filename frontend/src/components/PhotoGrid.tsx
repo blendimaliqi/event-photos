@@ -1,7 +1,7 @@
 import React from "react";
 import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos } from "../hooks/usePhotos";
-import { Photo } from "../types/photo";
+import { PhotoContent } from "./PhotoContent";
 
 interface PhotoCardContent {
   id: number;
@@ -9,22 +9,6 @@ interface PhotoCardContent {
   className: string;
   thumbnail: string;
 }
-
-const PhotoContent = ({ photo }: { photo: Photo }) => {
-  return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
-      <p className="font-serif text-xl md:text-2xl text-gray-800">
-        Moment {photo.id}
-      </p>
-      <p className="text-sm text-gray-600">
-        {new Date(photo.uploadDate).toLocaleDateString()}
-      </p>
-      <p className="text-gray-700 my-2">
-        {photo.description || "A beautiful wedding moment"}
-      </p>
-    </div>
-  );
-};
 
 export function PhotoGrid({ eventId }: { eventId: number }) {
   const { data: photos, isLoading, error } = usePhotos(eventId);
