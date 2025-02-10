@@ -188,7 +188,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
             >
               <button
                 onClick={handleCloseExpanded}
-                className="absolute top-4 right-4 z-10 text-white/80 hover:text-white transition-colors"
+                className="absolute top-4 right-4 z-20 text-white/80 hover:text-white transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -234,7 +234,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                           onClick={() =>
                             setIsDescriptionCollapsed(!isDescriptionCollapsed)
                           }
-                          className="absolute right-4 top-4 text-rose-600 hover:text-rose-700 transition-colors block sm:hidden z-10"
+                          className="absolute right-4 top-16 text-rose-600 hover:text-rose-700 transition-colors block sm:hidden z-10"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
