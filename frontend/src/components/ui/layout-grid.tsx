@@ -24,7 +24,10 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 
   const handleExpand = (id: number) => {
     setExpanded(id);
-    setIsDescriptionCollapsed(false);
+    const expandedCard = cards.find((c) => c.id === id);
+    const hasDescription = !!(expandedCard?.content as any)?.props?.photo
+      ?.description;
+    setIsDescriptionCollapsed(!hasDescription);
     document.body.style.overflow = "hidden";
   };
 
