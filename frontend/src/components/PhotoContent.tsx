@@ -5,12 +5,14 @@ interface PhotoContentProps {
   photo: Photo;
   onExpand?: () => void;
   isExpanded?: boolean;
+  isCompact?: boolean;
 }
 
 export const PhotoContent: React.FC<PhotoContentProps> = ({
   photo,
   onExpand,
   isExpanded,
+  isCompact,
 }) => {
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4">
@@ -63,7 +65,23 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
           )}
         </button>
       </div>
-      <p className="text-gray-700 my-2">{photo.description || ""}</p>
+      {!isCompact && photo.description && (
+        <div className="relative mt-2">
+          <div
+            className={`text-gray-700 whitespace-pre-wrap break-words ${
+              photo.description.length > 100
+                ? "max-h-32 overflow-y-auto pr-2 custom-scrollbar"
+                : ""
+            }`}
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#fecdd3 transparent",
+            }}
+          >
+            {photo.description}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

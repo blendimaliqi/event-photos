@@ -16,7 +16,7 @@ namespace EventPhotos.API.Models
         [StringLength(2048)]
         public string Url { get; set; } = string.Empty;
 
-        [StringLength(500)]
+        [StringLength(1500)]
         public string? Description { get; set; }
 
         [Required]

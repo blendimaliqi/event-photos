@@ -18,6 +18,7 @@ export function PhotoUploadModal({
   onCancel,
   isUploading,
 }: PhotoUploadModalProps) {
+  const maxChars = 1500;
   const [descriptions, setDescriptions] = useState<string[]>(
     files.map(() => "")
   );
@@ -50,9 +51,11 @@ export function PhotoUploadModal({
   };
 
   const handleDescriptionChange = (index: number, value: string) => {
-    setDescriptions((prev) =>
-      prev.map((desc, i) => (i === index ? value : desc))
-    );
+    if (value.length <= maxChars) {
+      setDescriptions((prev) =>
+        prev.map((desc, i) => (i === index ? value : desc))
+      );
+    }
   };
 
   return (
@@ -79,18 +82,30 @@ export function PhotoUploadModal({
               </div>
 
               <div className="space-y-1">
-                <label
-                  htmlFor={`description-${index}`}
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Description for photo {index + 1}
-                </label>
+                <div className="flex justify-between items-center">
+                  <label
+                    htmlFor={`description-${index}`}
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Description for photo {index + 1}
+                  </label>
+                  <span
+                    className={`text-xs ${
+                      maxChars - descriptions[index].length < 150
+                        ? "text-rose-500"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {maxChars - descriptions[index].length} characters remaining
+                  </span>
+                </div>
                 <textarea
                   id={`description-${index}`}
                   value={descriptions[index]}
                   onChange={(e) =>
                     handleDescriptionChange(index, e.target.value)
                   }
+                  maxLength={maxChars}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   rows={2}
                   placeholder="Write something about this photo..."

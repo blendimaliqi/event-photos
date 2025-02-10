@@ -147,26 +147,16 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                       viewMode === "compact" ? "p-2" : "p-6"
                     }`}
                   >
-                    {viewMode === "compact" ? (
-                      <div className="bg-white/80 backdrop-blur-sm rounded-md p-2 w-full">
-                        <p className="font-serif text-sm text-gray-800 truncate">
-                          Moment {card.id}
-                        </p>
-                      </div>
-                    ) : (
-                      <div
-                        className="w-full"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {React.cloneElement(
-                          card.content as React.ReactElement,
-                          {
-                            onExpand: () => handleExpand(card.id),
-                            isExpanded: false,
-                          }
-                        )}
-                      </div>
-                    )}
+                    <div
+                      className="w-full"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {React.cloneElement(card.content as React.ReactElement, {
+                        onExpand: () => handleExpand(card.id),
+                        isExpanded: false,
+                        isCompact: viewMode === "compact",
+                      })}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -223,6 +213,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                     {
                       onExpand: handleCloseExpanded,
                       isExpanded: true,
+                      isCompact: false,
                     }
                   )}
                 </div>
