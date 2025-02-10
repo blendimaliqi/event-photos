@@ -18,21 +18,25 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white/80 backdrop-blur-sm rounded-lg p-6 ${
-        isExpanded ? "h-full flex flex-col" : ""
+      className={`bg-white/80 backdrop-blur-sm rounded-lg ${
+        isExpanded ? "h-full flex flex-col" : "p-6"
       }`}
     >
       <div className={isExpanded ? "flex-1 min-h-0" : ""}>
         <div
           className={`${
             isExpanded ? "h-full" : "max-h-32"
-          } overflow-y-auto pr-4 custom-scrollbar`}
+          } overflow-y-auto pr-4 custom-scrollbar ${isExpanded ? "p-6" : ""}`}
           style={{
             scrollbarWidth: "thin",
             scrollbarColor: "#fecdd3 transparent",
           }}
         >
-          <div className="flex justify-between items-start mb-4">
+          <div
+            className={`flex justify-between items-start ${
+              photo.description ? "mb-4" : "mb-0"
+            }`}
+          >
             <p
               className={`text-sm text-gray-600 ${
                 isCompact ? "w-20" : "truncate"
@@ -45,7 +49,7 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
                   minute: "2-digit",
                 })}
             </p>
-            {!isCollapsed && (
+            {(!isExpanded || (isExpanded && photo.description)) && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -88,8 +92,12 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
               </button>
             )}
           </div>
-          {photo.description && !isCollapsed && (
-            <p className="text-gray-700 whitespace-pre-wrap break-words text-base px-1">
+          {photo.description && (
+            <p
+              className={`text-gray-700 whitespace-pre-wrap break-words text-base px-1 ${
+                isCollapsed ? "line-clamp-1" : ""
+              }`}
+            >
               {photo.description}
             </p>
           )}

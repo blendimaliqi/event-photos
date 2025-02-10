@@ -209,7 +209,11 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                 <div className="relative w-full h-full flex flex-col sm:flex-row">
                   <div
                     className={`${
-                      isDescriptionCollapsed ? "h-[85vh]" : "h-[60vh]"
+                      isDescriptionCollapsed ||
+                      !(cards.find((c) => c.id === expanded)?.content as any)
+                        ?.props?.photo?.description
+                        ? "h-[90vh]"
+                        : "h-[60vh]"
                     } sm:h-full flex-1 flex items-center justify-center`}
                   >
                     <img
@@ -218,23 +222,19 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                       className="max-w-full max-h-full object-contain"
                     />
                   </div>
-                  {expanded !== null && (
-                    <div
-                      className={`w-full sm:w-80 bg-white/80 backdrop-blur-sm transition-all duration-300 sm:h-full
-                        ${isDescriptionCollapsed ? "h-[15vh]" : "h-[40vh]"} 
-                        ${
-                          !cards.find((c) => c.id === expanded)?.content
-                            ? "h-[10vh]"
-                            : ""
-                        } 
+                  {expanded !== null &&
+                    (cards.find((c) => c.id === expanded)?.content as any)
+                      ?.props?.photo?.description && (
+                      <div
+                        className={`w-full sm:w-80 bg-white/80 backdrop-blur-sm transition-all duration-300 sm:h-full
+                        ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
                         overflow-y-auto relative`}
-                    >
-                      {cards.find((c) => c.id === expanded)?.content && (
+                      >
                         <button
                           onClick={() =>
                             setIsDescriptionCollapsed(!isDescriptionCollapsed)
                           }
-                          className="absolute right-4 top-4 text-rose-600 hover:text-rose-700 transition-colors block sm:hidden"
+                          className="absolute right-4 top-4 text-rose-600 hover:text-rose-700 transition-colors block sm:hidden z-10"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -249,25 +249,40 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                               strokeLinejoin="round"
                               d={
                                 isDescriptionCollapsed
-                                  ? "M4 6h16M4 12h16m-7 6h7"
-                                  : "M19.5 8.25l-7.5 7.5-7.5-7.5"
+                                  ? "M19.5 8.25l-7.5 7.5-7.5-7.5"
+                                  : "M4.5 15.75l7.5-7.5 7.5 7.5"
                               }
                             />
                           </svg>
                         </button>
-                      )}
-                      {React.cloneElement(
-                        cards.find((c) => c.id === expanded)
-                          ?.content as React.ReactElement,
-                        {
-                          onExpand: handleCloseExpanded,
-                          isExpanded: true,
-                          isCompact: false,
-                          isCollapsed: isDescriptionCollapsed,
-                        }
-                      )}
-                    </div>
-                  )}
+                        {React.cloneElement(
+                          cards.find((c) => c.id === expanded)
+                            ?.content as React.ReactElement,
+                          {
+                            onExpand: handleCloseExpanded,
+                            isExpanded: true,
+                            isCompact: false,
+                            isCollapsed: isDescriptionCollapsed,
+                          }
+                        )}
+                      </div>
+                    )}
+                  {expanded !== null &&
+                    !(cards.find((c) => c.id === expanded)?.content as any)
+                      ?.props?.photo?.description && (
+                      <div className="w-full sm:w-80 bg-white/80 backdrop-blur-sm h-[10vh] sm:h-full overflow-y-auto relative">
+                        {React.cloneElement(
+                          cards.find((c) => c.id === expanded)
+                            ?.content as React.ReactElement,
+                          {
+                            onExpand: handleCloseExpanded,
+                            isExpanded: true,
+                            isCompact: false,
+                            isCollapsed: false,
+                          }
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             </motion.div>
