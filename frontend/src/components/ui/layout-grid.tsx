@@ -200,24 +200,26 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                   />
                 </svg>
               </button>
-              <div className="relative w-full h-full flex flex-col items-center justify-center bg-black">
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={cards.find((c) => c.id === expanded)?.thumbnail}
-                    alt=""
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
-                <div className="w-full bg-white/80 backdrop-blur-sm">
-                  {React.cloneElement(
-                    cards.find((c) => c.id === expanded)
-                      ?.content as React.ReactElement,
-                    {
-                      onExpand: handleCloseExpanded,
-                      isExpanded: true,
-                      isCompact: false,
-                    }
-                  )}
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <div className="relative w-full h-full flex flex-col sm:flex-row">
+                  <div className="h-[60vh] sm:h-full flex-1 flex items-center justify-center">
+                    <img
+                      src={cards.find((c) => c.id === expanded)?.thumbnail}
+                      alt=""
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <div className="w-full sm:w-80 bg-white/80 backdrop-blur-sm max-h-[40vh] sm:max-h-full">
+                    {React.cloneElement(
+                      cards.find((c) => c.id === expanded)
+                        ?.content as React.ReactElement,
+                      {
+                        onExpand: handleCloseExpanded,
+                        isExpanded: true,
+                        isCompact: false,
+                      }
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

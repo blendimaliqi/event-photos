@@ -15,8 +15,12 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
   isCompact,
 }) => {
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6">
-      <div className="flex justify-between items-start mb-2">
+    <div
+      className={`bg-white/80 backdrop-blur-sm rounded-lg p-6 ${
+        isExpanded ? "h-full flex flex-col" : ""
+      }`}
+    >
+      <div className="flex justify-between items-start">
         <p
           className={`text-sm text-gray-600 ${
             isCompact ? "w-20" : "truncate"
@@ -71,21 +75,19 @@ export const PhotoContent: React.FC<PhotoContentProps> = ({
         </button>
       </div>
       {!isCompact && photo.description && (
-        <div className="relative mt-2">
+        <div className={isExpanded ? "mt-4 flex-1 min-h-0" : "mt-4"}>
           <div
-            className={`text-gray-700 whitespace-pre-wrap break-words text-base ${
-              photo.description.length > 100
-                ? "max-h-32 overflow-y-auto pr-4 custom-scrollbar"
-                : ""
-            }`}
+            className={`${
+              isExpanded ? "h-full" : "max-h-32"
+            } overflow-y-auto pr-4 custom-scrollbar`}
             style={{
               scrollbarWidth: "thin",
               scrollbarColor: "#fecdd3 transparent",
             }}
           >
-            <div className="pb-4">
-              <p className="px-1">{photo.description}</p>
-            </div>
+            <p className="text-gray-700 whitespace-pre-wrap break-words text-base px-1">
+              {photo.description}
+            </p>
           </div>
         </div>
       )}
