@@ -1,38 +1,27 @@
-import { useState, useCallback } from "react";
-import { UploadStatus } from "../types/photo";
+import { useState } from "react";
 import { photoService } from "../services/photoService";
 
-export const usePhotoUpload = (onUploadSuccess?: () => void) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+export function usePhotoUpload() {
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileSelect = useCallback((file: File | null) => {
-    if (file && file.type.startsWith("image/")) {
-      setSelectedFile(file);
+  const uploadPhoto = async (file: File, eventId: string) => {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Only image files are allowed");
     }
-  }, []);
-
-  const uploadPhoto = async () => {
-    if (!selectedFile) return;
 
     try {
-      setUploadStatus("uploading");
-      await photoService.uploadPhoto(selectedFile, "1"); // Default eventId for now
-      setUploadStatus("success");
-      setSelectedFile(null);
-      if (onUploadSuccess) {
-        onUploadSuccess();
-      }
+      setIsUploading(true);
+      await photoService.uploadPhoto(file, eventId);
     } catch (error) {
       console.error("Upload error:", error);
-      setUploadStatus("error");
+      throw error;
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return {
-    selectedFile,
-    uploadStatus,
-    handleFileSelect,
     uploadPhoto,
+    isUploading,
   };
-};
+}

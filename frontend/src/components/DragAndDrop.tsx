@@ -1,14 +1,11 @@
 import React, { useState, useCallback } from "react";
 
 interface DragAndDropProps {
-  onFileSelect: (file: File) => void;
-  children: React.ReactNode;
+  onFilesDrop: (files: FileList) => void;
+  isUploading: boolean;
 }
 
-export const DragAndDrop: React.FC<DragAndDropProps> = ({
-  onFileSelect,
-  children,
-}) => {
+export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -26,13 +23,20 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
       e.preventDefault();
       setIsDragging(false);
 
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith("image/")) {
-        onFileSelect(file);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        onFilesDrop(files);
       }
     },
-    [onFileSelect]
+    [onFilesDrop]
   );
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onFilesDrop(files);
+    }
+  };
 
   return (
     <div className="relative">
@@ -46,7 +50,39 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {children}
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="text-center">
+            <p className="text-2xl font-serif text-rose-800">
+              {isUploading ? "Uploading..." : "Drop your photos here"}
+            </p>
+            {!isUploading && (
+              <div className="flex items-center justify-center gap-4 my-2">
+                <span className="h-px w-12 bg-rose-200"></span>
+                <p className="text-sm font-serif italic text-rose-600">or</p>
+                <span className="h-px w-12 bg-rose-200"></span>
+              </div>
+            )}
+          </div>
+
+          {!isUploading && (
+            <>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileInput}
+                className="hidden"
+                id="file-input"
+                multiple
+              />
+              <label
+                htmlFor="file-input"
+                className="inline-block px-8 py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif"
+              >
+                Browse Files
+              </label>
+            </>
+          )}
+        </div>
       </div>
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-50 px-4">
         <span className="text-rose-300 text-2xl">❀</span>
@@ -56,4 +92,4 @@ export const DragAndDrop: React.FC<DragAndDropProps> = ({
       </div>
     </div>
   );
-};
+}

@@ -34,4 +34,14 @@ export const photoService = {
 
     return response.json();
   },
+
+  async deletePhoto(photoId: number): Promise<void> {
+    const response = await fetch(`${API_URL}/photos/${photoId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete photo");
+    }
+  },
 };

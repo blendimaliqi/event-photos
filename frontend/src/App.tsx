@@ -1,28 +1,63 @@
-import { PhotoUpload } from "./components/PhotoUpload";
+import { QueryProvider } from "./providers/QueryProvider";
 import { PhotoGrid } from "./components/PhotoGrid";
+import { PhotoUpload } from "./components/PhotoUpload";
+import { AuthProvider } from "./contexts/AuthContext";
+import { AdminPanel } from "./components/AdminPanel";
+import { AdminLogin } from "./components/AdminLogin";
+import { useAuth } from "./contexts/AuthContext";
+
+// Temporary event ID for demo purposes
+const DEMO_EVENT_ID = 1;
+
+function AdminRoute() {
+  const { isAdmin } = useAuth();
+
+  if (!isAdmin) {
+    return <AdminLogin />;
+  }
+
+  return <AdminPanel eventId={DEMO_EVENT_ID} />;
+}
 
 function App() {
-  // For now, we'll hardcode eventId to 1 for testing
-  const eventId = 1;
-
   return (
-    <div className="min-h-screen bg-rose-50">
-      <div className="container mx-auto px-6 md:px-12 lg:px-24 py-6 max-w-[1800px]">
-        <h1 className="text-center text-3xl md:text-4xl font-serif text-gray-800 mb-4">
-          Wedding Moments
-        </h1>
-        <p className="text-center text-gray-600 mb-8 max-w-md mx-auto">
-          Share your special moments from our wedding day. Every photo helps
-          tell our story.
-        </p>
-        <div className="flex justify-center items-center pb-8">
-          <div className="w-full max-w-lg mx-auto">
-            <PhotoUpload />
-          </div>
+    <QueryProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-100">
+          <nav className="bg-white shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between h-16">
+                <div className="flex items-center">
+                  <h1 className="text-xl font-semibold">Wedding Photos</h1>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <a href="/" className="text-gray-600 hover:text-gray-900">
+                    Gallery
+                  </a>
+                  <a
+                    href="/admin"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    Admin
+                  </a>
+                </div>
+              </div>
+            </div>
+          </nav>
+
+          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            {window.location.pathname === "/admin" ? (
+              <AdminRoute />
+            ) : (
+              <>
+                <PhotoUpload eventId={DEMO_EVENT_ID} />
+                <PhotoGrid eventId={DEMO_EVENT_ID} />
+              </>
+            )}
+          </main>
         </div>
-        <PhotoGrid eventId={eventId} />
-      </div>
-    </div>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 
