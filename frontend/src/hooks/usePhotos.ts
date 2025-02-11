@@ -102,7 +102,7 @@ export function usePhotoUpload(eventId: number) {
 
       return { optimisticPhoto };
     },
-    onError: (err, variables, context) => {
+    onError: (_, __, context) => {
       // Remove optimistic update on error
       if (context?.optimisticPhoto) {
         ["newest", "oldest", "withDescription"].forEach((sort) => {
