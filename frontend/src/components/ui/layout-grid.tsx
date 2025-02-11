@@ -300,16 +300,16 @@ export const LayoutGrid = ({
                         e.stopPropagation();
                         navigateImage("prev");
                       }}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200 z-20"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-20"
                       aria-label="Previous image"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         stroke="currentColor"
-                        className="w-5 h-5"
+                        className="w-6 h-6"
                       >
                         <path
                           strokeLinecap="round"
@@ -323,16 +323,16 @@ export const LayoutGrid = ({
                         e.stopPropagation();
                         navigateImage("next");
                       }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200 z-20"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-20"
                       aria-label="Next image"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         stroke="currentColor"
-                        className="w-5 h-5"
+                        className="w-6 h-6"
                       >
                         <path
                           strokeLinecap="round"
