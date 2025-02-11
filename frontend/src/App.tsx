@@ -122,6 +122,17 @@ function App() {
               </>
             )}
           </main>
+
+          {/* Footer with attribution */}
+          <footer className="py-6 text-center text-sm text-gray-500">
+            <p className="font-serif italic">
+              Made with{" "}
+              <span className="text-rose-500" aria-label="love">
+                ❤
+              </span>{" "}
+              by Blendi Maliqi
+            </p>
+          </footer>
         </div>
       </AuthProvider>
     </QueryProvider>
