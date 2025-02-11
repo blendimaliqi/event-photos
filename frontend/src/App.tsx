@@ -20,33 +20,90 @@ function AdminRoute() {
 }
 
 function App() {
+  const isAdminPage = window.location.pathname === "/admin";
+
   return (
     <QueryProvider>
       <AuthProvider>
         <div className="min-h-screen bg-gray-100">
-          <nav className="bg-white shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                <div className="flex items-center">
-                  <h1 className="text-xl font-semibold">Wedding Photos</h1>
+          {!isAdminPage && (
+            <div className="relative h-[60vh] bg-black">
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: 'url("/wedphoto.jpg")',
+                  backgroundPosition: "center 35%",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40" />
+              </div>
+              <nav className="relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between h-20">
+                    <div className="flex items-center">
+                      <h1 className="text-2xl font-semibold text-white">
+                        Wedding Photos
+                      </h1>
+                    </div>
+                    <div className="flex items-center space-x-6">
+                      <a
+                        href="/"
+                        className="text-white hover:text-rose-200 transition-colors"
+                      >
+                        Gallery
+                      </a>
+                      <a
+                        href="/admin"
+                        className="text-white hover:text-rose-200 transition-colors"
+                      >
+                        Admin
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <a href="/" className="text-gray-600 hover:text-gray-900">
-                    Gallery
-                  </a>
-                  <a
-                    href="/admin"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    Admin
-                  </a>
+              </nav>
+              <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
+                <div className="max-w-3xl">
+                  <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+                    Welcome to our Wedding Gallery
+                  </h2>
+                  <p className="text-xl text-rose-100">
+                    Upload and view photos {"<3"}
+                  </p>
                 </div>
               </div>
             </div>
-          </nav>
+          )}
 
-          <main className="max-w-[1600px] mx-auto py-6 sm:px-6 lg:px-8">
-            {window.location.pathname === "/admin" ? (
+          {isAdminPage && (
+            <nav className="bg-white shadow-sm">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                  <div className="flex items-center">
+                    <h1 className="text-xl font-semibold">Wedding Photos</h1>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <a href="/" className="text-gray-600 hover:text-gray-900">
+                      Gallery
+                    </a>
+                    <a
+                      href="/admin"
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Admin
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </nav>
+          )}
+
+          <main
+            className={`max-w-[1600px] mx-auto py-6 sm:px-6 lg:px-8 ${
+              !isAdminPage ? "-mt-16 relative z-20" : ""
+            }`}
+          >
+            {isAdminPage ? (
               <AdminRoute />
             ) : (
               <>
