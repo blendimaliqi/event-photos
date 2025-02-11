@@ -43,7 +43,12 @@ function App() {
                   <div className="flex justify-between h-20">
                     <div className="flex items-center">
                       <h1 className="text-2xl font-serif italic text-white tracking-wide">
-                        Fotot e Dasmës
+                        <a
+                          href="/"
+                          className="hover:text-rose-200 transition-colors"
+                        >
+                          Fotot e Dasmës
+                        </a>
                       </h1>
                     </div>
                     <div className="flex items-center space-x-6">
@@ -81,7 +86,11 @@ function App() {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                   <div className="flex items-center">
-                    <h1 className="text-xl font-semibold">Fotot e Dasmës</h1>
+                    <h1 className="text-xl font-semibold">
+                      <a href="/" className="hover:text-gray-900">
+                        Fotot e Dasmës
+                      </a>
+                    </h1>
                   </div>
                   <div className="flex items-center space-x-4">
                     <a href="/" className="text-gray-600 hover:text-gray-900">
