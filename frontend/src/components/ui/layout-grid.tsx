@@ -29,7 +29,6 @@ export const LayoutGrid = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
