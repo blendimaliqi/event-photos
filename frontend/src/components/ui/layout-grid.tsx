@@ -73,7 +73,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                   d="M4 6h16M4 12h16m-7 6h7"
                 />
               </svg>
-              Grid View
+              Pamja Grid
             </>
           ) : viewMode === "grid" ? (
             <>
@@ -91,7 +91,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                   d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zm-12 6h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zm-12 6h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"
                 />
               </svg>
-              Compact View
+              Pamja Kompakte
             </>
           ) : (
             <>
@@ -109,7 +109,7 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
                   d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"
                 />
               </svg>
-              Masonry View
+              Pamja Mozaik
             </>
           )}
         </button>

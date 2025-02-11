@@ -16,15 +16,17 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
 
   if (isLoading) {
     return (
-      <div className="text-center p-4 text-gray-600">Loading moments...</div>
+      <div className="text-center p-4 text-gray-600">
+        Duke ngarkuar momentet...
+      </div>
     );
   }
 
   if (error) {
     return (
       <div className="text-center text-red-500 p-4">
-        Error:{" "}
-        {error instanceof Error ? error.message : "Failed to load photos"}
+        Gabim:{" "}
+        {error instanceof Error ? error.message : "Dështoi ngarkimi i fotove"}
       </div>
     );
   }
@@ -32,7 +34,7 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
   if (!photos?.length) {
     return (
       <div className="text-center text-gray-600 p-4">
-        Be the first to share a moment from the wedding!
+        Bëhu i pari që ndan një moment nga dasma!
       </div>
     );
   }

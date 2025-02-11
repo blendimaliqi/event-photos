@@ -61,7 +61,7 @@ export function PhotoUploadModal({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-xl font-serif text-gray-800">Confirm Upload</h3>
+        <h3 className="text-xl font-serif text-gray-800">Konfirmo Ngarkimin</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {files.map((_file, index) => (
@@ -76,7 +76,7 @@ export function PhotoUploadModal({
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-500">
-                    Unable to preview image
+                    Nuk mund të shfaqet fotoja
                   </div>
                 )}
               </div>
@@ -87,7 +87,7 @@ export function PhotoUploadModal({
                     htmlFor={`description-${index}`}
                     className="block text-sm font-medium text-gray-700"
                   >
-                    Description for photo {index + 1}
+                    Përshkrimi për foton {index + 1}
                   </label>
                   <span
                     className={`text-xs ${
@@ -96,7 +96,7 @@ export function PhotoUploadModal({
                         : "text-gray-500"
                     }`}
                   >
-                    {maxChars - descriptions[index].length} characters remaining
+                    {maxChars - descriptions[index].length} karaktere të mbetura
                   </span>
                 </div>
                 <textarea
@@ -108,7 +108,7 @@ export function PhotoUploadModal({
                   maxLength={maxChars}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                   rows={2}
-                  placeholder="Write something about this photo..."
+                  placeholder="Shkruaj diçka për këtë foto..."
                 />
               </div>
             </div>
@@ -121,7 +121,7 @@ export function PhotoUploadModal({
             className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={isUploading}
           >
-            Cancel
+            Anulo
           </button>
           <button
             onClick={handleConfirm}
@@ -129,8 +129,8 @@ export function PhotoUploadModal({
             disabled={isUploading}
           >
             {isUploading
-              ? "Uploading..."
-              : `Confirm Upload (${files.length} photos)`}
+              ? "Duke ngarkuar..."
+              : `Konfirmo Ngarkimin (${files.length} foto)`}
           </button>
         </div>
       </div>

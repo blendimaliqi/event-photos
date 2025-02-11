@@ -54,20 +54,18 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
           <div className="text-center">
             <p className="text-xl sm:text-2xl font-serif text-rose-800">
               {isUploading ? (
-                "Uploading..."
+                "Duke ngarkuar..."
               ) : (
                 <span>
-                  <span className="hidden sm:inline">
-                    Drop your photos here
-                  </span>
-                  <span className="sm:hidden">Add your photos</span>
+                  <span className="hidden sm:inline">Vendos fotot këtu</span>
+                  <span className="sm:hidden">Shto fotot e tua</span>
                 </span>
               )}
             </p>
             {!isUploading && (
               <div className="flex items-center justify-center gap-4 my-2">
                 <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
-                <p className="text-sm font-serif italic text-rose-600">or</p>
+                <p className="text-sm font-serif italic text-rose-600">ose</p>
                 <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
               </div>
             )}
@@ -87,7 +85,7 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
                 htmlFor="file-input"
                 className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif text-sm sm:text-base"
               >
-                Browse Files
+                Zgjidhni Foto
               </label>
             </>
           )}

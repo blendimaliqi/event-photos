@@ -37,7 +37,7 @@ export function PhotoUpload({ eventId }: PhotoUploadProps) {
     <div className="w-full max-w-lg mx-auto mb-8">
       {error && (
         <div className="text-red-500 text-center mb-4">
-          {error instanceof Error ? error.message : "Upload failed"}
+          {error instanceof Error ? error.message : "Ngarkimi dështoi"}
         </div>
       )}
       <DragAndDrop onFilesDrop={handleFileUpload} isUploading={isUploading} />

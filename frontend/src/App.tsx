@@ -43,7 +43,7 @@ function App() {
                   <div className="flex justify-between h-20">
                     <div className="flex items-center">
                       <h1 className="text-2xl font-serif italic text-white tracking-wide">
-                        Wedding Photos
+                        Fotot e Dasmës
                       </h1>
                     </div>
                     <div className="flex items-center space-x-6">
@@ -51,7 +51,7 @@ function App() {
                         href="/"
                         className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
                       >
-                        Gallery
+                        Galeria
                       </a>
                       <a
                         href="/admin"
@@ -66,10 +66,10 @@ function App() {
               <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
                 <div className="max-w-3xl">
                   <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
-                    Welcome to our Wedding Gallery
+                    Mirë se vini në Galerinë tonë të Dasmës
                   </h2>
                   <p className="text-xl text-rose-100 font-serif tracking-wider">
-                    Upload and view photos {"❤"}
+                    Ngarko dhe shiko fotot {"❤"}
                   </p>
                 </div>
               </div>
@@ -81,11 +81,11 @@ function App() {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                   <div className="flex items-center">
-                    <h1 className="text-xl font-semibold">Wedding Photos</h1>
+                    <h1 className="text-xl font-semibold">Fotot e Dasmës</h1>
                   </div>
                   <div className="flex items-center space-x-4">
                     <a href="/" className="text-gray-600 hover:text-gray-900">
-                      Gallery
+                      Galeria
                     </a>
                     <a
                       href="/admin"
