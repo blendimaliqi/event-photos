@@ -27,6 +27,8 @@ export const LayoutGrid = ({
   const [expanded, setExpanded] = useState<number | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
@@ -127,14 +129,19 @@ export const LayoutGrid = ({
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
     setTouchEnd(e.targetTouches[0].clientX);
+    const currentOffset = e.targetTouches[0].clientX - touchStart;
+    setSwipeOffset(currentOffset);
   };
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
+    setIsDragging(false);
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -146,7 +153,15 @@ export const LayoutGrid = ({
     if (isRightSwipe) {
       navigateImage("prev");
     }
+
+    setSwipeOffset(0);
   };
+
+  useEffect(() => {
+    if (!isDragging) {
+      setSwipeOffset(0);
+    }
+  }, [isDragging]);
 
   return (
     <div className="space-y-4">
@@ -326,8 +341,27 @@ export const LayoutGrid = ({
                   <div
                     className={`${
                       isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
-                    } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative`}
+                    } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
                   >
+                    <motion.div
+                      className="relative w-full h-full flex items-center justify-center"
+                      animate={{
+                        x: swipeOffset,
+                        transition: { type: "spring", bounce: 0 },
+                      }}
+                      style={{
+                        touchAction: "none",
+                      }}
+                    >
+                      <img
+                        src={cards.find((c) => c.id === expanded)?.thumbnail}
+                        alt=""
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          pointerEvents: isDragging ? "none" : "auto",
+                        }}
+                      />
+                    </motion.div>
                     {/* Navigation Buttons */}
                     <button
                       onClick={(e) => {
@@ -375,11 +409,6 @@ export const LayoutGrid = ({
                         />
                       </svg>
                     </button>
-                    <img
-                      src={cards.find((c) => c.id === expanded)?.thumbnail}
-                      alt=""
-                      className="max-w-full max-h-full object-contain"
-                    />
                   </div>
                   {expanded !== null && (
                     <div
