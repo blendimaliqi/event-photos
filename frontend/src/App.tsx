@@ -42,20 +42,20 @@ function App() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between h-20">
                     <div className="flex items-center">
-                      <h1 className="text-2xl font-semibold text-white">
+                      <h1 className="text-2xl font-serif italic text-white tracking-wide">
                         Wedding Photos
                       </h1>
                     </div>
                     <div className="flex items-center space-x-6">
                       <a
                         href="/"
-                        className="text-white hover:text-rose-200 transition-colors"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
                       >
                         Gallery
                       </a>
                       <a
                         href="/admin"
-                        className="text-white hover:text-rose-200 transition-colors"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
                       >
                         Admin
                       </a>
@@ -65,11 +65,11 @@ function App() {
               </nav>
               <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
                 <div className="max-w-3xl">
-                  <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+                  <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
                     Welcome to our Wedding Gallery
                   </h2>
-                  <p className="text-xl text-rose-100">
-                    Upload and view photos {"<3"}
+                  <p className="text-xl text-rose-100 font-serif tracking-wider">
+                    Upload and view photos {"❤"}
                   </p>
                 </div>
               </div>
