@@ -64,9 +64,11 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
             </p>
             {!isUploading && (
               <div className="flex items-center justify-center gap-4 my-2">
-                <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
-                <p className="text-sm font-serif italic text-rose-600">ose</p>
-                <span className="h-px w-8 sm:w-12 bg-rose-200"></span>
+                <span className="hidden sm:block h-px w-8 sm:w-12 bg-rose-200"></span>
+                <p className="hidden sm:block text-sm font-serif italic text-rose-600">
+                  ose
+                </p>
+                <span className="hidden sm:block h-px w-8 sm:w-12 bg-rose-200"></span>
               </div>
             )}
           </div>
