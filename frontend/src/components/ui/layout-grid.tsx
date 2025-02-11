@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Card = {
@@ -14,9 +14,20 @@ type ViewMode = "masonry" | "grid" | "compact";
 export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("masonry");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return window.innerWidth < 640 ? "grid" : "masonry";
+  });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewMode(window.innerWidth < 640 ? "grid" : "masonry");
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleClick = (id: number) => {
     setSelected(id === selected ? null : id);
