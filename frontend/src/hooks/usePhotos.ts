@@ -10,40 +10,52 @@ export const QUERY_KEYS = {
   allPhotos: (eventId: number) => ["photos", eventId] as const,
 };
 
+const sortPhotos = (photos: Photo[], sortBy: SortOption = "newest") => {
+  const sortedPhotos = [...photos];
+
+  switch (sortBy) {
+    case "newest":
+      return sortedPhotos.sort(
+        (a, b) =>
+          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+      );
+    case "oldest":
+      return sortedPhotos.sort(
+        (a, b) =>
+          new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime()
+      );
+    case "withDescription":
+      return sortedPhotos.sort((a, b) => {
+        if (a.description && !b.description) return -1;
+        if (!a.description && b.description) return 1;
+        return (
+          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+        );
+      });
+    default:
+      return sortedPhotos;
+  }
+};
+
 export function usePhotos(eventId: number, sortBy: SortOption = "newest") {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: QUERY_KEYS.photos(eventId, sortBy),
     queryFn: () => photoService.getPhotos(eventId),
-    select: (data: Photo[]) => {
-      const photos = [...data];
+    select: (data: Photo[]) => sortPhotos(data, sortBy),
+    staleTime: 1000 * 60 * 3, // 3 minutes
+    placeholderData: () => {
+      // Use data from other sort queries as placeholder
+      const otherSortQueries = queryClient
+        .getQueriesData<Photo[]>({ queryKey: ["photos", eventId] })
+        .map(([, data]) => data)
+        .filter(Boolean)[0];
 
-      switch (sortBy) {
-        case "newest":
-          return photos.sort(
-            (a, b) =>
-              new Date(b.uploadDate).getTime() -
-              new Date(a.uploadDate).getTime()
-          );
-        case "oldest":
-          return photos.sort(
-            (a, b) =>
-              new Date(a.uploadDate).getTime() -
-              new Date(b.uploadDate).getTime()
-          );
-        case "withDescription":
-          return photos.sort((a, b) => {
-            // Sort photos with descriptions first
-            if (a.description && !b.description) return -1;
-            if (!a.description && b.description) return 1;
-            // If both have or don't have descriptions, sort by date
-            return (
-              new Date(b.uploadDate).getTime() -
-              new Date(a.uploadDate).getTime()
-            );
-          });
-        default:
-          return photos;
+      if (otherSortQueries) {
+        return sortPhotos(otherSortQueries, sortBy);
       }
+      return undefined;
     },
   });
 }
@@ -64,8 +76,46 @@ export function usePhotoUpload(eventId: number) {
       description,
     }: UploadPhotoParams) =>
       photoService.uploadPhoto(file, eventIdString, description),
-    onSuccess: () => {
-      // Invalidate all photo queries for this event, regardless of sort option
+    onMutate: async ({ file, description }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: QUERY_KEYS.allPhotos(eventId),
+      });
+
+      // Create optimistic update
+      const optimisticPhoto: Photo = {
+        id: Math.random(), // temporary ID
+        url: URL.createObjectURL(file),
+        description,
+        uploadDate: new Date().toISOString(),
+        eventId,
+      };
+
+      // Add optimistic photo to all sort variations
+      ["newest", "oldest", "withDescription"].forEach((sort) => {
+        queryClient.setQueryData<Photo[]>(
+          QUERY_KEYS.photos(eventId, sort as SortOption),
+          (old = []) =>
+            sortPhotos([...old, optimisticPhoto], sort as SortOption)
+        );
+      });
+
+      return { optimisticPhoto };
+    },
+    onError: (err, variables, context) => {
+      // Remove optimistic update on error
+      if (context?.optimisticPhoto) {
+        ["newest", "oldest", "withDescription"].forEach((sort) => {
+          queryClient.setQueryData<Photo[]>(
+            QUERY_KEYS.photos(eventId, sort as SortOption),
+            (old = []) =>
+              old.filter((photo) => photo.id !== context.optimisticPhoto.id)
+          );
+        });
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure server state
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.allPhotos(eventId),
       });
