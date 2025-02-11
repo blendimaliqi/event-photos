@@ -27,7 +27,7 @@ function App() {
       <AuthProvider>
         <div className="min-h-screen bg-gray-100">
           {!isAdminPage && (
-            <div className="relative h-[60vh] bg-black">
+            <div className="relative h-[90vh] bg-black">
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
@@ -36,6 +36,7 @@ function App() {
                 }}
               >
                 <div className="absolute inset-0 bg-black/40" />
+                <div className="absolute inset-x-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-100" />
               </div>
               <nav className="relative z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
