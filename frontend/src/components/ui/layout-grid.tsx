@@ -30,6 +30,8 @@ export const LayoutGrid = ({
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
+    if (savedViewMode) return savedViewMode;
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
@@ -46,7 +48,10 @@ export const LayoutGrid = ({
 
   useEffect(() => {
     const handleResize = () => {
-      setViewMode(window.innerWidth < 640 ? "grid" : "masonry");
+      // Only update view mode if there's no saved preference
+      if (!localStorage.getItem("viewMode")) {
+        setViewMode(window.innerWidth < 640 ? "grid" : "masonry");
+      }
     };
 
     window.addEventListener("resize", handleResize);
@@ -127,9 +132,14 @@ export const LayoutGrid = ({
   }, [expanded, cards, navigateImage, handleCloseExpanded]);
 
   const toggleViewMode = () => {
-    if (viewMode === "masonry") setViewMode("grid");
-    else if (viewMode === "grid") setViewMode("compact");
-    else setViewMode("masonry");
+    const newViewMode =
+      viewMode === "masonry"
+        ? "grid"
+        : viewMode === "grid"
+        ? "compact"
+        : "masonry";
+    setViewMode(newViewMode);
+    localStorage.setItem("viewMode", newViewMode);
   };
 
   const containerClassName =
