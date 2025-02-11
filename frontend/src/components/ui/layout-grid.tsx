@@ -162,28 +162,16 @@ export const LayoutGrid = ({
     const isRightSwipe = distance < -minSwipeDistance;
 
     if (isLeftSwipe || isRightSwipe) {
-      setIsAnimating(true);
-      const targetOffset = isLeftSwipe ? -window.innerWidth : window.innerWidth;
-      setSwipeOffset(targetOffset);
-
-      // Change image immediately and complete animation
       navigateImage(isLeftSwipe ? "next" : "prev");
-
-      // Reset position after a brief delay
-      setTimeout(() => {
-        setIsAnimating(false);
-        setSwipeOffset(0);
-      }, 50);
-    } else {
-      setSwipeOffset(0);
     }
+    setSwipeOffset(0);
   };
 
   useEffect(() => {
-    if (!isDragging && !isAnimating) {
+    if (!isDragging) {
       setSwipeOffset(0);
     }
-  }, [isDragging, isAnimating]);
+  }, [isDragging]);
 
   return (
     <div className="space-y-4">
@@ -370,9 +358,8 @@ export const LayoutGrid = ({
                       className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
                       animate={{
                         x: swipeOffset - window.innerWidth,
-                        opacity: 1,
                       }}
-                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                      transition={{ type: "tween", duration: 0 }}
                     >
                       <img
                         src={getAdjacentImages().prev}
@@ -387,9 +374,8 @@ export const LayoutGrid = ({
                       className="relative w-full h-full flex items-center justify-center"
                       animate={{
                         x: swipeOffset,
-                        opacity: 1,
                       }}
-                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                      transition={{ type: "tween", duration: 0 }}
                       style={{
                         touchAction: "none",
                       }}
@@ -409,9 +395,8 @@ export const LayoutGrid = ({
                       className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
                       animate={{
                         x: swipeOffset + window.innerWidth,
-                        opacity: 1,
                       }}
-                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                      transition={{ type: "tween", duration: 0 }}
                     >
                       <img
                         src={getAdjacentImages().next}
