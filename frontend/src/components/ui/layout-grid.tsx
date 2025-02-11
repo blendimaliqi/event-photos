@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SortOption } from "../../hooks/usePhotos";
 
 type Card = {
   id: number;
@@ -11,7 +12,17 @@ type Card = {
 
 type ViewMode = "masonry" | "grid" | "compact";
 
-export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
+interface LayoutGridProps {
+  cards: Card[];
+  onSortChange: (sortBy: SortOption) => void;
+  sortBy: SortOption;
+}
+
+export const LayoutGrid = ({
+  cards,
+  onSortChange,
+  sortBy,
+}: LayoutGridProps) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -19,6 +30,12 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
   });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const sortOptions: { value: SortOption; label: string }[] = [
+    { value: "newest", label: "Më të rejat" },
+    { value: "oldest", label: "Më të vjetrat" },
+    { value: "withDescription", label: "Me përshkrim" },
+  ];
 
   useEffect(() => {
     const handleResize = () => {
@@ -63,67 +80,52 @@ export const LayoutGrid = ({ cards }: { cards: Card[] }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end px-4 sm:px-0">
+      <div className="flex justify-end px-4 sm:px-0 gap-2">
         <button
           onClick={toggleViewMode}
-          className="inline-flex items-center px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors"
         >
-          {viewMode === "masonry" ? (
-            <>
-              <svg
-                className="w-4 h-4 mr-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-              Pamja Grid
-            </>
-          ) : viewMode === "grid" ? (
-            <>
-              <svg
-                className="w-4 h-4 mr-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zm-12 6h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zm-12 6h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"
-                />
-              </svg>
-              Pamja Kompakte
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4 mr-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"
-                />
-              </svg>
-              Pamja Mozaik
-            </>
-          )}
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16m-7 6h7"
+            />
+          </svg>
+          {viewMode === "masonry"
+            ? "Pamja Grid"
+            : viewMode === "grid"
+            ? "Pamja Kompakte"
+            : "Pamja Masonry"}
         </button>
+        <select
+          value={sortBy}
+          onChange={(e) => onSortChange(e.target.value as SortOption)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors appearance-none pr-8 cursor-pointer border-none focus:ring-0 focus:outline-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23991B1B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 8px center",
+            backgroundSize: "16px",
+          }}
+        >
+          {sortOptions.map((option) => (
+            <option
+              key={option.value}
+              value={option.value}
+              className="text-gray-900"
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div ref={containerRef} className={containerClassName}>
         {cards.map((card) => (

@@ -1,5 +1,5 @@
 import { DragAndDrop } from "./DragAndDrop";
-import { usePhotoUpload } from "../hooks/usePhotoUpload";
+import { usePhotoUpload } from "../hooks/usePhotos";
 import { useState } from "react";
 import { PhotoUploadModal } from "./PhotoUploadModal";
 

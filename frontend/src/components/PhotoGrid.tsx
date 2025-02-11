@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { LayoutGrid } from "./ui/layout-grid";
-import { usePhotos } from "../hooks/usePhotos";
+import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
 import { config } from "../config/config";
 
@@ -12,7 +12,8 @@ interface PhotoCardContent {
 }
 
 export function PhotoGrid({ eventId }: { eventId: number }) {
-  const { data: photos, isLoading, error } = usePhotos(eventId);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const { data: photos, isLoading, error } = usePhotos(eventId, sortBy);
 
   if (isLoading) {
     return (
@@ -50,8 +51,8 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
   });
 
   return (
-    <div className="py-4">
-      <LayoutGrid cards={cards} />
+    <div className="lg:px-8 py-8">
+      <LayoutGrid cards={cards} sortBy={sortBy} onSortChange={setSortBy} />
     </div>
   );
 }
