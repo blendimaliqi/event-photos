@@ -25,11 +25,16 @@ export const LayoutGrid = ({
 }: LayoutGridProps) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Minimum swipe distance in pixels
+  const minSwipeDistance = 50;
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: "Më të rejat" },
@@ -118,6 +123,30 @@ export const LayoutGrid = ({
       : viewMode === "grid"
       ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-4 sm:px-0"
       : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 px-4 sm:px-0";
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      navigateImage("next");
+    }
+    if (isRightSwipe) {
+      navigateImage("prev");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -288,7 +317,12 @@ export const LayoutGrid = ({
                 </svg>
               </button>
               <div className="relative w-full h-full flex items-center justify-center bg-black">
-                <div className="relative w-full h-full flex flex-col sm:flex-row">
+                <div
+                  className="relative w-full h-full flex flex-col sm:flex-row"
+                  onTouchStart={onTouchStart}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                >
                   <div
                     className={`${
                       isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
