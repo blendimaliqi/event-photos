@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SortOption } from "../../hooks/usePhotos";
 
@@ -64,6 +64,47 @@ export const LayoutGrid = ({
     setIsDescriptionCollapsed(false);
     document.body.style.overflow = "auto";
   };
+
+  const navigateImage = useCallback(
+    (direction: "prev" | "next") => {
+      if (expanded === null) return;
+
+      const currentIndex = cards.findIndex((card) => card.id === expanded);
+      let newIndex;
+
+      if (direction === "prev") {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1;
+      } else {
+        newIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0;
+      }
+
+      const nextCard = cards[newIndex];
+      if (nextCard) {
+        setExpanded(nextCard.id);
+        const hasDescription = !!(nextCard?.content as any)?.props?.photo
+          ?.description;
+        setIsDescriptionCollapsed(!hasDescription);
+      }
+    },
+    [expanded, cards]
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (expanded !== null) {
+        if (e.key === "ArrowLeft") {
+          navigateImage("prev");
+        } else if (e.key === "ArrowRight") {
+          navigateImage("next");
+        } else if (e.key === "Escape") {
+          handleCloseExpanded();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expanded, cards, navigateImage, handleCloseExpanded]);
 
   const toggleViewMode = () => {
     if (viewMode === "masonry") setViewMode("grid");
@@ -247,6 +288,53 @@ export const LayoutGrid = ({
                 </svg>
               </button>
               <div className="relative w-full h-full flex items-center justify-center bg-black">
+                {/* Navigation Buttons */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("prev");
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200 z-20"
+                  aria-label="Previous image"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 19.5L8.25 12l7.5-7.5"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("next");
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200 z-20"
+                  aria-label="Next image"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                    />
+                  </svg>
+                </button>
                 <div className="relative w-full h-full flex flex-col sm:flex-row">
                   <div
                     className={`${
