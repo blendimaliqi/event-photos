@@ -29,6 +29,7 @@ export const LayoutGrid = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
@@ -96,6 +97,19 @@ export const LayoutGrid = ({
     [expanded, cards]
   );
 
+  const getAdjacentImages = useCallback(() => {
+    if (expanded === null) return { prev: undefined, next: undefined };
+
+    const currentIndex = cards.findIndex((card) => card.id === expanded);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1;
+    const nextIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0;
+
+    return {
+      prev: cards[prevIndex]?.thumbnail || undefined,
+      next: cards[nextIndex]?.thumbnail || undefined,
+    };
+  }, [expanded, cards]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (expanded !== null) {
@@ -147,21 +161,29 @@ export const LayoutGrid = ({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe) {
-      navigateImage("next");
-    }
-    if (isRightSwipe) {
-      navigateImage("prev");
-    }
+    if (isLeftSwipe || isRightSwipe) {
+      setIsAnimating(true);
+      const targetOffset = isLeftSwipe ? -window.innerWidth : window.innerWidth;
+      setSwipeOffset(targetOffset);
 
-    setSwipeOffset(0);
+      // Change image immediately and complete animation
+      navigateImage(isLeftSwipe ? "next" : "prev");
+
+      // Reset position after a brief delay
+      setTimeout(() => {
+        setIsAnimating(false);
+        setSwipeOffset(0);
+      }, 50);
+    } else {
+      setSwipeOffset(0);
+    }
   };
 
   useEffect(() => {
-    if (!isDragging) {
+    if (!isDragging && !isAnimating) {
       setSwipeOffset(0);
     }
-  }, [isDragging]);
+  }, [isDragging, isAnimating]);
 
   return (
     <div className="space-y-4">
@@ -343,12 +365,31 @@ export const LayoutGrid = ({
                       isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
                     } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
                   >
+                    {/* Previous Image Preview */}
+                    <motion.div
+                      className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
+                      animate={{
+                        x: swipeOffset - window.innerWidth,
+                        opacity: 1,
+                      }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                    >
+                      <img
+                        src={getAdjacentImages().prev}
+                        alt=""
+                        className="max-w-full max-h-full object-contain"
+                        style={{ pointerEvents: "none" }}
+                      />
+                    </motion.div>
+
+                    {/* Current Image */}
                     <motion.div
                       className="relative w-full h-full flex items-center justify-center"
                       animate={{
                         x: swipeOffset,
-                        transition: { type: "spring", bounce: 0 },
+                        opacity: 1,
                       }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
                       style={{
                         touchAction: "none",
                       }}
@@ -362,6 +403,24 @@ export const LayoutGrid = ({
                         }}
                       />
                     </motion.div>
+
+                    {/* Next Image Preview */}
+                    <motion.div
+                      className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
+                      animate={{
+                        x: swipeOffset + window.innerWidth,
+                        opacity: 1,
+                      }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                    >
+                      <img
+                        src={getAdjacentImages().next}
+                        alt=""
+                        className="max-w-full max-h-full object-contain"
+                        style={{ pointerEvents: "none" }}
+                      />
+                    </motion.div>
+
                     {/* Navigation Buttons */}
                     <button
                       onClick={(e) => {
