@@ -27,7 +27,7 @@ function App() {
       <AuthProvider>
         <div className="min-h-screen bg-gray-100">
           {!isAdminPage && (
-            <div className="relative h-[90vh] bg-black">
+            <div className="relative h-[70vh] bg-black">
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
@@ -101,7 +101,7 @@ function App() {
 
           <main
             className={`max-w-[1600px] mx-auto py-6 sm:px-6 lg:px-8 ${
-              !isAdminPage ? "-mt-16 relative z-20" : ""
+              !isAdminPage ? "relative z-20 bg-gray-100" : ""
             }`}
           >
             {isAdminPage ? (
