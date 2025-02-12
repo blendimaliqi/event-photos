@@ -38,10 +38,14 @@ export const LayoutGrid = ({
   const [touchCount, setTouchCount] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [currentScale, setCurrentScale] = useState(1);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [transformApi, setTransformApi] = useState<any>(null);
   const touchLayerRef = useRef<HTMLDivElement>(null);
 
   // Minimum swipe distance required (in pixels)
   const minSwipeDistance = 50;
+  // Maximum time between taps for double tap (in milliseconds)
+  const doubleTapDelay = 300;
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: "Më të rejat" },
@@ -229,6 +233,36 @@ export const LayoutGrid = ({
   const handleImageLoad = () => {
     setImageLoaded(true);
   };
+
+  const handleDoubleTap = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTapTime;
+
+      if (tapLength < doubleTapDelay && tapLength > 0) {
+        e.preventDefault();
+        if (transformApi) {
+          const touch = e.touches[0] || e.changedTouches[0];
+          const element = e.target as HTMLElement;
+          const rect = element.getBoundingClientRect();
+
+          // Calculate relative position within the image
+          const x = (touch.clientX - rect.left) / rect.width;
+          const y = (touch.clientY - rect.top) / rect.height;
+
+          if (currentScale > 1) {
+            // If already zoomed in, reset zoom
+            transformApi.resetTransform();
+          } else {
+            // Zoom in to the tapped point
+            transformApi.zoomToPoint(2, { x: touch.clientX, y: touch.clientY });
+          }
+        }
+      }
+      setLastTapTime(currentTime);
+    },
+    [lastTapTime, currentScale, transformApi]
+  );
 
   return (
     <div className="space-y-4">
@@ -427,12 +461,16 @@ export const LayoutGrid = ({
                       onTransformed={(e) => {
                         setCurrentScale(e.state.scale);
                       }}
+                      onInit={(instance) => {
+                        setTransformApi(instance);
+                      }}
                     >
                       {() => (
                         <>
                           <div
                             ref={touchLayerRef}
                             className="absolute inset-0 z-10"
+                            onTouchStart={handleDoubleTap}
                           />
                           <TransformComponent
                             wrapperClass="w-full h-full"
