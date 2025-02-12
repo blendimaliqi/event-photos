@@ -2,6 +2,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SortOption } from "../../hooks/usePhotos";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 type Card = {
   id: number;
@@ -25,10 +26,6 @@ export const LayoutGrid = ({
 }: LayoutGridProps) => {
   const [selected, setSelected] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [swipeOffset, setSwipeOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
     if (savedViewMode) return savedViewMode;
@@ -36,9 +33,6 @@ export const LayoutGrid = ({
   });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Minimum swipe distance in pixels
-  const minSwipeDistance = 50;
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: "Më të rejat" },
@@ -148,39 +142,6 @@ export const LayoutGrid = ({
       : viewMode === "grid"
       ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 px-4 sm:px-0"
       : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 px-4 sm:px-0";
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    setIsDragging(true);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    setTouchEnd(e.targetTouches[0].clientX);
-    const currentOffset = e.targetTouches[0].clientX - touchStart;
-    setSwipeOffset(currentOffset);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    setIsDragging(false);
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe || isRightSwipe) {
-      navigateImage(isLeftSwipe ? "next" : "prev");
-    }
-    setSwipeOffset(0);
-  };
-
-  useEffect(() => {
-    if (!isDragging) {
-      setSwipeOffset(0);
-    }
-  }, [isDragging]);
 
   return (
     <div className="space-y-4">
@@ -351,81 +312,123 @@ export const LayoutGrid = ({
                 </svg>
               </button>
               <div className="relative w-full h-full flex items-center justify-center bg-black">
-                <div
-                  className="relative w-full h-full flex flex-col sm:flex-row"
-                  onTouchStart={(e) => {
-                    // Only handle swipe if it's a single touch
-                    if (e.touches.length === 1) {
-                      onTouchStart(e);
-                    }
-                  }}
-                  onTouchMove={(e) => {
-                    // Only handle swipe if it's a single touch
-                    if (e.touches.length === 1) {
-                      onTouchMove(e);
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Only handle swipe if it's a single touch
-                    if (e.touches.length === 0) {
-                      onTouchEnd();
-                    }
-                  }}
-                >
+                <div className="relative w-full h-full flex flex-col sm:flex-row">
                   <div
                     className={`${
                       isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
                     } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
                   >
-                    {/* Previous Image Preview */}
-                    <motion.div
-                      className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
-                      animate={{
-                        x: swipeOffset - window.innerWidth,
+                    <TransformWrapper
+                      initialScale={1}
+                      minScale={0.5}
+                      maxScale={4}
+                      centerOnInit={true}
+                      alignmentAnimation={{ sizeX: 0, sizeY: 0 }}
+                      limitToBounds={true}
+                      doubleClick={{ mode: "reset" }}
+                      wheel={{ step: 0.2 }}
+                      onPanning={({ state }) => {
+                        // If we're not zoomed in, handle horizontal swipes
+                        if (state.scale <= 1.01) {
+                          const offset = state.positionX;
+                          if (Math.abs(offset) > 100) {
+                            if (offset > 0) {
+                              navigateImage("prev");
+                            } else {
+                              navigateImage("next");
+                            }
+                          }
+                        }
                       }}
-                      transition={{ type: "tween", duration: 0 }}
                     >
-                      <img
-                        src={getAdjacentImages().prev}
-                        alt=""
-                        className="max-w-full max-h-full object-contain"
-                        style={{ pointerEvents: "none" }}
-                      />
-                    </motion.div>
+                      {({ zoomIn, zoomOut, resetTransform }) => (
+                        <>
+                          <TransformComponent
+                            wrapperClass="w-full h-full"
+                            contentClass="w-full h-full flex items-center justify-center"
+                          >
+                            <img
+                              id="image"
+                              src={
+                                cards.find((c) => c.id === expanded)?.thumbnail
+                              }
+                              alt=""
+                              className="max-w-full max-h-full object-contain select-none"
+                              draggable="false"
+                            />
+                          </TransformComponent>
 
-                    {/* Current Image */}
-                    <motion.div
-                      className="relative w-full h-full flex items-center justify-center"
-                      animate={{
-                        x: swipeOffset,
-                      }}
-                      transition={{ type: "tween", duration: 0 }}
-                    >
-                      <img
-                        src={cards.find((c) => c.id === expanded)?.thumbnail}
-                        alt=""
-                        className="max-w-full max-h-full object-contain"
-                        style={{
-                          touchAction: "pinch-zoom",
-                        }}
-                      />
-                    </motion.div>
-
-                    {/* Next Image Preview */}
-                    <motion.div
-                      className="absolute left-0 top-0 w-full h-full flex items-center justify-center"
-                      animate={{
-                        x: swipeOffset + window.innerWidth,
-                      }}
-                      transition={{ type: "tween", duration: 0 }}
-                    >
-                      <img
-                        src={getAdjacentImages().next}
-                        alt=""
-                        className="max-w-full max-h-full object-contain"
-                        style={{ pointerEvents: "none" }}
-                      />
-                    </motion.div>
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                zoomOut();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M19.5 12h-15"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resetTransform();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                zoomIn();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M12 4.5v15m7.5-7.5h-15"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </TransformWrapper>
 
                     {/* Navigation Buttons */}
                     <button
@@ -433,7 +436,7 @@ export const LayoutGrid = ({
                         e.stopPropagation();
                         navigateImage("prev");
                       }}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-20"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
                       aria-label="Previous image"
                     >
                       <svg
@@ -456,7 +459,7 @@ export const LayoutGrid = ({
                         e.stopPropagation();
                         navigateImage("next");
                       }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-20"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
                       aria-label="Next image"
                     >
                       <svg
