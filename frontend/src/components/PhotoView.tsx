@@ -18,8 +18,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [dragX, setDragX] = useState(0);
   const touchLayerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null); // Ref to the image
   const swipeThreshold = 100;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
+  const [isPinching, setIsPinching] = useState(false); // Track pinch zoom state
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -75,42 +77,45 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Add touch event handlers
+  // Touch event handlers with pinch zoom detection
   React.useEffect(() => {
     const touchLayer = touchLayerRef.current;
     if (!touchLayer) return;
 
     const handleTouchStart = (e: TouchEvent) => {
       const touchCount = e.touches.length;
-      touchLayer.setAttribute("data-touch-count", touchCount.toString());
 
-      // Reset drag position when second touch starts
       if (touchCount === 2) {
+        setIsPinching(true); // Pinch zoom detected
+        touchLayer.style.pointerEvents = "none"; //Disable Swipe
         setDragX(0);
-        // Ensure pointer events are disabled immediately for zoom
-        touchLayer.style.pointerEvents = "none";
       } else {
-        touchLayer.style.pointerEvents = "auto";
+        setIsPinching(false);
+        touchLayer.style.pointerEvents = "auto"; //Enable Swipe
       }
+
+      touchLayer.setAttribute("data-touch-count", touchCount.toString());
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       const touchCount = e.touches.length;
-      touchLayer.setAttribute("data-touch-count", touchCount.toString());
 
-      // Small delay before re-enabling pointer events to ensure zoom ends cleanly
-      if (touchCount <= 1) {
+      if (isPinching && touchCount < 2) {
+        setIsPinching(false);
+        // Small delay to ensure zoom ends cleanly before re-enabling swipe
         setTimeout(() => {
           if (touchLayer) {
             touchLayer.style.pointerEvents = "auto";
           }
         }, 100);
       }
+
+      touchLayer.setAttribute("data-touch-count", touchCount.toString());
     };
 
     const handleTouchCancel = () => {
+      setIsPinching(false);
       touchLayer.setAttribute("data-touch-count", "0");
-      // Small delay before re-enabling pointer events
       setTimeout(() => {
         if (touchLayer) {
           touchLayer.style.pointerEvents = "auto";
@@ -127,18 +132,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       touchLayer.removeEventListener("touchend", handleTouchEnd);
       touchLayer.removeEventListener("touchcancel", handleTouchCancel);
     };
-  }, [setDragX]);
-
-  // Reset touch state when navigating to a new image
-  React.useEffect(() => {
-    const touchLayer = touchLayerRef.current;
-    if (touchLayer) {
-      touchLayer.setAttribute("data-touch-count", "0");
-      touchLayer.style.pointerEvents = "auto";
-    }
-  }, [currentPhotoIndex]);
+  }, [setDragX, isPinching]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
+    if (isPinching) return; // Do nothing if pinching
+
     const { offset } = info;
     const touchCount = Number(
       touchLayerRef.current?.getAttribute("data-touch-count") || "0"
@@ -182,16 +180,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.1}
               onDragEnd={handleDragEnd}
-              dragListener={
-                parseInt(
-                  touchLayerRef.current?.getAttribute("data-touch-count") || "0"
-                ) <= 1
-              }
+              dragListener={!isPinching} // Disable drag when pinching
               onDrag={(_, info) => {
                 const touchCount = parseInt(
                   touchLayerRef.current?.getAttribute("data-touch-count") || "0"
                 );
-                if (touchCount === 1) {
+                if (touchCount === 1 && !isPinching) {
                   setDragX(info.offset.x);
                 } else {
                   setDragX(0);
@@ -242,6 +236,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   animate={{ opacity: imageLoaded ? 1 : 0 }}
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
+                  ref={imageRef} // Attach the ref
                   style={{
                     touchAction: "pinch-zoom",
                     userSelect: "none",
