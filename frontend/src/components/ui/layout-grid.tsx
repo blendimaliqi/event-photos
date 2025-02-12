@@ -314,14 +314,14 @@ export const LayoutGrid = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm touch-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm"
             onClick={handleCloseExpanded}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center touch-pan-y"
+              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -353,9 +353,24 @@ export const LayoutGrid = ({
               <div className="relative w-full h-full flex items-center justify-center bg-black">
                 <div
                   className="relative w-full h-full flex flex-col sm:flex-row"
-                  onTouchStart={onTouchStart}
-                  onTouchMove={onTouchMove}
-                  onTouchEnd={onTouchEnd}
+                  onTouchStart={(e) => {
+                    // Only handle swipe if it's a single touch
+                    if (e.touches.length === 1) {
+                      onTouchStart(e);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    // Only handle swipe if it's a single touch
+                    if (e.touches.length === 1) {
+                      onTouchMove(e);
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Only handle swipe if it's a single touch
+                    if (e.touches.length === 0) {
+                      onTouchEnd();
+                    }
+                  }}
                 >
                   <div
                     className={`${
@@ -385,16 +400,13 @@ export const LayoutGrid = ({
                         x: swipeOffset,
                       }}
                       transition={{ type: "tween", duration: 0 }}
-                      style={{
-                        touchAction: "manipulation",
-                      }}
                     >
                       <img
                         src={cards.find((c) => c.id === expanded)?.thumbnail}
                         alt=""
                         className="max-w-full max-h-full object-contain"
                         style={{
-                          touchAction: "manipulation",
+                          touchAction: "pinch-zoom",
                         }}
                       />
                     </motion.div>
