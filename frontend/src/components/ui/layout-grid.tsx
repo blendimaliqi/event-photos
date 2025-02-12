@@ -234,6 +234,30 @@ export const LayoutGrid = ({
     setImageLoaded(true);
   };
 
+  const handleZoom = useCallback(
+    (clientX: number, clientY: number, element: HTMLElement) => {
+      if (transformApi) {
+        const rect = element.getBoundingClientRect();
+
+        // Calculate relative position within the image
+        const x = (clientX - rect.left) / rect.width;
+        const y = (clientY - rect.top) / rect.height;
+
+        if (currentScale > 1) {
+          // If already zoomed in, reset zoom
+          transformApi.resetTransform();
+        } else {
+          // Zoom in to the clicked/tapped point using the calculated coordinates
+          transformApi.zoomToPoint(2, {
+            x: x * rect.width,
+            y: y * rect.height,
+          });
+        }
+      }
+    },
+    [currentScale, transformApi]
+  );
+
   const handleDoubleTap = useCallback(
     (e: React.TouchEvent<HTMLDivElement>) => {
       const currentTime = new Date().getTime();
@@ -241,27 +265,20 @@ export const LayoutGrid = ({
 
       if (tapLength < doubleTapDelay && tapLength > 0) {
         e.preventDefault();
-        if (transformApi) {
-          const touch = e.touches[0] || e.changedTouches[0];
-          const element = e.target as HTMLElement;
-          const rect = element.getBoundingClientRect();
-
-          // Calculate relative position within the image
-          const x = (touch.clientX - rect.left) / rect.width;
-          const y = (touch.clientY - rect.top) / rect.height;
-
-          if (currentScale > 1) {
-            // If already zoomed in, reset zoom
-            transformApi.resetTransform();
-          } else {
-            // Zoom in to the tapped point
-            transformApi.zoomToPoint(2, { x: touch.clientX, y: touch.clientY });
-          }
-        }
+        const touch = e.touches[0] || e.changedTouches[0];
+        handleZoom(touch.clientX, touch.clientY, e.target as HTMLElement);
       }
       setLastTapTime(currentTime);
     },
-    [lastTapTime, currentScale, transformApi]
+    [lastTapTime, handleZoom]
+  );
+
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      handleZoom(e.clientX, e.clientY, e.target as HTMLElement);
+    },
+    [handleZoom]
   );
 
   return (
@@ -471,6 +488,7 @@ export const LayoutGrid = ({
                             ref={touchLayerRef}
                             className="absolute inset-0 z-10"
                             onTouchStart={handleDoubleTap}
+                            onDoubleClick={handleDoubleClick}
                           />
                           <TransformComponent
                             wrapperClass="w-full h-full"
