@@ -25,6 +25,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [isPinching, setIsPinching] = useState(false);
   const [scale, setScale] = useState(1);
   const [origin, setOrigin] = useState([0, 0]);
+  const [pan, setPan] = useState<[number, number]>([0, 0]);
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -55,6 +56,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         setDragX(0);
         setScale(1);
         setOrigin([0, 0]);
+        setPan([0, 0]);
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -97,26 +99,67 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       onPinchEnd: () => {
         setIsPinching(false);
       },
-      onDrag: ({ offset: [x] }) => {
+      onDrag: ({ offset: [x, y] }) => {
         if (!isPinching) {
-          setDragX(x);
+          if (scale > 1) {
+            if (imageRef.current && imageRef.current.parentElement) {
+              const containerRect =
+                imageRef.current.parentElement.getBoundingClientRect();
+              const imgRect = imageRef.current.getBoundingClientRect();
+              const extraX = Math.max(
+                0,
+                (imgRect.width - containerRect.width) / 2
+              );
+              const extraY = Math.max(
+                0,
+                (imgRect.height - containerRect.height) / 2
+              );
+              const clampedX = Math.max(-extraX, Math.min(x, extraX));
+              const clampedY = Math.max(-extraY, Math.min(y, extraY));
+              setPan([clampedX, clampedY]);
+            } else {
+              setPan([x, y]);
+            }
+          } else {
+            setDragX(x);
+          }
         }
       },
-      onDragEnd: ({ offset: [x] }) => {
-        if (!isPinching && scale === 1 && Math.abs(x) >= swipeThreshold) {
+      onDragEnd: ({ offset: [x, y] }) => {
+        if (
+          !isPinching &&
+          scale === 1 &&
+          Math.abs(x) >= swipeThreshold &&
+          Math.abs(x) > Math.abs(y)
+        ) {
           if (x > 0) {
             navigateImage("prev");
           } else {
             navigateImage("next");
           }
+          setDragX(0);
+        } else if (scale > 1) {
+          if (imageRef.current && imageRef.current.parentElement) {
+            const containerRect =
+              imageRef.current.parentElement.getBoundingClientRect();
+            const imgRect = imageRef.current.getBoundingClientRect();
+            const extraX = Math.max(
+              0,
+              (imgRect.width - containerRect.width) / 2
+            );
+            const extraY = Math.max(
+              0,
+              (imgRect.height - containerRect.height) / 2
+            );
+            const clampedX = Math.max(-extraX, Math.min(pan[0], extraX));
+            const clampedY = Math.max(-extraY, Math.min(pan[1], extraY));
+            setPan([clampedX, clampedY]);
+          }
         }
-        setDragX(0);
       },
     },
     {
       drag: {
-        axis: "x",
-        bounds: { left: -swipeThreshold, right: swipeThreshold },
         rubberband: true,
       },
     }
@@ -125,6 +168,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   useEffect(() => {
     setScale(1);
     setOrigin([0, 0]);
+    setPan([0, 0]);
   }, [currentPhotoIndex]);
 
   if (!currentPhoto) {
@@ -176,9 +220,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
-              style={{
-                x: dragX,
-              }}
+              style={{ x: scale === 1 ? dragX : 0 }}
             >
               <div className="w-full h-full flex items-center justify-center">
                 {!imageLoaded && (
@@ -193,7 +235,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   className="max-h-full w-auto object-contain select-none"
                   draggable="false"
                   initial={{ opacity: 0, scale: 1 }}
-                  animate={{ opacity: imageLoaded ? 1 : 0, scale: scale }}
+                  animate={{
+                    opacity: imageLoaded ? 1 : 0,
+                    scale: scale,
+                    x: scale > 1 ? pan[0] : 0,
+                    y: scale > 1 ? pan[1] : 0,
+                  }}
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
