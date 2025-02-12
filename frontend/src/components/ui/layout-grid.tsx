@@ -425,7 +425,7 @@ export const LayoutGrid = ({
                         setCurrentScale(e.state.scale);
                       }}
                     >
-                      {({ zoomIn, zoomOut, resetTransform, instance }) => (
+                      {() => (
                         <>
                           <div
                             className="absolute inset-0 z-10"
@@ -566,75 +566,6 @@ export const LayoutGrid = ({
                               px
                             </div>
                           )}
-
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                zoomOut();
-                              }}
-                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-5 h-5"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M19.5 12h-15"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                resetTransform();
-                              }}
-                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-5 h-5"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                zoomIn();
-                              }}
-                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-5 h-5"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M12 4.5v15m7.5-7.5h-15"
-                                />
-                              </svg>
-                            </button>
-                          </div>
                         </>
                       )}
                     </TransformWrapper>
