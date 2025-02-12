@@ -35,9 +35,8 @@ export const LayoutGrid = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [currentScale, setCurrentScale] = useState(1);
   const touchLayerRef = useRef<HTMLDivElement>(null);
 
@@ -168,7 +167,6 @@ export const LayoutGrid = ({
         const startX = e.touches[0].clientX;
         setTouchEnd(null);
         setTouchStart(startX);
-        setIsSwiping(true);
       }
       setTouchCount(e.touches.length);
     };
@@ -188,7 +186,6 @@ export const LayoutGrid = ({
       if (touchCount === 1 && currentScale <= 1) {
         e.preventDefault();
         e.stopPropagation();
-        setIsSwiping(false);
 
         if (!touchStart || !touchEnd) {
           return;
