@@ -39,6 +39,7 @@ export const LayoutGrid = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [touchCount, setTouchCount] = useState(0);
   const [currentScale, setCurrentScale] = useState(1);
+  const touchLayerRef = useRef<HTMLDivElement>(null);
 
   // Minimum swipe distance required (in pixels)
   const minSwipeDistance = 50;
@@ -156,72 +157,77 @@ export const LayoutGrid = ({
     [expanded, cards]
   );
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    // Only handle single touch for swipes when not zoomed
-    if (e.touches.length === 1 && currentScale <= 1) {
-      const startX = e.targetTouches[0].clientX;
-      console.log("Touch Start:", {
-        startX,
-        timestamp: new Date().toISOString(),
-      });
-      setTouchEnd(null);
-      setTouchStart(startX);
-      setIsSwiping(true);
-    }
-    setTouchCount(e.touches.length);
-  };
+  useEffect(() => {
+    const element = touchLayerRef.current;
+    if (!element) return;
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    // Only handle swipe if it's a single touch and not zoomed
-    if (touchCount === 1 && touchStart && currentScale <= 1) {
-      const currentX = e.targetTouches[0].clientX;
-      console.log("Touch Move:", {
-        currentX,
-        touchStart,
-        distance: currentX - touchStart,
-        timestamp: new Date().toISOString(),
-      });
-      setTouchEnd(currentX);
-    }
-  };
-
-  const onTouchEnd = (e: React.TouchEvent) => {
-    // Update remaining touch count
-    setTouchCount(e.touches.length);
-
-    // Only process swipe if it was a single touch and not zoomed
-    if (touchCount === 1 && currentScale <= 1) {
-      console.log("Touch End:", {
-        touchStart,
-        touchEnd,
-        distance: touchEnd ? touchStart! - touchEnd : "no end position",
-        timestamp: new Date().toISOString(),
-      });
-
-      setIsSwiping(false);
-      if (!touchStart || !touchEnd) {
-        console.log("Touch End - Missing start or end position");
-        return;
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1 && currentScale <= 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.touches[0].clientX;
+        setTouchEnd(null);
+        setTouchStart(startX);
+        setIsSwiping(true);
       }
+      setTouchCount(e.touches.length);
+    };
 
-      const distance = touchStart - touchEnd;
-      const isLeftSwipe = distance > minSwipeDistance;
-      const isRightSwipe = distance < -minSwipeDistance;
-
-      if (isLeftSwipe) {
-        console.log("Navigating to next image");
-        navigateImage("next");
-      } else if (isRightSwipe) {
-        console.log("Navigating to previous image");
-        navigateImage("prev");
-      } else {
-        console.log("Swipe distance too small, not navigating");
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchCount === 1 && touchStart && currentScale <= 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentX = e.touches[0].clientX;
+        setTouchEnd(currentX);
       }
+    };
 
-      setTouchEnd(null);
-      setTouchStart(null);
-    }
-  };
+    const handleTouchEnd = (e: TouchEvent) => {
+      setTouchCount(e.touches.length);
+
+      if (touchCount === 1 && currentScale <= 1) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSwiping(false);
+
+        if (!touchStart || !touchEnd) {
+          return;
+        }
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+          navigateImage("next");
+        } else if (isRightSwipe) {
+          navigateImage("prev");
+        }
+
+        setTouchEnd(null);
+        setTouchStart(null);
+      }
+    };
+
+    element.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+    element.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+    return () => {
+      element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
+      element.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [
+    currentScale,
+    touchCount,
+    touchStart,
+    touchEnd,
+    minSwipeDistance,
+    navigateImage,
+  ]);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
@@ -428,34 +434,8 @@ export const LayoutGrid = ({
                       {() => (
                         <>
                           <div
+                            ref={touchLayerRef}
                             className="absolute inset-0 z-10"
-                            onTouchStart={(e) => {
-                              if (currentScale <= 1) {
-                                if (e.touches.length === 1) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  onTouchStart(e);
-                                }
-                              }
-                            }}
-                            onTouchMove={(e) => {
-                              if (currentScale <= 1) {
-                                if (e.touches.length === 1) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  onTouchMove(e);
-                                }
-                              }
-                            }}
-                            onTouchEnd={(e) => {
-                              if (currentScale <= 1) {
-                                if (touchCount === 1) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  onTouchEnd(e);
-                                }
-                              }
-                            }}
                           />
                           <TransformComponent
                             wrapperClass="w-full h-full"
@@ -555,17 +535,6 @@ export const LayoutGrid = ({
                               )}
                             </div>
                           </TransformComponent>
-
-                          {/* Debug overlay */}
-                          {isSwiping && (
-                            <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm z-20">
-                              Swiping:{" "}
-                              {touchEnd && touchStart
-                                ? Math.round(touchEnd - touchStart)
-                                : 0}
-                              px
-                            </div>
-                          )}
                         </>
                       )}
                     </TransformWrapper>
