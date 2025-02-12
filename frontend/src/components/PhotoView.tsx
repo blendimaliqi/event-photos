@@ -87,21 +87,35 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       // Reset drag position when second touch starts
       if (touchCount === 2) {
         setDragX(0);
+        // Ensure pointer events are disabled immediately for zoom
+        touchLayer.style.pointerEvents = "none";
+      } else {
+        touchLayer.style.pointerEvents = "auto";
       }
-
-      // Disable pointer events during multi-touch
-      touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       const touchCount = e.touches.length;
       touchLayer.setAttribute("data-touch-count", touchCount.toString());
-      touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
+
+      // Small delay before re-enabling pointer events to ensure zoom ends cleanly
+      if (touchCount <= 1) {
+        setTimeout(() => {
+          if (touchLayer) {
+            touchLayer.style.pointerEvents = "auto";
+          }
+        }, 100);
+      }
     };
 
     const handleTouchCancel = () => {
       touchLayer.setAttribute("data-touch-count", "0");
-      touchLayer.style.pointerEvents = "auto";
+      // Small delay before re-enabling pointer events
+      setTimeout(() => {
+        if (touchLayer) {
+          touchLayer.style.pointerEvents = "auto";
+        }
+      }, 100);
     };
 
     touchLayer.addEventListener("touchstart", handleTouchStart);
@@ -114,6 +128,15 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       touchLayer.removeEventListener("touchcancel", handleTouchCancel);
     };
   }, [setDragX]);
+
+  // Reset touch state when navigating to a new image
+  React.useEffect(() => {
+    const touchLayer = touchLayerRef.current;
+    if (touchLayer) {
+      touchLayer.setAttribute("data-touch-count", "0");
+      touchLayer.style.pointerEvents = "auto";
+    }
+  }, [currentPhotoIndex]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     const { offset } = info;
@@ -214,7 +237,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
                   style={{
-                    touchAction: "pinch-zoom",
+                    touchAction: "manipulation",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
