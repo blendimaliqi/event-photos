@@ -118,7 +118,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         // Only update origin on initial pinch and ensure it's centered between touch points
         if (!memo && imageRef.current) {
           const rect = imageRef.current.getBoundingClientRect();
-          if (event instanceof TouchEvent && event.touches.length >= 2) {
+          if ("touches" in event && event.touches.length >= 2) {
             const touch1 = event.touches[0];
             const touch2 = event.touches[1];
             const centerX = (touch1.clientX + touch2.clientX) / 2;
