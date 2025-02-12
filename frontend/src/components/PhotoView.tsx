@@ -24,6 +24,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const [isPinching, setIsPinching] = useState(false);
   const [scale, setScale] = useState(1);
+  const [origin, setOrigin] = useState([0, 0]);
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -53,6 +54,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       if (nextCard) {
         setDragX(0);
         setScale(1);
+        setOrigin([0, 0]);
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -82,9 +84,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onPinch: ({ offset: [d] }) => {
+      onPinch: ({ origin: [ox, oy], offset: [d] }) => {
         setIsPinching(true);
         setScale(Math.max(1, Math.min(5, d))); // Limit scale between 1 and 5
+        setOrigin([ox, oy]);
       },
       onPinchEnd: () => {
         setIsPinching(false);
@@ -116,6 +119,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   useEffect(() => {
     setScale(1);
+    setOrigin([0, 0]);
   }, [currentPhotoIndex]);
 
   if (!currentPhoto) {
@@ -167,7 +171,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
-              style={{ x: dragX }}
+              style={{
+                x: dragX,
+                transformOrigin: `${origin[0]}px ${origin[1]}px`,
+              }}
             >
               <div className="w-full h-full flex items-center justify-center">
                 {!imageLoaded && (
