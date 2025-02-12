@@ -126,16 +126,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         }
       },
       onDragEnd: ({ offset: [x, y] }) => {
-        if (
-          !isPinching &&
-          scale === 1 &&
-          Math.abs(x) >= swipeThreshold &&
-          Math.abs(x) > Math.abs(y)
-        ) {
-          if (x > 0) {
-            navigateImage("prev");
-          } else {
-            navigateImage("next");
+        if (!isPinching && scale === 1) {
+          if (Math.abs(x) >= swipeThreshold && Math.abs(x) > Math.abs(y)) {
+            if (x > 0) {
+              navigateImage("prev");
+            } else {
+              navigateImage("next");
+            }
           }
           setDragX(0);
         } else if (scale > 1) {
@@ -202,7 +199,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               style={{
                 left: -windowWidth,
                 width: windowWidth,
-                x: dragX > 0 ? dragX : 0,
+                x: scale === 1 ? dragX - windowWidth : -windowWidth,
               }}
             >
               <img
@@ -264,7 +261,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               style={{
                 right: -windowWidth,
                 width: windowWidth,
-                x: dragX < 0 ? dragX : 0,
+                x: scale === 1 ? dragX + windowWidth : windowWidth,
               }}
             >
               <img
