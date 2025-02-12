@@ -174,9 +174,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
         >
           <div className="relative w-full h-full">
+            {/* Touch layer for swipe only */}
             <motion.div
               ref={touchLayerRef}
-              className="absolute inset-0 z-10"
+              className="absolute inset-0 z-10 touch-none"
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.1}
@@ -200,7 +201,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             {/* Previous Image */}
             <motion.div
-              className="absolute inset-y-0 flex items-center justify-end"
+              className="absolute inset-y-0 flex items-center justify-end touch-none"
               style={{
                 left: -windowWidth,
                 width: windowWidth,
@@ -212,6 +213,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 alt=""
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
+                style={{
+                  touchAction: "manipulation",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                }}
               />
             </motion.div>
 
@@ -237,7 +243,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
                   style={{
-                    touchAction: "manipulation",
+                    touchAction: "pinch-zoom",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
@@ -251,7 +257,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             {/* Next Image */}
             <motion.div
-              className="absolute inset-y-0 flex items-center justify-start"
+              className="absolute inset-y-0 flex items-center justify-start touch-none"
               style={{
                 right: -windowWidth,
                 width: windowWidth,
@@ -263,6 +269,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 alt=""
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
+                style={{
+                  touchAction: "manipulation",
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                }}
               />
             </motion.div>
           </div>
