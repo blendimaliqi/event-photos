@@ -118,10 +118,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
         setScale(newScale);
       },
-      onPinchEnd: () => {
+      onPinchEnd: ({ offset: [s] }) => {
         setIsPinching(false);
-        // If scale is close to or below 1, reset to initial state
-        if (scale <= 1.05) {
+        const finalScale = Math.min(3, Math.max(0.5, s));
+        // If final scale is close to or below 1, reset to initial state
+        if (finalScale <= 1.05) {
           resetImageState();
         }
       },
