@@ -108,7 +108,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         }
 
         setIsPinching(true);
-        const newScale = Math.max(1, Math.min(3, s)); // Reduced max scale for better performance
+        const newScale = Math.min(3, Math.max(0.5, s)); // Allow scale to go below 1 temporarily
 
         // Only update origin on initial pinch
         if (scale === 1 && imageRef.current) {
@@ -120,7 +120,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       },
       onPinchEnd: () => {
         setIsPinching(false);
-        if (scale < 1.1) {
+        // If scale is close to or below 1, reset to initial state
+        if (scale <= 1.05) {
           resetImageState();
         }
       },
