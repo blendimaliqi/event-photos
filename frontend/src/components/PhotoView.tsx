@@ -96,7 +96,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onPinch: ({ event, origin: [ox, oy], offset: [s], memo }) => {
+      onPinch: ({ event, origin: [ox, oy], movement: [ms], memo }) => {
         if (event?.cancelable) {
           event.preventDefault();
         }
@@ -107,8 +107,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         }
 
         setIsPinching(true);
-        const newScale = Math.min(3, Math.max(0.5, s)); // Allow scale to go below 1 temporarily
-        console.log("Pinch in progress, scale:", newScale);
+        // Use movement for more responsive scale changes
+        const currentScale = scale;
+        const newScale = Math.min(
+          3,
+          Math.max(0.8, currentScale * (1 + ms * 0.01))
+        );
+        console.log("Pinch in progress, scale:", newScale, "movement:", ms);
 
         // Only update origin on initial pinch
         if (!memo && imageRef.current) {
@@ -120,12 +125,16 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         setScale(newScale);
         return memo;
       },
-      onPinchEnd: ({ offset: [s] }) => {
+      onPinchEnd: ({ movement: [ms] }) => {
         setIsPinching(false);
-        const finalScale = Math.min(3, Math.max(0.5, s));
-        console.log("Pinch ended, final scale:", finalScale);
+        const currentScale = scale;
+        const finalScale = Math.min(
+          3,
+          Math.max(0.8, currentScale * (1 + ms * 0.01))
+        );
+        console.log("Pinch ended, final scale:", finalScale, "movement:", ms);
         // If final scale is close to or below 1, reset to initial state
-        if (finalScale <= 1.05) {
+        if (finalScale <= 1.1) {
           resetImageState();
         }
       },
