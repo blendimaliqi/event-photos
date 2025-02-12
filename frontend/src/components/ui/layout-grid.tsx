@@ -32,11 +32,13 @@ export const LayoutGrid = ({
     return window.innerWidth < 640 ? "grid" : "masonry";
   });
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<"prev" | "next" | null>(
-    null
-  );
-  const [swipeProgress, setSwipeProgress] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  // Minimum swipe distance required (in pixels)
+  const minSwipeDistance = 50;
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "newest", label: "Më të rejat" },
@@ -150,6 +152,69 @@ export const LayoutGrid = ({
     },
     [expanded, cards]
   );
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const startX = e.targetTouches[0].clientX;
+    console.log("Touch Start:", {
+      startX,
+      timestamp: new Date().toISOString(),
+    });
+    setTouchEnd(null);
+    setTouchStart(startX);
+    setIsSwiping(true);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStart) {
+      const currentX = e.targetTouches[0].clientX;
+      console.log("Touch Move:", {
+        currentX,
+        touchStart,
+        distance: currentX - touchStart,
+        timestamp: new Date().toISOString(),
+      });
+      setTouchEnd(currentX);
+    }
+  };
+
+  const onTouchEnd = () => {
+    console.log("Touch End:", {
+      touchStart,
+      touchEnd,
+      distance: touchEnd ? touchStart! - touchEnd : "no end position",
+      timestamp: new Date().toISOString(),
+    });
+
+    setIsSwiping(false);
+    if (!touchStart || !touchEnd) {
+      console.log("Touch End - Missing start or end position");
+      return;
+    }
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    console.log("Swipe Analysis:", {
+      distance,
+      minSwipeDistance,
+      isLeftSwipe,
+      isRightSwipe,
+    });
+
+    if (isLeftSwipe) {
+      console.log("Navigating to next image");
+      navigateImage("next");
+    } else if (isRightSwipe) {
+      console.log("Navigating to previous image");
+      navigateImage("prev");
+    } else {
+      console.log("Swipe distance too small, not navigating");
+    }
+
+    setTouchEnd(null);
+    setTouchStart(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -283,127 +348,205 @@ export const LayoutGrid = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 overflow-hidden"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm"
             onClick={handleCloseExpanded}
           >
-            <div className="relative w-full h-full flex items-center justify-center bg-black">
-              <div className="relative w-full h-full flex flex-col sm:flex-row">
-                <div
-                  className={`${
-                    isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
-                  } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full h-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={handleCloseExpanded}
+                className="absolute top-4 right-4 z-20 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200"
+              >
+                <svg
+                  className="w-3 h-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  {/* Preview images for swipe */}
-                  {swipeDirection && (
-                    <div
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        opacity: Math.abs(swipeProgress) * 0.8,
-                        transform: `translateX(${
-                          swipeDirection === "next" ? "100%" : "-100%"
-                        })`,
-                        transition: "transform 0.3s ease-out",
+                  <path
+                    d="M18 6L6 18"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6 6L18 18"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <div className="relative w-full h-full flex flex-col sm:flex-row">
+                  <div
+                    className={`${
+                      isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
+                    } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
+                  >
+                    <TransformWrapper
+                      initialScale={1}
+                      minScale={0.5}
+                      maxScale={4}
+                      centerOnInit={true}
+                      alignmentAnimation={{ sizeX: 0, sizeY: 0 }}
+                      limitToBounds={true}
+                      doubleClick={{ mode: "reset" }}
+                      wheel={{ step: 0.2 }}
+                      panning={{
+                        velocityDisabled: true,
+                        excluded: ["button"],
+                        disabled: isSwiping,
                       }}
                     >
-                      <img
-                        src={getAdjacentImage(swipeDirection) || undefined}
-                        alt=""
-                        className="w-full h-full object-contain"
-                        draggable="false"
-                      />
-                    </div>
-                  )}
-                  <TransformWrapper
-                    initialScale={1}
-                    minScale={0.5}
-                    maxScale={4}
-                    centerOnInit={true}
-                    alignmentAnimation={{ sizeX: 0, sizeY: 0 }}
-                    limitToBounds={true}
-                    doubleClick={{ mode: "reset" }}
-                    wheel={{ step: 0.2 }}
-                    panning={{
-                      lockAxisY: true,
-                      velocityDisabled: true,
-                      excluded: ["button"],
-                    }}
-                    onPanningStart={({ state }) => {
-                      // Prevent panning interference with swipe when not zoomed
-                      if (state.scale > 1.01) return;
+                      {({ zoomIn, zoomOut, resetTransform }) => (
+                        <>
+                          <div
+                            className="absolute inset-0 z-10"
+                            onTouchStart={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onTouchStart(e);
+                            }}
+                            onTouchMove={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onTouchMove(e);
+                            }}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onTouchEnd();
+                            }}
+                          />
+                          <TransformComponent
+                            wrapperClass="w-full h-full"
+                            contentClass="w-full h-full flex items-center justify-center"
+                          >
+                            <motion.img
+                              id="image"
+                              src={
+                                cards.find((c) => c.id === expanded)?.thumbnail
+                              }
+                              alt=""
+                              className="max-w-full max-h-full object-contain select-none"
+                              draggable="false"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                              style={{
+                                transform:
+                                  touchEnd && touchStart
+                                    ? `translateX(${touchEnd - touchStart}px)`
+                                    : undefined,
+                                transition:
+                                  !touchEnd && !touchStart
+                                    ? "transform 0.3s ease-out"
+                                    : undefined,
+                                touchAction: "none",
+                                userSelect: "none",
+                                WebkitUserSelect: "none",
+                              }}
+                            />
+                          </TransformComponent>
 
-                      // Start swipe with minimal movement
-                      if (Math.abs(state.positionX) > 5) {
-                        const direction = state.positionX > 0 ? "prev" : "next";
-                        setSwipeDirection(direction);
-                      }
-                    }}
-                    onPanning={({ state }) => {
-                      if (state.scale <= 1.01) {
-                        const offset = state.positionX;
-                        const normalizedProgress =
-                          offset / (window.innerWidth * 0.3); // Only need 30% of screen width
-                        setSwipeProgress(normalizedProgress);
+                          {/* Debug overlay */}
+                          {isSwiping && (
+                            <div className="absolute top-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm z-20">
+                              Swiping:{" "}
+                              {touchEnd && touchStart
+                                ? Math.round(touchEnd - touchStart)
+                                : 0}
+                              px
+                            </div>
+                          )}
 
-                        const targetElement = document.getElementById("image");
-                        if (targetElement) {
-                          targetElement.style.transform = `translateX(${offset}px)`;
-                          targetElement.style.opacity = Math.max(
-                            0.5,
-                            1 - Math.abs(normalizedProgress)
-                          ).toString();
-                        }
-                      }
-                    }}
-                    onPanningStop={({ state }) => {
-                      setSwipeDirection(null);
-                      setSwipeProgress(0);
-                      const targetElement = document.getElementById("image");
-                      if (targetElement) {
-                        targetElement.style.transform = "";
-                        targetElement.style.opacity = "1";
-                      }
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                zoomOut();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M19.5 12h-15"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resetTransform();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                zoomIn();
+                              }}
+                              className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M12 4.5v15m7.5-7.5h-15"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </TransformWrapper>
 
-                      if (state.scale <= 1.01) {
-                        const offset = state.positionX;
-                        // Trigger navigation with just 20% screen width swipe
-                        if (Math.abs(offset) > window.innerWidth * 0.2) {
-                          if (offset > 0) {
-                            navigateImage("prev");
-                          } else {
-                            navigateImage("next");
-                          }
-                        }
-                      }
-                    }}
-                  >
-                    <TransformComponent
-                      wrapperClass="w-full h-full touch-pan-y"
-                      contentClass="w-full h-full flex items-center justify-center"
-                    >
-                      <motion.img
-                        id="image"
-                        src={cards.find((c) => c.id === expanded)?.thumbnail}
-                        alt=""
-                        className="max-w-full max-h-full object-contain select-none"
-                        draggable="false"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        style={{
-                          transition:
-                            "transform 0.3s ease-out, opacity 0.3s ease-out",
-                        }}
-                      />
-                    </TransformComponent>
-                  </TransformWrapper>
-
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+                    {/* Navigation Buttons */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         navigateImage("prev");
                       }}
-                      className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
                       aria-label="Previous image"
                     >
                       <svg
@@ -426,7 +569,7 @@ export const LayoutGrid = ({
                         e.stopPropagation();
                         navigateImage("next");
                       }}
-                      className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
                       aria-label="Next image"
                     >
                       <svg
@@ -445,29 +588,29 @@ export const LayoutGrid = ({
                       </svg>
                     </button>
                   </div>
+                  {expanded !== null && (
+                    <div
+                      className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
+                      ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
+                      overflow-y-auto relative`}
+                    >
+                      {React.cloneElement(
+                        cards.find((c) => c.id === expanded)
+                          ?.content as React.ReactElement,
+                        {
+                          onExpand: handleCloseExpanded,
+                          isExpanded: true,
+                          isCompact: false,
+                          isCollapsed: isDescriptionCollapsed,
+                          onToggleCollapse: () =>
+                            setIsDescriptionCollapsed(!isDescriptionCollapsed),
+                        }
+                      )}
+                    </div>
+                  )}
                 </div>
-                {expanded !== null && (
-                  <div
-                    className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
-                    ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
-                    overflow-y-auto relative`}
-                  >
-                    {React.cloneElement(
-                      cards.find((c) => c.id === expanded)
-                        ?.content as React.ReactElement,
-                      {
-                        onExpand: handleCloseExpanded,
-                        isExpanded: true,
-                        isCompact: false,
-                        isCollapsed: isDescriptionCollapsed,
-                        onToggleCollapse: () =>
-                          setIsDescriptionCollapsed(!isDescriptionCollapsed),
-                      }
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
