@@ -75,9 +75,52 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  // Add touch event handlers
+  React.useEffect(() => {
+    const touchLayer = touchLayerRef.current;
+    if (!touchLayer) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const touchCount = e.touches.length;
+      touchLayer.setAttribute("data-touch-count", touchCount.toString());
+
+      // Toggle pointer events based on touch count
+      touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchCount = e.touches.length;
+      touchLayer.setAttribute("data-touch-count", touchCount.toString());
+
+      // Re-enable pointer events when we're back to 0-1 touches
+      touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
+    };
+
+    const handleTouchCancel = (e: TouchEvent) => {
+      const touchCount = e.touches.length;
+      touchLayer.setAttribute("data-touch-count", touchCount.toString());
+      touchLayer.style.pointerEvents = "auto";
+    };
+
+    touchLayer.addEventListener("touchstart", handleTouchStart);
+    touchLayer.addEventListener("touchend", handleTouchEnd);
+    touchLayer.addEventListener("touchcancel", handleTouchCancel);
+
+    return () => {
+      touchLayer.removeEventListener("touchstart", handleTouchStart);
+      touchLayer.removeEventListener("touchend", handleTouchEnd);
+      touchLayer.removeEventListener("touchcancel", handleTouchCancel);
+    };
+  }, []);
+
   const handleDragEnd = (_: any, info: PanInfo) => {
     const { offset } = info;
-    if (Math.abs(offset.x) > swipeThreshold) {
+    const touchCount = Number(
+      touchLayerRef.current?.getAttribute("data-touch-count") || "0"
+    );
+
+    // Only handle swipe if we have 0 or 1 touch points
+    if (touchCount <= 1 && Math.abs(offset.x) > swipeThreshold) {
       if (offset.x > 0) {
         navigateImage("prev");
       } else {
@@ -114,7 +157,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               dragElastic={0.1}
               onDragEnd={handleDragEnd}
               onDrag={(_, info) => {
-                setDragX(info.offset.x);
+                // Only update dragX if it's a single touch
+                if (
+                  touchLayerRef.current?.getAttribute("data-touch-count") ===
+                  "1"
+                ) {
+                  setDragX(info.offset.x);
+                }
               }}
             />
 
@@ -157,7 +206,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
                   style={{
-                    touchAction: "none",
+                    touchAction: "pinch-zoom",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
