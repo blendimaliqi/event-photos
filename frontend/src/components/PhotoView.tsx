@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 interface PhotoViewProps {
@@ -19,12 +19,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [currentScale, setCurrentScale] = useState(1);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [transformApi, setTransformApi] = useState<any>(null);
+  const [dragX, setDragX] = useState(0);
   const touchLayerRef = useRef<HTMLDivElement>(null);
+  const swipeThreshold = 100; // minimum distance to trigger navigation
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
   );
   const currentPhoto = cards[currentPhotoIndex];
+  const prevPhoto =
+    cards[currentPhotoIndex > 0 ? currentPhotoIndex - 1 : cards.length - 1];
+  const nextPhoto =
+    cards[currentPhotoIndex < cards.length - 1 ? currentPhotoIndex + 1 : 0];
 
   const handleClose = () => {
     navigate("/");
@@ -43,6 +49,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
       const nextCard = cards[newIndex];
       if (nextCard) {
+        setDragX(0);
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -98,6 +105,20 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     [handleZoom]
   );
 
+  const handleDragEnd = (_: any, info: PanInfo) => {
+    if (currentScale <= 1) {
+      const { offset } = info;
+      if (Math.abs(offset.x) > swipeThreshold) {
+        if (offset.x > 0) {
+          navigateImage("prev");
+        } else {
+          navigateImage("next");
+        }
+      }
+      setDragX(0);
+    }
+  };
+
   if (!currentPhoto) {
     navigate("/");
     return null;
@@ -128,7 +149,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             panning={{
               velocityDisabled: true,
               excluded: ["button"],
-              disabled: false,
+              disabled: currentScale <= 1,
               activationKeys: ["Control"],
               lockAxisX: false,
               lockAxisY: false,
@@ -144,43 +165,93 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           >
             {() => (
               <>
-                <div
+                <motion.div
                   ref={touchLayerRef}
                   className="absolute inset-0 z-10"
+                  drag={currentScale <= 1 ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.1}
+                  onDragEnd={handleDragEnd}
+                  onDrag={(_, info) => {
+                    if (currentScale <= 1) {
+                      setDragX(info.offset.x);
+                    }
+                  }}
                   onDoubleClick={handleDoubleClick}
                 />
-                <TransformComponent
-                  wrapperClass="w-full h-full"
-                  contentClass="w-full h-full flex items-center justify-center"
-                >
-                  <div className="w-full h-full flex items-center justify-center">
-                    {!imageLoaded && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-                      </div>
-                    )}
-                    <motion.img
-                      key={currentPhoto.id}
-                      src={currentPhoto.thumbnail}
+                <div className="relative w-full h-full">
+                  {/* Previous Image */}
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{
+                      opacity: dragX > 0 ? dragX / (swipeThreshold * 2) : 0,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <img
+                      src={prevPhoto.thumbnail}
                       alt=""
-                      className="max-h-full w-auto object-contain select-none"
+                      className="max-h-full w-auto object-contain select-none opacity-50"
                       draggable="false"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: imageLoaded ? 1 : 0 }}
-                      transition={{ duration: 0.3 }}
-                      onLoad={() => setImageLoaded(true)}
-                      style={{
-                        touchAction: "none",
-                        userSelect: "none",
-                        WebkitUserSelect: "none",
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        width: "auto",
-                        height: "auto",
-                      }}
                     />
-                  </div>
-                </TransformComponent>
+                  </motion.div>
+
+                  {/* Current Image */}
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{ x: dragX }}
+                  >
+                    <TransformComponent
+                      wrapperClass="w-full h-full"
+                      contentClass="w-full h-full flex items-center justify-center"
+                    >
+                      <div className="w-full h-full flex items-center justify-center">
+                        {!imageLoaded && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+                          </div>
+                        )}
+                        <motion.img
+                          key={currentPhoto.id}
+                          src={currentPhoto.thumbnail}
+                          alt=""
+                          className="max-h-full w-auto object-contain select-none"
+                          draggable="false"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: imageLoaded ? 1 : 0 }}
+                          transition={{ duration: 0.3 }}
+                          onLoad={() => setImageLoaded(true)}
+                          style={{
+                            touchAction: "none",
+                            userSelect: "none",
+                            WebkitUserSelect: "none",
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            width: "auto",
+                            height: "auto",
+                          }}
+                        />
+                      </div>
+                    </TransformComponent>
+                  </motion.div>
+
+                  {/* Next Image */}
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    style={{
+                      opacity:
+                        dragX < 0 ? Math.abs(dragX) / (swipeThreshold * 2) : 0,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <img
+                      src={nextPhoto.thumbnail}
+                      alt=""
+                      className="max-h-full w-auto object-contain select-none opacity-50"
+                      draggable="false"
+                    />
+                  </motion.div>
+                </div>
               </>
             )}
           </TransformWrapper>
