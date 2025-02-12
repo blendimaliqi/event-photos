@@ -314,7 +314,31 @@ export const LayoutGrid = ({
                       limitToBounds={true}
                       doubleClick={{ mode: "reset" }}
                       wheel={{ step: 0.2 }}
+                      panning={{ velocityDisabled: true }}
                       onPanning={({ state }) => {
+                        // If we're not zoomed in, handle horizontal swipes
+                        if (state.scale <= 1.01) {
+                          const offset = state.positionX;
+                          // Show visual feedback during swipe
+                          if (Math.abs(offset) > 50) {
+                            const targetElement =
+                              document.getElementById("image");
+                            if (targetElement) {
+                              targetElement.style.opacity = Math.max(
+                                0.5,
+                                1 - Math.abs(offset) / 200
+                              ).toString();
+                            }
+                          }
+                        }
+                      }}
+                      onPanningStop={({ state }) => {
+                        // Reset opacity
+                        const targetElement = document.getElementById("image");
+                        if (targetElement) {
+                          targetElement.style.opacity = "1";
+                        }
+
                         // If we're not zoomed in, handle horizontal swipes
                         if (state.scale <= 1.01) {
                           const offset = state.positionX;
