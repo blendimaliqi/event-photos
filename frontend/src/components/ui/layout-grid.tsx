@@ -419,6 +419,7 @@ export const LayoutGrid = ({
                         lockAxisY: currentScale <= 1,
                       }}
                       pinch={{ disabled: false }}
+                      centerZoomedOut={true}
                       onTransformed={(e) => {
                         setCurrentScale(e.state.scale);
                       }}
@@ -453,13 +454,20 @@ export const LayoutGrid = ({
                             wrapperClass="w-full h-full"
                             contentClass="w-full h-full flex items-center justify-center"
                           >
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div
+                              className="w-full h-full flex items-center justify-center"
+                              style={{
+                                touchAction: "none",
+                                WebkitUserSelect: "none",
+                                userSelect: "none",
+                              }}
+                            >
                               {/* Current Image Container */}
                               <div
                                 className="relative w-full h-full flex items-center justify-center"
                                 style={{
                                   transform:
-                                    touchEnd && touchStart
+                                    touchEnd && touchStart && currentScale <= 1
                                       ? `translateX(${touchEnd - touchStart}px)`
                                       : undefined,
                                   transition:
@@ -491,6 +499,10 @@ export const LayoutGrid = ({
                                     touchAction: "none",
                                     userSelect: "none",
                                     WebkitUserSelect: "none",
+                                    maxWidth: "100%",
+                                    maxHeight: "100%",
+                                    width: "auto",
+                                    height: "auto",
                                   }}
                                 />
                               </div>
