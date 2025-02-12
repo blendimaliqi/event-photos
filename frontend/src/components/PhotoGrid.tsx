@@ -3,17 +3,17 @@ import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
 import { config } from "../config/config";
+import { PhotoView } from "./PhotoView";
+import { useParams } from "react-router-dom";
 
-interface PhotoCardContent {
-  id: number;
-  content: React.ReactElement;
-  className: string;
-  thumbnail: string;
+interface PhotoGridProps {
+  eventId: number;
+  isPhotoView?: boolean;
 }
 
-export function PhotoGrid({ eventId }: { eventId: number }) {
+export function PhotoGrid({ eventId, isPhotoView = false }: PhotoGridProps) {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const { data: photos, isLoading, error } = usePhotos(eventId, sortBy);
+  const { data: photos = [], isLoading, error } = usePhotos(eventId, sortBy);
 
   if (isLoading) {
     return (
@@ -40,19 +40,16 @@ export function PhotoGrid({ eventId }: { eventId: number }) {
     );
   }
 
-  const cards: PhotoCardContent[] = photos.map((photo) => {
-    const imageUrl = config.getImageUrl(photo.url);
-    return {
-      id: photo.id,
-      content: <PhotoContent photo={photo} />,
-      className: "",
-      thumbnail: imageUrl,
-    };
-  });
+  const cards = photos.map((photo) => ({
+    id: photo.id,
+    content: <PhotoContent photo={photo} />,
+    className: "",
+    thumbnail: config.getImageUrl(photo.url),
+  }));
 
-  return (
-    <div className="lg:px-8 py-8">
-      <LayoutGrid cards={cards} sortBy={sortBy} onSortChange={setSortBy} />
-    </div>
-  );
+  if (isPhotoView) {
+    return <PhotoView cards={cards} />;
+  }
+
+  return <LayoutGrid cards={cards} onSortChange={setSortBy} sortBy={sortBy} />;
 }
