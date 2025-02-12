@@ -84,21 +84,23 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       const touchCount = e.touches.length;
       touchLayer.setAttribute("data-touch-count", touchCount.toString());
 
-      // Toggle pointer events based on touch count
+      // Reset drag position when second touch starts
+      if (touchCount === 2) {
+        setDragX(0);
+      }
+
+      // Disable pointer events during multi-touch
       touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       const touchCount = e.touches.length;
       touchLayer.setAttribute("data-touch-count", touchCount.toString());
-
-      // Re-enable pointer events when we're back to 0-1 touches
       touchLayer.style.pointerEvents = touchCount > 1 ? "none" : "auto";
     };
 
-    const handleTouchCancel = (e: TouchEvent) => {
-      const touchCount = e.touches.length;
-      touchLayer.setAttribute("data-touch-count", touchCount.toString());
+    const handleTouchCancel = () => {
+      touchLayer.setAttribute("data-touch-count", "0");
       touchLayer.style.pointerEvents = "auto";
     };
 
@@ -111,7 +113,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       touchLayer.removeEventListener("touchend", handleTouchEnd);
       touchLayer.removeEventListener("touchcancel", handleTouchCancel);
     };
-  }, []);
+  }, [setDragX]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     const { offset } = info;
@@ -156,13 +158,19 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.1}
               onDragEnd={handleDragEnd}
+              dragListener={
+                parseInt(
+                  touchLayerRef.current?.getAttribute("data-touch-count") || "0"
+                ) <= 1
+              }
               onDrag={(_, info) => {
-                // Only update dragX if it's a single touch
-                if (
-                  touchLayerRef.current?.getAttribute("data-touch-count") ===
-                  "1"
-                ) {
+                const touchCount = parseInt(
+                  touchLayerRef.current?.getAttribute("data-touch-count") || "0"
+                );
+                if (touchCount === 1) {
                   setDragX(info.offset.x);
+                } else {
+                  setDragX(0);
                 }
               }}
             />
