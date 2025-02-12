@@ -430,22 +430,13 @@ export const LayoutGrid = ({
                             wrapperClass="w-full h-full"
                             contentClass="w-full h-full flex items-center justify-center"
                           >
-                            <div className="relative w-full h-full flex items-center justify-center">
-                              {/* Current Image */}
-                              <motion.img
-                                id="image"
-                                src={
-                                  cards.find((c) => c.id === expanded)
-                                    ?.thumbnail
-                                }
-                                alt=""
-                                className="max-w-full max-h-full object-contain select-none"
-                                draggable="false"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.3 }}
+                            <div
+                              className="relative flex items-center justify-center"
+                              style={{ minWidth: "100%", minHeight: "100%" }}
+                            >
+                              <div
+                                className="absolute inset-0 flex items-center justify-center"
                                 style={{
-                                  position: "absolute",
                                   transform:
                                     touchEnd && touchStart
                                       ? `translateX(${touchEnd - touchStart}px)`
@@ -454,28 +445,34 @@ export const LayoutGrid = ({
                                     !touchEnd && !touchStart
                                       ? "transform 0.3s ease-out"
                                       : undefined,
-                                  touchAction: "none",
-                                  userSelect: "none",
-                                  WebkitUserSelect: "none",
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "contain",
                                 }}
-                              />
-
-                              {/* Next Image Preview */}
-                              {touchEnd && touchStart && (
+                              >
+                                {/* Current Image */}
                                 <motion.img
+                                  id="image"
                                   src={
-                                    getAdjacentImage(
-                                      touchEnd < touchStart ? "next" : "prev"
-                                    ) || ""
+                                    cards.find((c) => c.id === expanded)
+                                      ?.thumbnail
                                   }
                                   alt=""
                                   className="max-w-full max-h-full object-contain select-none"
                                   draggable="false"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ duration: 0.3 }}
                                   style={{
-                                    position: "absolute",
+                                    touchAction: "none",
+                                    userSelect: "none",
+                                    WebkitUserSelect: "none",
+                                  }}
+                                />
+                              </div>
+
+                              {/* Next Image Preview */}
+                              {touchEnd && touchStart && (
+                                <div
+                                  className="absolute inset-0 flex items-center justify-center"
+                                  style={{
                                     transform:
                                       touchEnd && touchStart
                                         ? `translateX(${
@@ -490,14 +487,24 @@ export const LayoutGrid = ({
                                       Math.abs(touchEnd - touchStart) / 200,
                                       1
                                     ),
-                                    touchAction: "none",
-                                    userSelect: "none",
-                                    WebkitUserSelect: "none",
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "contain",
                                   }}
-                                />
+                                >
+                                  <motion.img
+                                    src={
+                                      getAdjacentImage(
+                                        touchEnd < touchStart ? "next" : "prev"
+                                      ) || ""
+                                    }
+                                    alt=""
+                                    className="max-w-full max-h-full object-contain select-none"
+                                    draggable="false"
+                                    style={{
+                                      touchAction: "none",
+                                      userSelect: "none",
+                                      WebkitUserSelect: "none",
+                                    }}
+                                  />
+                                </div>
                               )}
                             </div>
                           </TransformComponent>
