@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGesture } from "react-use-gesture";
 
 interface PhotoViewProps {
@@ -84,12 +84,29 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const resetImageState = useCallback(() => {
+    setScale(1);
+    setOrigin([0, 0]);
+    setPan([0, 0]);
+    setDragX(0);
+    setIsPinching(false);
+  }, []);
+
   const bindGesture = useGesture(
     {
-      onPinch: ({ event, origin: [ox, oy], offset: [s] }) => {
-        event && event.preventDefault && event.preventDefault();
+      onPinch: ({ event, origin: [ox, oy], offset: [s], cancel }) => {
+        if (event?.cancelable) {
+          event.preventDefault();
+        }
+
+        // Prevent pinch if we're in the middle of a swipe
+        if (Math.abs(dragX) > 20) {
+          cancel();
+          return;
+        }
+
         setIsPinching(true);
-        const newScale = Math.max(1, Math.min(5, s));
+        const newScale = Math.max(1, Math.min(3, s)); // Reduced max scale for better performance
         setScale(newScale);
         if (imageRef.current) {
           const rect = imageRef.current.getBoundingClientRect();
@@ -98,44 +115,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       },
       onPinchEnd: () => {
         setIsPinching(false);
-      },
-      onDrag: ({ offset: [x, y] }) => {
-        if (!isPinching) {
-          if (scale > 1) {
-            if (imageRef.current && imageRef.current.parentElement) {
-              const containerRect =
-                imageRef.current.parentElement.getBoundingClientRect();
-              const imgRect = imageRef.current.getBoundingClientRect();
-              const extraX = Math.max(
-                0,
-                (imgRect.width - containerRect.width) / 2
-              );
-              const extraY = Math.max(
-                0,
-                (imgRect.height - containerRect.height) / 2
-              );
-              const clampedX = Math.max(-extraX, Math.min(x, extraX));
-              const clampedY = Math.max(-extraY, Math.min(y, extraY));
-              setPan([clampedX, clampedY]);
-            } else {
-              setPan([x, y]);
-            }
-          } else {
-            setDragX(x);
-          }
+        if (scale < 1.1) {
+          resetImageState();
         }
       },
-      onDragEnd: ({ offset: [x, y] }) => {
-        if (!isPinching && scale === 1) {
-          if (Math.abs(x) >= swipeThreshold && Math.abs(x) > Math.abs(y)) {
-            if (x > 0) {
-              navigateImage("prev");
-            } else {
-              navigateImage("next");
-            }
-          }
-          setDragX(0);
-        } else if (scale > 1) {
+      onDrag: ({ movement: [x, y], cancel }) => {
+        // Prevent drag if we're pinching
+        if (isPinching) {
+          cancel();
+          return;
+        }
+
+        if (scale > 1) {
           if (imageRef.current && imageRef.current.parentElement) {
             const containerRect =
               imageRef.current.parentElement.getBoundingClientRect();
@@ -148,25 +139,54 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               0,
               (imgRect.height - containerRect.height) / 2
             );
-            const clampedX = Math.max(-extraX, Math.min(pan[0], extraX));
-            const clampedY = Math.max(-extraY, Math.min(pan[1], extraY));
+            const clampedX = Math.max(-extraX, Math.min(x, extraX));
+            const clampedY = Math.max(-extraY, Math.min(y, extraY));
             setPan([clampedX, clampedY]);
           }
+        } else {
+          setDragX(x);
+        }
+      },
+      onDragEnd: (state) => {
+        if (isPinching) return;
+
+        if (scale === 1) {
+          const [x, y] = state.movement;
+          const shouldSwipe =
+            Math.abs(x) >= swipeThreshold || Math.abs(state.velocity) > 0.5;
+          if (shouldSwipe && Math.abs(x) > Math.abs(y)) {
+            if (x > 0) {
+              navigateImage("prev");
+            } else {
+              navigateImage("next");
+            }
+          }
+          setDragX(0);
         }
       },
     },
     {
       drag: {
         rubberband: true,
+        initial: () => pan,
+      },
+      pinch: {
+        distanceBounds: { min: 50 },
+        rubberband: true,
       },
     }
   );
 
   useEffect(() => {
-    setScale(1);
-    setOrigin([0, 0]);
-    setPan([0, 0]);
-  }, [currentPhotoIndex]);
+    resetImageState();
+  }, [currentPhotoIndex, resetImageState]);
+
+  // Add cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      resetImageState();
+    };
+  }, [resetImageState]);
 
   if (!currentPhoto) {
     navigate("/");
@@ -179,6 +199,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black"
+      style={{ touchAction: "none" }}
     >
       <div className="relative w-full h-full flex flex-col sm:flex-row">
         <div
@@ -195,11 +216,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             />
 
             <motion.div
-              className="absolute inset-y-0 flex items-center justify-end touch-none"
+              className="absolute inset-0 flex items-center justify-center touch-none"
               style={{
-                left: -windowWidth,
-                width: windowWidth,
-                x: scale === 1 ? dragX - windowWidth : -windowWidth,
+                x: dragX - windowWidth,
+                opacity: Math.abs(dragX) / (windowWidth / 2),
+                zIndex: dragX > 0 ? 1 : 0,
+                pointerEvents: "none",
               }}
             >
               <img
@@ -208,7 +230,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
                 style={{
-                  touchAction: "manipulation",
+                  touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                 }}
@@ -217,7 +239,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
-              style={{ x: scale === 1 ? dragX : 0 }}
+              style={{
+                x: dragX,
+                zIndex: 2,
+              }}
             >
               <div className="w-full h-full flex items-center justify-center">
                 {!imageLoaded && (
@@ -242,7 +267,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
                   style={{
-                    touchAction: "pinch-zoom",
+                    touchAction: "none",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
@@ -257,11 +282,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </motion.div>
 
             <motion.div
-              className="absolute inset-y-0 flex items-center justify-start touch-none"
+              className="absolute inset-0 flex items-center justify-center touch-none"
               style={{
-                right: -windowWidth,
-                width: windowWidth,
-                x: scale === 1 ? dragX + windowWidth : windowWidth,
+                x: dragX + windowWidth,
+                opacity: Math.abs(dragX) / (windowWidth / 2),
+                zIndex: dragX < 0 ? 1 : 0,
+                pointerEvents: "none",
               }}
             >
               <img
@@ -270,7 +296,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
                 style={{
-                  touchAction: "manipulation",
+                  touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                 }}
