@@ -26,6 +26,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [scale, setScale] = useState(1);
   const [origin, setOrigin] = useState([0, 0]);
   const [pan, setPan] = useState<[number, number]>([0, 0]);
+  const [prevImageLoaded, setPrevImageLoaded] = useState(false);
+  const [nextImageLoaded, setNextImageLoaded] = useState(false);
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -191,6 +193,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     };
   }, [resetImageState]);
 
+  // Add effect to reset preview image states when navigating
+  useEffect(() => {
+    setPrevImageLoaded(false);
+    setNextImageLoaded(false);
+  }, [currentPhotoIndex]);
+
   if (!currentPhoto) {
     navigate("/");
     return null;
@@ -220,28 +228,34 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center touch-none"
+              initial={false}
               style={{
                 x: dragX - windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
                 zIndex: dragX > 0 ? 1 : 0,
                 pointerEvents: "none",
+                visibility: prevImageLoaded ? "visible" : "hidden",
               }}
             >
-              <img
+              <motion.img
                 src={prevPhoto.thumbnail}
                 alt=""
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
+                initial={false}
+                onLoad={() => setPrevImageLoaded(true)}
                 style={{
                   touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
+                  willChange: "transform",
                 }}
               />
             </motion.div>
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
+              initial={false}
               style={{
                 x: dragX,
                 zIndex: 2,
@@ -297,22 +311,27 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center touch-none"
+              initial={false}
               style={{
                 x: dragX + windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
                 zIndex: dragX < 0 ? 1 : 0,
                 pointerEvents: "none",
+                visibility: nextImageLoaded ? "visible" : "hidden",
               }}
             >
-              <img
+              <motion.img
                 src={nextPhoto.thumbnail}
                 alt=""
                 className="max-h-full w-auto object-contain select-none"
                 draggable="false"
+                initial={false}
+                onLoad={() => setNextImageLoaded(true)}
                 style={{
                   touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
+                  willChange: "transform",
                 }}
               />
             </motion.div>
