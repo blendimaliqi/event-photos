@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { PhotoContent } from "./PhotoContent";
 
 interface PhotoViewProps {
   cards: {

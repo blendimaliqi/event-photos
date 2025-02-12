@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
 import { config } from "../config/config";
 import { PhotoView } from "./PhotoView";
-import { useParams } from "react-router-dom";
 
 interface PhotoGridProps {
   eventId: number;
