@@ -36,6 +36,7 @@ export const LayoutGrid = ({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Minimum swipe distance required (in pixels)
   const minSwipeDistance = 50;
@@ -214,6 +215,10 @@ export const LayoutGrid = ({
 
     setTouchEnd(null);
     setTouchStart(null);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
   };
 
   return (
@@ -430,12 +435,10 @@ export const LayoutGrid = ({
                             wrapperClass="w-full h-full"
                             contentClass="w-full h-full flex items-center justify-center"
                           >
-                            <div
-                              className="relative flex items-center justify-center"
-                              style={{ minWidth: "100%", minHeight: "100%" }}
-                            >
+                            <div className="w-full h-full flex items-center justify-center">
+                              {/* Current Image Container */}
                               <div
-                                className="absolute inset-0 flex items-center justify-center"
+                                className="relative w-full h-full flex items-center justify-center"
                                 style={{
                                   transform:
                                     touchEnd && touchStart
@@ -447,19 +450,25 @@ export const LayoutGrid = ({
                                       : undefined,
                                 }}
                               >
-                                {/* Current Image */}
+                                {!imageLoaded && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+                                  </div>
+                                )}
                                 <motion.img
+                                  key={expanded}
                                   id="image"
                                   src={
                                     cards.find((c) => c.id === expanded)
                                       ?.thumbnail
                                   }
                                   alt=""
-                                  className="max-w-full max-h-full object-contain select-none"
+                                  className="max-h-full w-auto object-contain select-none"
                                   draggable="false"
                                   initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
+                                  animate={{ opacity: imageLoaded ? 1 : 0 }}
                                   transition={{ duration: 0.3 }}
+                                  onLoad={handleImageLoad}
                                   style={{
                                     touchAction: "none",
                                     userSelect: "none",
@@ -489,14 +498,14 @@ export const LayoutGrid = ({
                                     ),
                                   }}
                                 >
-                                  <motion.img
+                                  <img
                                     src={
                                       getAdjacentImage(
                                         touchEnd < touchStart ? "next" : "prev"
                                       ) || ""
                                     }
                                     alt=""
-                                    className="max-w-full max-h-full object-contain select-none"
+                                    className="max-h-full w-auto object-contain select-none"
                                     draggable="false"
                                     style={{
                                       touchAction: "none",
