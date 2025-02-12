@@ -430,31 +430,68 @@ export const LayoutGrid = ({
                             wrapperClass="w-full h-full"
                             contentClass="w-full h-full flex items-center justify-center"
                           >
-                            <motion.img
-                              id="image"
-                              src={
-                                cards.find((c) => c.id === expanded)?.thumbnail
-                              }
-                              alt=""
-                              className="max-w-full max-h-full object-contain select-none"
-                              draggable="false"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0.3 }}
-                              style={{
-                                transform:
-                                  touchEnd && touchStart
-                                    ? `translateX(${touchEnd - touchStart}px)`
-                                    : undefined,
-                                transition:
-                                  !touchEnd && !touchStart
-                                    ? "transform 0.3s ease-out"
-                                    : undefined,
-                                touchAction: "none",
-                                userSelect: "none",
-                                WebkitUserSelect: "none",
-                              }}
-                            />
+                            <div className="relative w-full h-full">
+                              {/* Current Image */}
+                              <motion.img
+                                id="image"
+                                src={
+                                  cards.find((c) => c.id === expanded)
+                                    ?.thumbnail
+                                }
+                                alt=""
+                                className="absolute inset-0 w-full h-full object-contain select-none"
+                                draggable="false"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.3 }}
+                                style={{
+                                  transform:
+                                    touchEnd && touchStart
+                                      ? `translateX(${touchEnd - touchStart}px)`
+                                      : undefined,
+                                  transition:
+                                    !touchEnd && !touchStart
+                                      ? "transform 0.3s ease-out"
+                                      : undefined,
+                                  touchAction: "none",
+                                  userSelect: "none",
+                                  WebkitUserSelect: "none",
+                                }}
+                              />
+
+                              {/* Next Image Preview */}
+                              {touchEnd && touchStart && (
+                                <motion.img
+                                  src={
+                                    getAdjacentImage(
+                                      touchEnd < touchStart ? "next" : "prev"
+                                    ) || ""
+                                  }
+                                  alt=""
+                                  className="absolute inset-0 w-full h-full object-contain select-none"
+                                  draggable="false"
+                                  style={{
+                                    transform:
+                                      touchEnd && touchStart
+                                        ? `translateX(${
+                                            touchEnd -
+                                            touchStart +
+                                            (touchEnd < touchStart
+                                              ? window.innerWidth
+                                              : -window.innerWidth)
+                                          }px)`
+                                        : undefined,
+                                    opacity: Math.min(
+                                      Math.abs(touchEnd - touchStart) / 200,
+                                      1
+                                    ),
+                                    touchAction: "none",
+                                    userSelect: "none",
+                                    WebkitUserSelect: "none",
+                                  }}
+                                />
+                              )}
+                            </div>
                           </TransformComponent>
 
                           {/* Debug overlay */}
