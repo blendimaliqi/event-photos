@@ -96,31 +96,34 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onPinch: ({ event, origin: [ox, oy], offset: [s], cancel }) => {
+      onPinch: ({ event, origin: [ox, oy], offset: [s], memo }) => {
         if (event?.cancelable) {
           event.preventDefault();
         }
 
         // Prevent pinch if we're in the middle of a swipe
         if (Math.abs(dragX) > 20) {
-          cancel();
           return;
         }
 
         setIsPinching(true);
         const newScale = Math.min(3, Math.max(0.5, s)); // Allow scale to go below 1 temporarily
+        console.log("Pinch in progress, scale:", newScale);
 
         // Only update origin on initial pinch
-        if (scale === 1 && imageRef.current) {
+        if (!memo && imageRef.current) {
           const rect = imageRef.current.getBoundingClientRect();
           setOrigin([ox - rect.left, oy - rect.top]);
+          memo = [ox - rect.left, oy - rect.top];
         }
 
         setScale(newScale);
+        return memo;
       },
       onPinchEnd: ({ offset: [s] }) => {
         setIsPinching(false);
         const finalScale = Math.min(3, Math.max(0.5, s));
+        console.log("Pinch ended, final scale:", finalScale);
         // If final scale is close to or below 1, reset to initial state
         if (finalScale <= 1.05) {
           resetImageState();
@@ -200,6 +203,31 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     setPrevImageLoaded(false);
     setNextImageLoaded(false);
   }, [currentPhotoIndex]);
+
+  useEffect(() => {
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const delta = event.deltaY;
+      const newScale = Math.min(3, Math.max(0.5, scale - delta * 0.01));
+
+      // Calculate new origin based on mouse position
+      if (imageRef.current) {
+        const rect = imageRef.current.getBoundingClientRect();
+        const ox = event.clientX - rect.left;
+        const oy = event.clientY - rect.top;
+        setOrigin([ox, oy]);
+      }
+
+      setScale(newScale);
+      console.log("Mouse wheel zoom, scale:", newScale);
+      if (newScale <= 1.05) {
+        resetImageState();
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [scale, resetImageState]);
 
   if (!currentPhoto) {
     navigate("/");
