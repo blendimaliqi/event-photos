@@ -107,11 +107,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
         setIsPinching(true);
         const newScale = Math.max(1, Math.min(3, s)); // Reduced max scale for better performance
-        setScale(newScale);
-        if (imageRef.current) {
+
+        // Only update origin on initial pinch
+        if (scale === 1 && imageRef.current) {
           const rect = imageRef.current.getBoundingClientRect();
           setOrigin([ox - rect.left, oy - rect.top]);
         }
+
+        setScale(newScale);
       },
       onPinchEnd: () => {
         setIsPinching(false);
@@ -242,9 +245,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               style={{
                 x: dragX,
                 zIndex: 2,
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
               }}
             >
-              <div className="w-full h-full flex items-center justify-center">
+              <div className="w-full h-full flex items-center justify-center relative">
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                     <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
@@ -256,14 +262,21 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   alt=""
                   className="max-h-full w-auto object-contain select-none"
                   draggable="false"
-                  initial={{ opacity: 0, scale: 1 }}
+                  initial={{ opacity: 0 }}
                   animate={{
                     opacity: imageLoaded ? 1 : 0,
                     scale: scale,
                     x: scale > 1 ? pan[0] : 0,
                     y: scale > 1 ? pan[1] : 0,
                   }}
-                  transition={{ duration: 0.3 }}
+                  transition={{
+                    duration: 0.2,
+                    scale: {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                    },
+                  }}
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
                   style={{
@@ -274,6 +287,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     maxHeight: "100%",
                     width: "auto",
                     height: "auto",
+                    willChange: "transform",
                     transformOrigin:
                       scale !== 1 ? `${origin[0]}px ${origin[1]}px` : "50% 50%",
                   }}
