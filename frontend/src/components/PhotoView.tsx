@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, PanInfo } from "framer-motion";
+import { useGesture } from "react-use-gesture";
 
 interface PhotoViewProps {
   cards: {
@@ -18,11 +19,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [dragX, setDragX] = useState(0);
   const touchLayerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null); // Ref to the image
+  const imageRef = useRef<HTMLImageElement>(null);
   const swipeThreshold = 100;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-  const [isPinching, setIsPinching] = useState(false); // Track pinch zoom state
-  const [scale, setScale] = useState(1); // Track scale
+  const [isPinching, setIsPinching] = useState(false);
+  const [scale, setScale] = useState(1);
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -51,7 +52,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       const nextCard = cards[newIndex];
       if (nextCard) {
         setDragX(0);
-        setScale(1); // Reset scale on navigation
+        setScale(1);
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -79,84 +80,41 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Touch event handlers with pinch zoom detection
-  useEffect(() => {
-    const touchLayer = touchLayerRef.current;
-    if (!touchLayer) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      const touchCount = e.touches.length;
-
-      if (touchCount === 2) {
-        setIsPinching(true); // Pinch zoom detected
-        touchLayer.style.pointerEvents = "none"; //Disable Swipe
-        setDragX(0);
-      } else {
+  const bindGesture = useGesture(
+    {
+      onPinch: ({ offset: [d] }) => {
+        setIsPinching(true);
+        setScale(Math.max(1, Math.min(5, d))); // Limit scale between 1 and 5
+      },
+      onPinchEnd: () => {
         setIsPinching(false);
-        touchLayer.style.pointerEvents = "auto"; //Enable Swipe
-      }
-
-      touchLayer.setAttribute("data-touch-count", touchCount.toString());
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      const touchCount = e.touches.length;
-
-      if (isPinching && touchCount < 2) {
-        setIsPinching(false);
-        // Small delay to ensure zoom ends cleanly before re-enabling swipe
-        setTimeout(() => {
-          if (touchLayer) {
-            touchLayer.style.pointerEvents = "auto";
-          }
-        }, 100);
-      }
-
-      touchLayer.setAttribute("data-touch-count", touchCount.toString());
-    };
-
-    const handleTouchCancel = () => {
-      setIsPinching(false);
-      touchLayer.setAttribute("data-touch-count", "0");
-      setTimeout(() => {
-        if (touchLayer) {
-          touchLayer.style.pointerEvents = "auto";
+      },
+      onDrag: ({ offset: [x] }) => {
+        if (!isPinching) {
+          setDragX(x);
         }
-      }, 100);
-    };
-
-    touchLayer.addEventListener("touchstart", handleTouchStart);
-    touchLayer.addEventListener("touchend", handleTouchEnd);
-    touchLayer.addEventListener("touchcancel", handleTouchCancel);
-
-    return () => {
-      touchLayer.removeEventListener("touchstart", handleTouchStart);
-      touchLayer.removeEventListener("touchend", handleTouchEnd);
-      touchLayer.removeEventListener("touchcancel", handleTouchCancel);
-    };
-  }, [setDragX, isPinching]);
-
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    if (isPinching) return; // Do nothing if pinching
-
-    const { offset } = info;
-    const touchCount = Number(
-      touchLayerRef.current?.getAttribute("data-touch-count") || "0"
-    );
-
-    // Only handle swipe if we have 0 or 1 touch points
-    if (touchCount <= 1 && Math.abs(offset.x) > swipeThreshold) {
-      if (offset.x > 0) {
-        navigateImage("prev");
-      } else {
-        navigateImage("next");
-      }
+      },
+      onDragEnd: ({ offset: [x] }) => {
+        if (!isPinching && Math.abs(x) > swipeThreshold) {
+          if (x > 0) {
+            navigateImage("prev");
+          } else {
+            navigateImage("next");
+          }
+        }
+        setDragX(0);
+      },
+    },
+    {
+      drag: {
+        axis: "x",
+        bounds: { left: -swipeThreshold, right: swipeThreshold },
+        rubberband: true,
+      },
     }
-    setDragX(0);
-  };
+  );
 
   useEffect(() => {
-    // Reset scale when the current photo changes (navigation)
     setScale(1);
   }, [currentPhotoIndex]);
 
@@ -179,29 +137,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
         >
           <div className="relative w-full h-full">
-            {/* Touch layer for swipe only */}
             <motion.div
               ref={touchLayerRef}
-              className="absolute inset-0 z-10 touch-none" // Remove inline style here
-              style={{ userSelect: "none" }} // Keep user-select none to prevent text selection
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.1}
-              onDragEnd={handleDragEnd}
-              dragListener={!isPinching} // Disable drag when pinching
-              onDrag={(_, info) => {
-                const touchCount = parseInt(
-                  touchLayerRef.current?.getAttribute("data-touch-count") || "0"
-                );
-                if (touchCount === 1 && !isPinching) {
-                  setDragX(info.offset.x);
-                } else {
-                  setDragX(0);
-                }
-              }}
+              className="absolute inset-0 z-10 touch-none"
+              style={{ userSelect: "none" }}
+              {...bindGesture()}
             />
 
-            {/* Previous Image */}
             <motion.div
               className="absolute inset-y-0 flex items-center justify-end touch-none"
               style={{
@@ -223,7 +165,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               />
             </motion.div>
 
-            {/* Current Image */}
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
               style={{ x: dragX }}
@@ -240,11 +181,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   alt=""
                   className="max-h-full w-auto object-contain select-none"
                   draggable="false"
-                  initial={{ opacity: 0, scale: 1 }} // Reset scale initially
-                  animate={{ opacity: imageLoaded ? 1 : 0, scale: scale }} // Animate scale
+                  initial={{ opacity: 0, scale: 1 }}
+                  animate={{ opacity: imageLoaded ? 1 : 0, scale: scale }}
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
-                  ref={imageRef} // Attach the ref
+                  ref={imageRef}
                   style={{
                     touchAction: "pinch-zoom",
                     userSelect: "none",
@@ -258,7 +199,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               </div>
             </motion.div>
 
-            {/* Next Image */}
             <motion.div
               className="absolute inset-y-0 flex items-center justify-start touch-none"
               style={{
@@ -281,7 +221,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </motion.div>
           </div>
 
-          {/* Navigation Buttons */}
           <button
             onClick={() => navigateImage("prev")}
             className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
@@ -323,7 +262,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </svg>
           </button>
 
-          {/* Close Button */}
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 z-20 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200"
@@ -352,10 +290,9 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           </button>
         </div>
 
-        {/* Description Panel */}
         <div
           className={`w-full sm:w-80 backdrop-blur-sm transition-all duration-300 sm:h-full
-          ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"} 
+          ${isDescriptionCollapsed ? "h-[10vh]" : "h-[40vh]"}
           overflow-y-auto relative`}
         >
           {React.cloneElement(currentPhoto.content as React.ReactElement, {
