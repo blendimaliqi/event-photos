@@ -95,19 +95,6 @@ export const LayoutGrid = ({
     [expanded, cards]
   );
 
-  const getAdjacentImages = useCallback(() => {
-    if (expanded === null) return { prev: undefined, next: undefined };
-
-    const currentIndex = cards.findIndex((card) => card.id === expanded);
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1;
-    const nextIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0;
-
-    return {
-      prev: cards[prevIndex]?.thumbnail || undefined,
-      next: cards[nextIndex]?.thumbnail || undefined,
-    };
-  }, [expanded, cards]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (expanded !== null) {
@@ -123,7 +110,7 @@ export const LayoutGrid = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [expanded, cards, navigateImage, handleCloseExpanded]);
+  }, [expanded, navigateImage, handleCloseExpanded]);
 
   const toggleViewMode = () => {
     const newViewMode =
