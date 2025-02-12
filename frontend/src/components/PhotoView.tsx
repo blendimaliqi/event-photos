@@ -84,10 +84,15 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onPinch: ({ origin: [ox, oy], offset: [d] }) => {
+      onPinch: ({ event, origin: [ox, oy], offset: [s] }) => {
+        event && event.preventDefault && event.preventDefault();
         setIsPinching(true);
-        setScale(Math.max(1, Math.min(5, d))); // Limit scale between 1 and 5
-        setOrigin([ox, oy]);
+        const newScale = Math.max(1, Math.min(5, s));
+        setScale(newScale);
+        if (imageRef.current) {
+          const rect = imageRef.current.getBoundingClientRect();
+          setOrigin([ox - rect.left, oy - rect.top]);
+        }
       },
       onPinchEnd: () => {
         setIsPinching(false);
@@ -98,7 +103,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         }
       },
       onDragEnd: ({ offset: [x] }) => {
-        if (!isPinching && Math.abs(x) > swipeThreshold) {
+        if (!isPinching && scale === 1 && Math.abs(x) >= swipeThreshold) {
           if (x > 0) {
             navigateImage("prev");
           } else {
@@ -173,7 +178,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               className="absolute inset-0 flex items-center justify-center"
               style={{
                 x: dragX,
-                transformOrigin: `${origin[0]}px ${origin[1]}px`,
               }}
             >
               <div className="w-full h-full flex items-center justify-center">
@@ -201,6 +205,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     maxHeight: "100%",
                     width: "auto",
                     height: "auto",
+                    transformOrigin:
+                      scale !== 1 ? `${origin[0]}px ${origin[1]}px` : "50% 50%",
                   }}
                 />
               </div>
