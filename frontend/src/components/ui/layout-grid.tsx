@@ -37,6 +37,8 @@ export const LayoutGrid = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [touchCount, setTouchCount] = useState(0);
+  const [currentScale, setCurrentScale] = useState(1);
 
   // Minimum swipe distance required (in pixels)
   const minSwipeDistance = 50;
@@ -155,18 +157,23 @@ export const LayoutGrid = ({
   );
 
   const onTouchStart = (e: React.TouchEvent) => {
-    const startX = e.targetTouches[0].clientX;
-    console.log("Touch Start:", {
-      startX,
-      timestamp: new Date().toISOString(),
-    });
-    setTouchEnd(null);
-    setTouchStart(startX);
-    setIsSwiping(true);
+    // Only handle single touch for swipes when not zoomed
+    if (e.touches.length === 1 && currentScale <= 1) {
+      const startX = e.targetTouches[0].clientX;
+      console.log("Touch Start:", {
+        startX,
+        timestamp: new Date().toISOString(),
+      });
+      setTouchEnd(null);
+      setTouchStart(startX);
+      setIsSwiping(true);
+    }
+    setTouchCount(e.touches.length);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStart) {
+    // Only handle swipe if it's a single touch and not zoomed
+    if (touchCount === 1 && touchStart && currentScale <= 1) {
       const currentX = e.targetTouches[0].clientX;
       console.log("Touch Move:", {
         currentX,
@@ -178,43 +185,42 @@ export const LayoutGrid = ({
     }
   };
 
-  const onTouchEnd = () => {
-    console.log("Touch End:", {
-      touchStart,
-      touchEnd,
-      distance: touchEnd ? touchStart! - touchEnd : "no end position",
-      timestamp: new Date().toISOString(),
-    });
+  const onTouchEnd = (e: React.TouchEvent) => {
+    // Update remaining touch count
+    setTouchCount(e.touches.length);
 
-    setIsSwiping(false);
-    if (!touchStart || !touchEnd) {
-      console.log("Touch End - Missing start or end position");
-      return;
+    // Only process swipe if it was a single touch and not zoomed
+    if (touchCount === 1 && currentScale <= 1) {
+      console.log("Touch End:", {
+        touchStart,
+        touchEnd,
+        distance: touchEnd ? touchStart! - touchEnd : "no end position",
+        timestamp: new Date().toISOString(),
+      });
+
+      setIsSwiping(false);
+      if (!touchStart || !touchEnd) {
+        console.log("Touch End - Missing start or end position");
+        return;
+      }
+
+      const distance = touchStart - touchEnd;
+      const isLeftSwipe = distance > minSwipeDistance;
+      const isRightSwipe = distance < -minSwipeDistance;
+
+      if (isLeftSwipe) {
+        console.log("Navigating to next image");
+        navigateImage("next");
+      } else if (isRightSwipe) {
+        console.log("Navigating to previous image");
+        navigateImage("prev");
+      } else {
+        console.log("Swipe distance too small, not navigating");
+      }
+
+      setTouchEnd(null);
+      setTouchStart(null);
     }
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    console.log("Swipe Analysis:", {
-      distance,
-      minSwipeDistance,
-      isLeftSwipe,
-      isRightSwipe,
-    });
-
-    if (isLeftSwipe) {
-      console.log("Navigating to next image");
-      navigateImage("next");
-    } else if (isRightSwipe) {
-      console.log("Navigating to previous image");
-      navigateImage("prev");
-    } else {
-      console.log("Swipe distance too small, not navigating");
-    }
-
-    setTouchEnd(null);
-    setTouchStart(null);
   };
 
   const handleImageLoad = () => {
@@ -408,7 +414,13 @@ export const LayoutGrid = ({
                       panning={{
                         velocityDisabled: true,
                         excluded: ["button"],
-                        disabled: isSwiping,
+                        disabled: false,
+                        lockAxisX: currentScale <= 1,
+                        lockAxisY: currentScale <= 1,
+                      }}
+                      pinch={{ disabled: false }}
+                      onTransformed={(e) => {
+                        setCurrentScale(e.state.scale);
                       }}
                     >
                       {({ zoomIn, zoomOut, resetTransform }) => (
@@ -416,19 +428,25 @@ export const LayoutGrid = ({
                           <div
                             className="absolute inset-0 z-10"
                             onTouchStart={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onTouchStart(e);
+                              if (e.touches.length === 1 && currentScale <= 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onTouchStart(e);
+                              }
                             }}
                             onTouchMove={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onTouchMove(e);
+                              if (e.touches.length === 1 && currentScale <= 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onTouchMove(e);
+                              }
                             }}
                             onTouchEnd={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onTouchEnd();
+                              if (touchCount === 1 && currentScale <= 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onTouchEnd(e);
+                              }
                             }}
                           />
                           <TransformComponent
