@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, PanInfo } from "framer-motion";
 
@@ -22,6 +22,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const swipeThreshold = 100;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const [isPinching, setIsPinching] = useState(false); // Track pinch zoom state
+  const [scale, setScale] = useState(1); // Track scale
 
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
@@ -50,6 +51,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       const nextCard = cards[newIndex];
       if (nextCard) {
         setDragX(0);
+        setScale(1); // Reset scale on navigation
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -72,13 +74,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     [navigateImage]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   // Touch event handlers with pinch zoom detection
-  React.useEffect(() => {
+  useEffect(() => {
     const touchLayer = touchLayerRef.current;
     if (!touchLayer) return;
 
@@ -153,6 +155,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     setDragX(0);
   };
 
+  useEffect(() => {
+    // Reset scale when the current photo changes (navigation)
+    setScale(1);
+  }, [currentPhotoIndex]);
+
   if (!currentPhoto) {
     navigate("/");
     return null;
@@ -175,7 +182,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             {/* Touch layer for swipe only */}
             <motion.div
               ref={touchLayerRef}
-              className="absolute inset-0 z-10 touch-none"
+              className="absolute inset-0 z-10 touch-none" // Remove inline style here
+              style={{ userSelect: "none" }} // Keep user-select none to prevent text selection
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.1}
@@ -232,8 +240,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   alt=""
                   className="max-h-full w-auto object-contain select-none"
                   draggable="false"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: imageLoaded ? 1 : 0 }}
+                  initial={{ opacity: 0, scale: 1 }} // Reset scale initially
+                  animate={{ opacity: imageLoaded ? 1 : 0, scale: scale }} // Animate scale
                   transition={{ duration: 0.3 }}
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef} // Attach the ref
