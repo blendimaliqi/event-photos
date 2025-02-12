@@ -430,7 +430,7 @@ export const LayoutGrid = ({
                             wrapperClass="w-full h-full"
                             contentClass="w-full h-full flex items-center justify-center"
                           >
-                            <div className="relative w-full h-full">
+                            <div className="relative w-full h-full flex items-center justify-center">
                               {/* Current Image */}
                               <motion.img
                                 id="image"
@@ -439,12 +439,13 @@ export const LayoutGrid = ({
                                     ?.thumbnail
                                 }
                                 alt=""
-                                className="absolute inset-0 w-full h-full object-contain select-none"
+                                className="max-w-full max-h-full object-contain select-none"
                                 draggable="false"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.3 }}
                                 style={{
+                                  position: "absolute",
                                   transform:
                                     touchEnd && touchStart
                                       ? `translateX(${touchEnd - touchStart}px)`
@@ -456,6 +457,9 @@ export const LayoutGrid = ({
                                   touchAction: "none",
                                   userSelect: "none",
                                   WebkitUserSelect: "none",
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "contain",
                                 }}
                               />
 
@@ -468,9 +472,10 @@ export const LayoutGrid = ({
                                     ) || ""
                                   }
                                   alt=""
-                                  className="absolute inset-0 w-full h-full object-contain select-none"
+                                  className="max-w-full max-h-full object-contain select-none"
                                   draggable="false"
                                   style={{
+                                    position: "absolute",
                                     transform:
                                       touchEnd && touchStart
                                         ? `translateX(${
@@ -488,6 +493,9 @@ export const LayoutGrid = ({
                                     touchAction: "none",
                                     userSelect: "none",
                                     WebkitUserSelect: "none",
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "contain",
                                   }}
                                 />
                               )}
