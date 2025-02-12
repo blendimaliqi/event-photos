@@ -96,7 +96,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onPinch: ({ event, origin: [ox, oy], movement: [ms], memo }) => {
+      onPinch: ({ event, offset: [s], delta: [d], memo }) => {
         if (event?.cancelable) {
           event.preventDefault();
         }
@@ -106,33 +106,35 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           return;
         }
 
-        setIsPinching(true);
-        // Use movement for more responsive scale changes
-        const currentScale = scale;
-        const newScale = Math.min(
-          3,
-          Math.max(0.8, currentScale * (1 + ms * 0.01))
-        );
-        console.log("Pinch in progress, scale:", newScale, "movement:", ms);
+        // Only start pinching if there's actual pinch movement
+        if (Math.abs(d) < 0.001 && !isPinching) {
+          return;
+        }
 
-        // Only update origin on initial pinch
+        setIsPinching(true);
+        const newScale = Math.min(3, Math.max(0.8, s));
+        console.log("Pinch in progress, scale:", newScale, "delta:", d);
+
+        // Only update origin on initial pinch and ensure it's centered between touch points
         if (!memo && imageRef.current) {
           const rect = imageRef.current.getBoundingClientRect();
-          setOrigin([ox - rect.left, oy - rect.top]);
-          memo = [ox - rect.left, oy - rect.top];
+          if (event instanceof TouchEvent && event.touches.length >= 2) {
+            const touch1 = event.touches[0];
+            const touch2 = event.touches[1];
+            const centerX = (touch1.clientX + touch2.clientX) / 2;
+            const centerY = (touch1.clientY + touch2.clientY) / 2;
+            setOrigin([centerX - rect.left, centerY - rect.top]);
+            memo = [centerX - rect.left, centerY - rect.top];
+          }
         }
 
         setScale(newScale);
         return memo;
       },
-      onPinchEnd: ({ movement: [ms] }) => {
+      onPinchEnd: ({ offset: [s] }) => {
         setIsPinching(false);
-        const currentScale = scale;
-        const finalScale = Math.min(
-          3,
-          Math.max(0.8, currentScale * (1 + ms * 0.01))
-        );
-        console.log("Pinch ended, final scale:", finalScale, "movement:", ms);
+        const finalScale = Math.min(3, Math.max(0.8, s));
+        console.log("Pinch ended, final scale:", finalScale);
         // If final scale is close to or below 1, reset to initial state
         if (finalScale <= 1.1) {
           resetImageState();
