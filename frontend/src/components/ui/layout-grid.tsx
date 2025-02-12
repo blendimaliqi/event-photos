@@ -386,7 +386,7 @@ export const LayoutGrid = ({
                       }}
                       transition={{ type: "tween", duration: 0 }}
                       style={{
-                        touchAction: "none",
+                        touchAction: "manipulation",
                       }}
                     >
                       <img
@@ -394,7 +394,7 @@ export const LayoutGrid = ({
                         alt=""
                         className="max-w-full max-h-full object-contain"
                         style={{
-                          pointerEvents: isDragging ? "none" : "auto",
+                          touchAction: "manipulation",
                         }}
                       />
                     </motion.div>
