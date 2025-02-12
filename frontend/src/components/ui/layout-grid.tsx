@@ -314,12 +314,21 @@ export const LayoutGrid = ({
                       limitToBounds={true}
                       doubleClick={{ mode: "reset" }}
                       wheel={{ step: 0.2 }}
-                      panning={{ velocityDisabled: true }}
+                      panning={{
+                        lockAxisY: true,
+                        velocityDisabled: true,
+                        excluded: ["button"],
+                      }}
+                      onPanningStart={({ state }) => {
+                        // Only enable panning for navigation when not zoomed
+                        if (state.scale > 1.01) {
+                          return;
+                        }
+                      }}
                       onPanning={({ state }) => {
-                        // If we're not zoomed in, handle horizontal swipes
+                        // Only handle swipes when not zoomed
                         if (state.scale <= 1.01) {
                           const offset = state.positionX;
-                          // Show visual feedback during swipe
                           if (Math.abs(offset) > 50) {
                             const targetElement =
                               document.getElementById("image");
@@ -333,13 +342,11 @@ export const LayoutGrid = ({
                         }
                       }}
                       onPanningStop={({ state }) => {
-                        // Reset opacity
                         const targetElement = document.getElementById("image");
                         if (targetElement) {
                           targetElement.style.opacity = "1";
                         }
 
-                        // If we're not zoomed in, handle horizontal swipes
                         if (state.scale <= 1.01) {
                           const offset = state.positionX;
                           if (Math.abs(offset) > 100) {
@@ -364,7 +371,7 @@ export const LayoutGrid = ({
                                 cards.find((c) => c.id === expanded)?.thumbnail
                               }
                               alt=""
-                              className="max-w-full max-h-full object-contain select-none"
+                              className="max-w-full max-h-full object-contain select-none transition-opacity duration-200"
                               draggable="false"
                             />
                           </TransformComponent>
