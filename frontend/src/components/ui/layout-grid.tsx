@@ -415,8 +415,9 @@ export const LayoutGrid = ({
                         velocityDisabled: true,
                         excluded: ["button"],
                         disabled: false,
-                        lockAxisX: currentScale <= 1,
-                        lockAxisY: currentScale <= 1,
+                        activationKeys: ["Control"],
+                        lockAxisX: false,
+                        lockAxisY: false,
                       }}
                       pinch={{ disabled: false }}
                       centerZoomedOut={true}
@@ -424,29 +425,35 @@ export const LayoutGrid = ({
                         setCurrentScale(e.state.scale);
                       }}
                     >
-                      {({ zoomIn, zoomOut, resetTransform }) => (
+                      {({ zoomIn, zoomOut, resetTransform, instance }) => (
                         <>
                           <div
                             className="absolute inset-0 z-10"
                             onTouchStart={(e) => {
-                              if (e.touches.length === 1 && currentScale <= 1) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onTouchStart(e);
+                              if (currentScale <= 1) {
+                                if (e.touches.length === 1) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onTouchStart(e);
+                                }
                               }
                             }}
                             onTouchMove={(e) => {
-                              if (e.touches.length === 1 && currentScale <= 1) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onTouchMove(e);
+                              if (currentScale <= 1) {
+                                if (e.touches.length === 1) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onTouchMove(e);
+                                }
                               }
                             }}
                             onTouchEnd={(e) => {
-                              if (touchCount === 1 && currentScale <= 1) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onTouchEnd(e);
+                              if (currentScale <= 1) {
+                                if (touchCount === 1) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onTouchEnd(e);
+                                }
                               }
                             }}
                           />
@@ -457,7 +464,8 @@ export const LayoutGrid = ({
                             <div
                               className="w-full h-full flex items-center justify-center"
                               style={{
-                                touchAction: "none",
+                                touchAction:
+                                  currentScale > 1 ? "pan-x pan-y" : "none",
                                 WebkitUserSelect: "none",
                                 userSelect: "none",
                               }}
