@@ -1,6 +1,5 @@
 "use client";
-import React, { useState, useEffect, cloneElement } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
 import { SortOption } from "../../hooks/usePhotos";
 import { useNavigate } from "react-router-dom";
 
@@ -25,7 +24,6 @@ export const LayoutGrid = ({
   sortBy,
 }: LayoutGridProps) => {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(
     !!sessionStorage.getItem("scrollPosition")
   );
