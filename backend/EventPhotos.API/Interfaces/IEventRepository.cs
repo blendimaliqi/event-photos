@@ -14,5 +14,10 @@ namespace EventPhotos.API.Interfaces
         Task<Event?> DeleteAsync(int id);
         Task<Event?> UpdateAsync(int id, UpdateEventDto eventDto);
         Task<bool> EventExists(int id);
+
+        // Hero Photo
+        Task<bool> CreateHeroPhotoAsync(int eventId, Photo photo);
+        Task<bool> DeleteHeroPhotoAsync(int eventId, bool deletePhoto = false);
+        Task<Photo?> GetHeroPhotoAsync(int eventId);
     }
 }

@@ -14,6 +14,11 @@ namespace EventPhotos.API.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
+        public int? HeroPhotoId { get; set; }
+
+        [ForeignKey(nameof(HeroPhotoId))]
+        public virtual Photo? HeroPhoto { get; set; }
+
         [Required]
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;

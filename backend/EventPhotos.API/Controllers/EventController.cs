@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using EventPhotos.API.DTOs;
 using EventPhotos.API.Interfaces;
 using EventPhotos.API.Mappers;
+using EventPhotos.API.Models;
+using EventPhotos.API.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventPhotos.API.Controllers
@@ -14,10 +17,14 @@ namespace EventPhotos.API.Controllers
     public class EventController: ControllerBase
     {
         private readonly IEventRepository _eventRepository;
+        private readonly FileStorageService _fileStorageService;
         
-        public EventController(IEventRepository eventRepository)
+        public EventController(
+            IEventRepository eventRepository,
+            FileStorageService fileStorageService)
         {
             _eventRepository = eventRepository;
+            _fileStorageService = fileStorageService;
         }
 
         [HttpGet]
@@ -40,7 +47,7 @@ namespace EventPhotos.API.Controllers
         {
             var eventModel = await _eventRepository.GetByIdAsync(id);
 
-            if(eventModel  == null)
+            if(eventModel == null)
             {
                 return NotFound();
             }
@@ -80,6 +87,59 @@ namespace EventPhotos.API.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpPost("{id}/hero-photo")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadHeroPhoto(
+            [FromRoute] int id,
+            [FromForm] IFormFile file,
+            [FromForm] string? description)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file was uploaded");
+            }
+
+            if (!await _eventRepository.EventExists(id))
+            {
+                return BadRequest("Event does not exist");
+            }
+
+            try
+            {
+                // Save the file and get its URL
+                var fileUrl = await _fileStorageService.SavePhotoAsync(file);
+
+                // Create the photo record
+                var photo = new Photo
+                {
+                    Url = fileUrl,
+                    EventId = id,
+                    Description = description,
+                    UploadDate = DateTime.UtcNow
+                };
+
+                var success = await _eventRepository.CreateHeroPhotoAsync(id, photo);
+                if (!success)
+                {
+                    // Clean up the uploaded file since we couldn't set it as hero
+                    _fileStorageService.DeletePhoto(fileUrl);
+                    return StatusCode(500, "Failed to set hero photo for the event");
+                }
+
+                // Get the updated event to return the complete data
+                var updatedEvent = await _eventRepository.GetByIdAsync(id);
+                return CreatedAtAction(nameof(GetById), new { id }, updatedEvent?.ToEventDto());
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while uploading the hero photo: {ex.Message}");
+            }
         }
     }
 }

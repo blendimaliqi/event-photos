@@ -14,6 +14,7 @@ namespace EventPhotos.API.DTOs
         public string Name { get; set; } = string.Empty;
         public DateTime Date { get; set; }
         public string Description { get; set; } = string.Empty;
+        public PhotoDto? HeroPhoto { get; set; }
         public List<PhotoDto> Photos { get; set; } = new();
     }
 }
