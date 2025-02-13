@@ -1,12 +1,39 @@
 import { QueryProvider } from "./providers/QueryProvider";
-import { PhotoGrid } from "./components/PhotoGrid";
-import { PhotoUpload } from "./components/PhotoUpload";
 import { AuthProvider } from "./contexts/AuthContext";
-import { AdminPanel } from "./components/AdminPanel";
-import { AdminLogin } from "./components/AdminLogin";
 import { useAuth } from "./contexts/AuthContext";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { Suspense, lazy } from "react";
+import { motion } from "framer-motion";
+
+// Lazy load components
+const PhotoGrid = lazy(() =>
+  import("./components/PhotoGrid").then((module) => ({
+    default: module.PhotoGrid,
+  }))
+);
+const PhotoUpload = lazy(() =>
+  import("./components/PhotoUpload").then((module) => ({
+    default: module.PhotoUpload,
+  }))
+);
+const AdminPanel = lazy(() =>
+  import("./components/AdminPanel").then((module) => ({
+    default: module.AdminPanel,
+  }))
+);
+const AdminLogin = lazy(() =>
+  import("./components/AdminLogin").then((module) => ({
+    default: module.AdminLogin,
+  }))
+);
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
+    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
+  </div>
+);
 
 // Temporary event ID for demo purposes
 const DEMO_EVENT_ID = 1;
@@ -15,10 +42,18 @@ function AdminRoute() {
   const { isAdmin } = useAuth();
 
   if (!isAdmin) {
-    return <AdminLogin />;
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <AdminLogin />
+      </Suspense>
+    );
   }
 
-  return <AdminPanel eventId={DEMO_EVENT_ID} />;
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <AdminPanel eventId={DEMO_EVENT_ID} />
+    </Suspense>
+  );
 }
 
 function App() {
@@ -119,24 +154,40 @@ function App() {
                 !isAdminPage ? "relative z-20 bg-gray-100" : ""
               }`}
             >
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route path="/admin" element={<AdminRoute />} />
-                  <Route
-                    path="/"
-                    element={
-                      <>
-                        <PhotoUpload eventId={DEMO_EVENT_ID} />
-                        <PhotoGrid eventId={DEMO_EVENT_ID} />
-                      </>
-                    }
-                  />
-                  <Route
-                    path="/photo/:photoId"
-                    element={<PhotoGrid eventId={DEMO_EVENT_ID} isPhotoView />}
-                  />
-                </Routes>
-              </AnimatePresence>
+              <Suspense fallback={<LoadingSpinner />}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <Routes>
+                    <Route path="/admin" element={<AdminRoute />} />
+                    <Route
+                      path="/"
+                      element={
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <PhotoUpload eventId={DEMO_EVENT_ID} />
+                          <PhotoGrid eventId={DEMO_EVENT_ID} />
+                        </motion.div>
+                      }
+                    />
+                    <Route
+                      path="/photo/:photoId"
+                      element={
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <PhotoGrid eventId={DEMO_EVENT_ID} isPhotoView />
+                        </motion.div>
+                      }
+                    />
+                  </Routes>
+                </AnimatePresence>
+              </Suspense>
             </main>
 
             {/* Footer with attribution */}
