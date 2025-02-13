@@ -81,7 +81,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onDrag: ({ movement: [x, y], velocity }) => {
+      onDrag: ({ movement: [x] }) => {
         // Allow horizontal dragging
         setDragX(x);
       },
