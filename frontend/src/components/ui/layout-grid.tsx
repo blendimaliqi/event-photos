@@ -205,8 +205,26 @@ export const LayoutGrid = ({
                 </div>
               )}
               <div
-                className={`absolute inset-0 bg-gradient-to-b from-transparent to-black/50 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
+                className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
               />
+              <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
+                <p className="text-xs text-white/80 mb-2">
+                  {new Date(
+                    (card.content as any)?.props?.photo?.uploadDate
+                  ).toLocaleDateString()}{" "}
+                  {new Date(
+                    (card.content as any)?.props?.photo?.uploadDate
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+                {(card.content as any)?.props?.photo?.description && (
+                  <p className="text-sm line-clamp-3">
+                    {(card.content as any)?.props?.photo?.description}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         ))}
