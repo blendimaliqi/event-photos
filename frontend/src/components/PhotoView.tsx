@@ -250,6 +250,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </motion.div>
           </div>
 
+          {/* Image Counter */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-white/90 text-sm font-medium">
+            {currentPhotoIndex + 1} / {cards.length}
+          </div>
+
           <button
             onClick={() => navigateImage("prev")}
             className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-white/60 hover:text-white transition-colors duration-200 z-30"
