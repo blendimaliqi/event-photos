@@ -22,10 +22,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const imageRef = useRef<HTMLImageElement>(null);
   const swipeThreshold = 100;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-  const [isPinching, setIsPinching] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [origin, setOrigin] = useState([0, 0]);
-  const [pan, setPan] = useState<[number, number]>([0, 0]);
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
 
@@ -56,9 +52,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       const nextCard = cards[newIndex];
       if (nextCard) {
         setDragX(0);
-        setScale(1);
-        setOrigin([0, 0]);
-        setPan([0, 0]);
         navigate(`/photo/${nextCard.id}`);
         const hasDescription = !!(nextCard?.content as any)?.props?.photo
           ?.description;
@@ -86,159 +79,37 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const resetImageState = useCallback(() => {
-    setScale(1);
-    setOrigin([0, 0]);
-    setPan([0, 0]);
-    setDragX(0);
-    setIsPinching(false);
-  }, []);
-
   const bindGesture = useGesture(
     {
-      onPinch: ({ event, offset: [s], delta: [d], memo }) => {
-        if (event?.cancelable) {
-          event.preventDefault();
-        }
-
-        // Prevent pinch if we're in the middle of a swipe
-        if (Math.abs(dragX) > 20) {
-          return;
-        }
-
-        // Only start pinching if there's actual pinch movement
-        if (Math.abs(d) < 0.001 && !isPinching) {
-          return;
-        }
-
-        setIsPinching(true);
-        const newScale = Math.min(3, Math.max(0.8, s));
-        console.log("Pinch in progress, scale:", newScale, "delta:", d);
-
-        // Only update origin on initial pinch and ensure it's centered between touch points
-        if (!memo && imageRef.current) {
-          const rect = imageRef.current.getBoundingClientRect();
-          if ("touches" in event && event.touches.length >= 2) {
-            const touch1 = event.touches[0];
-            const touch2 = event.touches[1];
-            const centerX = (touch1.clientX + touch2.clientX) / 2;
-            const centerY = (touch1.clientY + touch2.clientY) / 2;
-            setOrigin([centerX - rect.left, centerY - rect.top]);
-            memo = [centerX - rect.left, centerY - rect.top];
+      onDrag: ({ movement: [x, y], velocity }) => {
+        // Allow horizontal dragging
+        setDragX(x);
+      },
+      onDragEnd: ({ movement: [x, y], velocity }) => {
+        const shouldSwipe =
+          Math.abs(x) >= swipeThreshold || Math.abs(velocity) > 0.5;
+        if (shouldSwipe && Math.abs(x) > Math.abs(y)) {
+          if (x > 0) {
+            navigateImage("prev");
+          } else {
+            navigateImage("next");
           }
         }
-
-        setScale(newScale);
-        return memo;
-      },
-      onPinchEnd: ({ offset: [s] }) => {
-        setIsPinching(false);
-        const finalScale = Math.min(3, Math.max(0.8, s));
-        console.log("Pinch ended, final scale:", finalScale);
-        // If final scale is close to or below 1, reset to initial state
-        if (finalScale <= 1.1) {
-          resetImageState();
-        }
-      },
-      onDrag: ({ movement: [x, y], cancel }) => {
-        // Prevent drag if we're pinching
-        if (isPinching) {
-          cancel();
-          return;
-        }
-
-        if (scale > 1) {
-          if (imageRef.current && imageRef.current.parentElement) {
-            const containerRect =
-              imageRef.current.parentElement.getBoundingClientRect();
-            const imgRect = imageRef.current.getBoundingClientRect();
-            const extraX = Math.max(
-              0,
-              (imgRect.width - containerRect.width) / 2
-            );
-            const extraY = Math.max(
-              0,
-              (imgRect.height - containerRect.height) / 2
-            );
-            const clampedX = Math.max(-extraX, Math.min(x, extraX));
-            const clampedY = Math.max(-extraY, Math.min(y, extraY));
-            setPan([clampedX, clampedY]);
-          }
-        } else {
-          setDragX(x);
-        }
-      },
-      onDragEnd: (state) => {
-        if (isPinching) return;
-
-        if (scale === 1) {
-          const [x, y] = state.movement;
-          const shouldSwipe =
-            Math.abs(x) >= swipeThreshold || Math.abs(state.velocity) > 0.5;
-          if (shouldSwipe && Math.abs(x) > Math.abs(y)) {
-            if (x > 0) {
-              navigateImage("prev");
-            } else {
-              navigateImage("next");
-            }
-          }
-          setDragX(0);
-        }
+        setDragX(0);
       },
     },
     {
       drag: {
         rubberband: true,
-        initial: () => pan,
-      },
-      pinch: {
-        distanceBounds: { min: 50 },
-        rubberband: true,
       },
     }
   );
-
-  useEffect(() => {
-    resetImageState();
-  }, [currentPhotoIndex, resetImageState]);
-
-  // Add cleanup on component unmount
-  useEffect(() => {
-    return () => {
-      resetImageState();
-    };
-  }, [resetImageState]);
 
   // Add effect to reset preview image states when navigating
   useEffect(() => {
     setPrevImageLoaded(false);
     setNextImageLoaded(false);
   }, [currentPhotoIndex]);
-
-  useEffect(() => {
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const delta = event.deltaY;
-      const newScale = Math.min(3, Math.max(0.5, scale - delta * 0.01));
-
-      // Calculate new origin based on mouse position
-      if (imageRef.current) {
-        const rect = imageRef.current.getBoundingClientRect();
-        const ox = event.clientX - rect.left;
-        const oy = event.clientY - rect.top;
-        setOrigin([ox, oy]);
-      }
-
-      setScale(newScale);
-      console.log("Mouse wheel zoom, scale:", newScale);
-      if (newScale <= 1.05) {
-        resetImageState();
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => window.removeEventListener("wheel", handleWheel);
-  }, [scale, resetImageState]);
 
   if (!currentPhoto) {
     navigate("/");
@@ -251,7 +122,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black"
-      style={{ touchAction: "none" }}
     >
       <div className="relative w-full h-full flex flex-col sm:flex-row">
         <div
@@ -262,8 +132,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           <div className="relative w-full h-full">
             <motion.div
               ref={touchLayerRef}
-              className="absolute inset-0 z-10 touch-none"
-              style={{ userSelect: "none" }}
+              className="absolute inset-0 z-10"
               {...bindGesture()}
             />
 
@@ -320,17 +189,9 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   initial={{ opacity: 0 }}
                   animate={{
                     opacity: imageLoaded ? 1 : 0,
-                    scale: scale,
-                    x: scale > 1 ? pan[0] : 0,
-                    y: scale > 1 ? pan[1] : 0,
                   }}
                   transition={{
                     duration: 0.2,
-                    scale: {
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                    },
                   }}
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
@@ -343,8 +204,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     width: "auto",
                     height: "auto",
                     willChange: "transform",
-                    transformOrigin:
-                      scale !== 1 ? `${origin[0]}px ${origin[1]}px` : "50% 50%",
                   }}
                 />
               </div>
