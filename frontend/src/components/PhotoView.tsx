@@ -25,6 +25,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
 
+  // Get the original scroll position when the component mounts
+  const originalScrollPosition = useRef(
+    sessionStorage.getItem("originalScrollPosition")
+  );
+
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
   );
@@ -35,6 +40,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     cards[currentPhotoIndex < cards.length - 1 ? currentPhotoIndex + 1 : 0];
 
   const handleClose = () => {
+    console.log(
+      "PhotoView: Restoring original scroll position:",
+      originalScrollPosition.current
+    );
+    if (originalScrollPosition.current) {
+      sessionStorage.setItem("scrollPosition", originalScrollPosition.current);
+      sessionStorage.removeItem("originalScrollPosition");
+    }
     navigate("/");
   };
 

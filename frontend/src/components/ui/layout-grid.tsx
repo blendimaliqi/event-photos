@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, cloneElement } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SortOption } from "../../hooks/usePhotos";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,9 @@ export const LayoutGrid = ({
 }: LayoutGridProps) => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(
+    !!sessionStorage.getItem("scrollPosition")
+  );
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
     if (savedViewMode) return savedViewMode;
@@ -44,11 +47,42 @@ export const LayoutGrid = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Add scroll position restoration
+  useEffect(() => {
+    console.log("LayoutGrid: Component mounted");
+    const savedPosition = sessionStorage.getItem("scrollPosition");
+    console.log("LayoutGrid: Retrieved saved position:", savedPosition);
+
+    if (savedPosition) {
+      // Use a small timeout to ensure the DOM is ready and images are loaded
+      const timeoutId = setTimeout(() => {
+        const scrollPosition = parseInt(savedPosition);
+        console.log("LayoutGrid: Attempting to scroll to:", scrollPosition);
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: "instant",
+        });
+        console.log("LayoutGrid: Scroll complete, removing saved position");
+        sessionStorage.removeItem("scrollPosition");
+        // Show content after scrolling
+        setIsLoading(false);
+      }, 0); // Reduced timeout since we're hiding content
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setIsLoading(false);
+    }
+  }, [cards]);
+
   const handleClick = (id: number) => {
     setSelected(id === selected ? null : id);
   };
 
   const handleExpand = (id: number) => {
+    const scrollY = window.scrollY;
+    console.log("LayoutGrid: Saving scroll position before expand:", scrollY);
+    sessionStorage.setItem("originalScrollPosition", scrollY.toString());
+    sessionStorage.setItem("scrollPosition", scrollY.toString());
     navigate(`/photo/${id}`);
   };
 
@@ -77,7 +111,11 @@ export const LayoutGrid = ({
   ];
 
   return (
-    <div className="space-y-4">
+    <div
+      className={`space-y-4 transition-opacity duration-200 ${
+        isLoading ? "opacity-0" : "opacity-100"
+      }`}
+    >
       <div className="flex justify-end px-4 sm:px-0 gap-2">
         <button
           onClick={toggleViewMode}
@@ -188,7 +226,7 @@ export const LayoutGrid = ({
                       className="w-full"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {React.cloneElement(card.content as React.ReactElement, {
+                      {cloneElement(card.content as React.ReactElement, {
                         onExpand: () => handleExpand(card.id),
                         isExpanded: false,
                         isCompact: viewMode === "compact",
