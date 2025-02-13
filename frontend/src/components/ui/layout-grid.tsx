@@ -75,7 +75,7 @@ export const LayoutGrid = ({
   }, [cards]);
 
   const handleClick = (id: number) => {
-    setSelected(id === selected ? null : id);
+    handleExpand(id);
   };
 
   const handleExpand = (id: number) => {
@@ -205,36 +205,8 @@ export const LayoutGrid = ({
                 </div>
               )}
               <div
-                className={`absolute inset-0 bg-gradient-to-b from-transparent to-black/50 transition-opacity duration-300 ${
-                  selected === card.id
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                }`}
+                className={`absolute inset-0 bg-gradient-to-b from-transparent to-black/50 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
               />
-              <AnimatePresence>
-                {selected === card.id && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.2 }}
-                    className={`absolute inset-0 flex items-end ${
-                      viewMode === "compact" ? "p-2" : "p-6"
-                    }`}
-                  >
-                    <div
-                      className="w-full"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {cloneElement(card.content as React.ReactElement, {
-                        onExpand: () => handleExpand(card.id),
-                        isExpanded: false,
-                        isCompact: viewMode === "compact",
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         ))}
