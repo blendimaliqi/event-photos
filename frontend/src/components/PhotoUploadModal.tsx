@@ -60,13 +60,15 @@ export function PhotoUploadModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-xl font-serif text-gray-800">Konfirmo Ngarkimin</h3>
+      <div className="bg-white rounded-xl max-w-2xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto shadow-xl">
+        <h3 className="text-2xl font-serif text-gray-800 border-b pb-4">
+          Konfirmo Ngarkimin
+        </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-8">
           {files.map((_file, index) => (
-            <div key={index} className="space-y-2">
-              <div className="relative rounded-lg overflow-hidden bg-gray-100 h-48">
+            <div key={index} className="space-y-4">
+              <div className="relative rounded-lg overflow-hidden bg-gray-50 h-64 shadow-sm border">
                 {previews[index] && !previews[index].error ? (
                   <img
                     src={previews[index].url}
@@ -81,7 +83,7 @@ export function PhotoUploadModal({
                 )}
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label
                     htmlFor={`description-${index}`}
@@ -93,7 +95,7 @@ export function PhotoUploadModal({
                     className={`text-xs ${
                       maxChars - descriptions[index].length < 150
                         ? "text-rose-500"
-                        : "text-gray-500"
+                        : "text-gray-400"
                     }`}
                   >
                     {maxChars - descriptions[index].length} karaktere të mbetura
@@ -106,8 +108,8 @@ export function PhotoUploadModal({
                     handleDescriptionChange(index, e.target.value)
                   }
                   maxLength={maxChars}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                  rows={2}
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 resize-none transition-shadow"
+                  rows={3}
                   placeholder="Shkruaj diçka për këtë foto..."
                 />
               </div>
@@ -115,17 +117,17 @@ export function PhotoUploadModal({
           ))}
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-6 border-t">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-6 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
             disabled={isUploading}
           >
             Anulo
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors disabled:opacity-50 font-medium shadow-sm"
             disabled={isUploading}
           >
             {isUploading
