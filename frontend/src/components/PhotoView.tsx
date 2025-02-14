@@ -18,14 +18,16 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const touchLayerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const swipeThreshold = 100;
+  const swipeThreshold = 80;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isCounterVisible, setIsCounterVisible] = useState(false);
+  const [touchCount, setTouchCount] = useState(0);
   const counterTimeoutRef = useRef<number>();
 
   // Get the original scroll position when the component mounts
@@ -131,26 +133,64 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   const bindGesture = useGesture(
     {
-      onDrag: ({ movement: [x] }) => {
-        // Allow horizontal dragging
-        setDragX(x);
+      onDragStart: ({ event }) => {
+        // Prevent drag if we're using more than one finger (for pinch zoom)
+        if (event instanceof TouchEvent && event.touches.length > 1) {
+          return;
+        }
+        setIsDragging(true);
       },
-      onDragEnd: ({ movement: [x, y], velocity }) => {
+      onDrag: ({ movement: [x], event, cancel }) => {
+        // Cancel drag if multi-touch is detected
+        if (event instanceof TouchEvent) {
+          setTouchCount(event.touches.length);
+          if (event.touches.length > 1) {
+            cancel();
+            return;
+          }
+        }
+
+        // Apply resistance to the drag
+        const dampedX =
+          x > 0
+            ? Math.min(x * 0.8, windowWidth)
+            : Math.max(x * 0.8, -windowWidth);
+        setDragX(dampedX);
+      },
+      onDragEnd: ({ movement: [x], velocity }) => {
+        setIsDragging(false);
+        setTouchCount(0);
+
+        const swipeVelocityThreshold = 0.5;
         const shouldSwipe =
-          Math.abs(x) >= swipeThreshold || Math.abs(velocity) > 0.5;
-        if (shouldSwipe && Math.abs(x) > Math.abs(y)) {
+          Math.abs(x) >= swipeThreshold ||
+          Math.abs(velocity) > swipeVelocityThreshold;
+
+        if (shouldSwipe) {
           if (x > 0) {
             navigateImage("prev");
           } else {
             navigateImage("next");
           }
+        } else {
+          // Spring back to center if swipe threshold not met
+          setDragX(0);
         }
-        setDragX(0);
+      },
+      onTouchStart: (state) => {
+        if (state.event instanceof TouchEvent) {
+          setTouchCount(state.event.touches.length);
+        }
+      },
+      onTouchEnd: () => {
+        setTouchCount(0);
       },
     },
     {
       drag: {
         rubberband: true,
+        filterTaps: true,
+        threshold: 5, // Small threshold for responsive dragging
       },
     }
   );
@@ -191,18 +231,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           <div className="relative w-full h-full">
             <motion.div
               ref={touchLayerRef}
-              className="absolute inset-0 z-10"
+              className="absolute inset-0 z-10 touch-none"
               {...bindGesture()}
             />
 
             <motion.div
-              className="absolute inset-0 flex items-center justify-center touch-none"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
               initial={false}
               style={{
                 x: dragX - windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
+                scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
                 zIndex: dragX > 0 ? 1 : 0,
-                pointerEvents: "none",
                 visibility: prevImageLoaded ? "visible" : "hidden",
               }}
             >
@@ -214,7 +254,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setPrevImageLoaded(true)}
                 style={{
-                  touchAction: "none",
+                  touchAction: touchCount > 1 ? "auto" : "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
@@ -227,10 +267,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               initial={false}
               style={{
                 x: dragX,
+                scale: isDragging ? 0.95 : 1,
                 zIndex: 2,
                 width: "100%",
                 height: "100%",
                 overflow: "hidden",
+              }}
+              transition={{
+                scale: { type: "spring", stiffness: 300, damping: 30 },
               }}
             >
               <div className="w-full h-full flex items-center justify-center relative">
@@ -255,7 +299,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
                   style={{
-                    touchAction: "none",
+                    touchAction: touchCount > 1 ? "auto" : "none",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
@@ -269,13 +313,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </motion.div>
 
             <motion.div
-              className="absolute inset-0 flex items-center justify-center touch-none"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
               initial={false}
               style={{
                 x: dragX + windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
+                scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
                 zIndex: dragX < 0 ? 1 : 0,
-                pointerEvents: "none",
                 visibility: nextImageLoaded ? "visible" : "hidden",
               }}
             >
@@ -287,7 +331,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setNextImageLoaded(true)}
                 style={{
-                  touchAction: "none",
+                  touchAction: touchCount > 1 ? "auto" : "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
