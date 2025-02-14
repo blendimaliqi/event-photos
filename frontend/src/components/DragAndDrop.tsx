@@ -41,7 +41,7 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
   return (
     <div className="relative px-6 sm:px-0">
       <div
-        className={`border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center transition-colors min-h-[200px] sm:min-h-[240px] flex items-center justify-center backdrop-blur-sm ${
+        className={`border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center transition-colors min-h-[200px] sm:min-h-[240px] flex items-center justify-center backdrop-blur-sm focus:outline-none select-none cursor-default ${
           isDragging
             ? "border-rose-400 bg-rose-50/80"
             : "border-rose-200 hover:border-rose-300 bg-white/40"
