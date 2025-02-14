@@ -27,7 +27,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isCounterVisible, setIsCounterVisible] = useState(false);
-  const [isZooming, setIsZooming] = useState(false);
   const counterTimeoutRef = useRef<number>();
 
   // Get the original scroll position when the component mounts
@@ -131,27 +130,41 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const getTouchDistance = (touches: TouchList) => {
-    if (touches.length < 2) return false;
-    return true;
-  };
-
   const bindGesture = useGesture(
     {
-      onDragStart: ({ event }) => {
-        setIsDragging(true);
+      onDragStart: () => {
+        // Only start drag if we're not zoomed in
+        if (
+          imageRef.current &&
+          imageRef.current.getBoundingClientRect().width <= window.innerWidth
+        ) {
+          setIsDragging(true);
+        }
       },
-      onDrag: ({ movement: [x], event }) => {
-        // Apply resistance to the drag
-        const dampedX =
-          x > 0
-            ? Math.min(x * 0.8, windowWidth)
-            : Math.max(x * 0.8, -windowWidth);
-        setDragX(dampedX);
+      onDrag: ({ movement: [x] }) => {
+        // Only allow dragging if we're not zoomed in
+        if (
+          imageRef.current &&
+          imageRef.current.getBoundingClientRect().width <= window.innerWidth
+        ) {
+          const dampedX =
+            x > 0
+              ? Math.min(x * 0.8, windowWidth)
+              : Math.max(x * 0.8, -windowWidth);
+          setDragX(dampedX);
+        }
       },
       onDragEnd: ({ movement: [x], velocity }) => {
-        setIsDragging(false);
+        if (
+          !imageRef.current ||
+          imageRef.current.getBoundingClientRect().width > window.innerWidth
+        ) {
+          setDragX(0);
+          setIsDragging(false);
+          return;
+        }
 
+        setIsDragging(false);
         const swipeVelocityThreshold = 0.5;
         const shouldSwipe =
           Math.abs(x) >= swipeThreshold ||
@@ -173,7 +186,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         filterTaps: true,
         threshold: 5,
         rubberband: true,
-        axis: "x", // Only allow horizontal dragging
+        axis: "x",
       },
     }
   );
@@ -211,18 +224,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
           } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
         >
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full" {...bindGesture()}>
             <motion.div
               ref={touchLayerRef}
               className="absolute inset-0 z-10"
               style={{
-                touchAction: "pan-y pinch-zoom", // Allow vertical pan and pinch zoom
+                touchAction: "none",
+                pointerEvents: "none",
               }}
-              {...bindGesture()}
             />
 
             <motion.div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex items-center justify-center"
               initial={false}
               style={{
                 x: dragX - windowWidth,
@@ -230,6 +243,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
                 zIndex: dragX > 0 ? 1 : 0,
                 visibility: prevImageLoaded ? "visible" : "hidden",
+                pointerEvents: "none",
               }}
             >
               <motion.img
@@ -240,7 +254,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setPrevImageLoaded(true)}
                 style={{
-                  touchAction: "pan-y pinch-zoom",
+                  touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
@@ -258,6 +272,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 width: "100%",
                 height: "100%",
                 overflow: "hidden",
+                pointerEvents: "none",
               }}
               transition={{
                 scale: { type: "spring", stiffness: 300, damping: 30 },
@@ -285,7 +300,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
                   style={{
-                    touchAction: "pan-y pinch-zoom",
+                    touchAction: "manipulation",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
@@ -299,7 +314,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             </motion.div>
 
             <motion.div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              className="absolute inset-0 flex items-center justify-center"
               initial={false}
               style={{
                 x: dragX + windowWidth,
@@ -307,6 +322,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
                 zIndex: dragX < 0 ? 1 : 0,
                 visibility: nextImageLoaded ? "visible" : "hidden",
+                pointerEvents: "none",
               }}
             >
               <motion.img
@@ -317,7 +333,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setNextImageLoaded(true)}
                 style={{
-                  touchAction: "pan-y pinch-zoom",
+                  touchAction: "none",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
