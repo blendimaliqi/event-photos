@@ -26,9 +26,6 @@ export const LayoutGrid = ({
   sortBy,
 }: LayoutGridProps) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(
-    !!sessionStorage.getItem("scrollPosition")
-  );
   const [expandedPhotoId, setExpandedPhotoId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
@@ -69,12 +66,9 @@ export const LayoutGrid = ({
         console.log("LayoutGrid: Scroll complete, removing saved position");
         sessionStorage.removeItem("scrollPosition");
         // Show content after scrolling
-        setIsLoading(false);
       }, 0);
 
       return () => clearTimeout(timeoutId);
-    } else {
-      setIsLoading(false);
     }
   }, [cards]);
 
