@@ -8,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useEvent } from "./hooks/useEvent";
 import { config } from "./config/config";
@@ -68,135 +68,153 @@ function AppContent() {
   const isAdminPage = location.pathname === "/admin";
   const isPhotoViewPage = location.pathname.startsWith("/photo/");
   const { data: event } = useEvent(DEMO_EVENT_ID);
+  const [isNavigating, setIsNavigating] = useState(false);
   const heroImageUrl = event?.heroPhoto?.url
     ? config.getImageUrl(event.heroPhoto.url)
-    : "https://images.unsplash.com/photo-1563865436914-44ee14a35e4b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // Fallback to default image if no hero photo
+    : "https://images.unsplash.com/photo-1563865436914-44ee14a35e4b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+  // Listen for navigation events
+  useEffect(() => {
+    const handleNavigationStart = () => setIsNavigating(true);
+    const handleNavigationEnd = () => setIsNavigating(false);
+
+    window.addEventListener("navigationStart", handleNavigationStart);
+    window.addEventListener("navigationEnd", handleNavigationEnd);
+
+    return () => {
+      window.removeEventListener("navigationStart", handleNavigationStart);
+      window.removeEventListener("navigationEnd", handleNavigationEnd);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <AnimatePresence mode="wait">
-        {!isAdminPage && !isPhotoViewPage ? (
-          <motion.div
-            key="gallery"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative h-[90vh] bg-black"
-          >
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{
-                backgroundImage: `url("${heroImageUrl}")`,
-                backgroundPosition: "center 35%",
-              }}
+      {/* Only show hero section if not navigating */}
+      {!isNavigating && (
+        <AnimatePresence mode="wait">
+          {!isAdminPage && !isPhotoViewPage ? (
+            <motion.div
+              key="gallery"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="relative h-[90vh] bg-black"
             >
-              <div className="absolute inset-0 bg-black/40" />
-              <div className="absolute inset-x-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-100" />
-            </div>
-            <nav className="relative z-10">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-20">
-                  <div className="flex items-center">
-                    <h1 className="text-2xl font-serif italic text-white tracking-wide">
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: `url("${heroImageUrl}")`,
+                  backgroundPosition: "center 35%",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40" />
+                <div className="absolute inset-x-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-100" />
+              </div>
+              <nav className="relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between h-20">
+                    <div className="flex items-center">
+                      <h1 className="text-2xl font-serif italic text-white tracking-wide">
+                        <Link
+                          to="/"
+                          className="hover:text-rose-200 transition-colors"
+                        >
+                          Fotot e Dasmës
+                        </Link>
+                      </h1>
+                    </div>
+                    <div className="flex items-center space-x-6">
                       <Link
                         to="/"
-                        className="hover:text-rose-200 transition-colors"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
                       >
-                        Fotot e Dasmës
+                        Galeria
                       </Link>
-                    </h1>
-                  </div>
-                  <div className="flex items-center space-x-6">
-                    <Link
-                      to="/"
-                      className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
-                    >
-                      Galeria
-                    </Link>
-                    <Link
-                      to="/admin"
-                      className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
-                    >
-                      Admin
-                    </Link>
+                      <Link
+                        to="/admin"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
+                      >
+                        Admin
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              </nav>
+              <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
+                <div className="max-w-3xl">
+                  <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
+                    Mirë se vini në Galerinë tonë të Dasmës
+                  </h2>
+                  <p className="text-xl text-rose-100 font-serif tracking-wider">
+                    Ngarko dhe shiko fotot {"❤"}
+                  </p>
+                </div>
               </div>
-            </nav>
-            <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
-              <div className="max-w-3xl">
-                <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
-                  Mirë se vini në Galerinë tonë të Dasmës
-                </h2>
-                <p className="text-xl text-rose-100 font-serif tracking-wider">
-                  Ngarko dhe shiko fotot {"❤"}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="admin-photo"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative h-[90vh] bg-black"
-          >
-            <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{
-                backgroundImage: `url("${heroImageUrl}")`,
-                backgroundPosition: "center 35%",
-              }}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="admin-photo"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="relative h-[90vh] bg-black"
             >
-              <div className="absolute inset-0 bg-black/40" />
-              <div className="absolute inset-x-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-100" />
-            </div>
-            <nav className="relative z-10">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-20">
-                  <div className="flex items-center">
-                    <h1 className="text-2xl font-serif italic text-white tracking-wide">
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: `url("${heroImageUrl}")`,
+                  backgroundPosition: "center 35%",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40" />
+                <div className="absolute inset-x-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-100" />
+              </div>
+              <nav className="relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between h-20">
+                    <div className="flex items-center">
+                      <h1 className="text-2xl font-serif italic text-white tracking-wide">
+                        <Link
+                          to="/"
+                          className="hover:text-rose-200 transition-colors"
+                        >
+                          Fotot e Dasmës
+                        </Link>
+                      </h1>
+                    </div>
+                    <div className="flex items-center space-x-6">
                       <Link
                         to="/"
-                        className="hover:text-rose-200 transition-colors"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
                       >
-                        Fotot e Dasmës
+                        Galeria
                       </Link>
-                    </h1>
-                  </div>
-                  <div className="flex items-center space-x-6">
-                    <Link
-                      to="/"
-                      className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
-                    >
-                      Galeria
-                    </Link>
-                    <Link
-                      to="/admin"
-                      className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
-                    >
-                      Admin
-                    </Link>
+                      <Link
+                        to="/admin"
+                        className="text-white hover:text-rose-200 transition-colors font-serif tracking-wide"
+                      >
+                        Admin
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              </nav>
+              <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
+                <div className="max-w-3xl">
+                  <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
+                    {isAdminPage ? "Paneli i Administratorit" : "Pamja e Fotos"}
+                  </h2>
+                  <p className="text-xl text-rose-100 font-serif tracking-wider">
+                    {isAdminPage
+                      ? "Menaxho fotot e dasmës ❤"
+                      : "Shiko dhe menaxho fotot ❤"}
+                  </p>
+                </div>
               </div>
-            </nav>
-            <div className="relative z-10 h-full flex items-center justify-center text-center px-4">
-              <div className="max-w-3xl">
-                <h2 className="text-4xl sm:text-6xl font-serif italic text-white mb-6 tracking-wide">
-                  {isAdminPage ? "Paneli i Administratorit" : "Pamja e Fotos"}
-                </h2>
-                <p className="text-xl text-rose-100 font-serif tracking-wider">
-                  {isAdminPage
-                    ? "Menaxho fotot e dasmës ❤"
-                    : "Shiko dhe menaxho fotot ❤"}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       <main
         className={`max-w-[1600px] mx-auto py-6 sm:px-6 lg:px-8 ${

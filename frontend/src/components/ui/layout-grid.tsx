@@ -82,18 +82,34 @@ export const LayoutGrid = ({
     const scrollY = window.scrollY;
     sessionStorage.setItem("originalScrollPosition", scrollY.toString());
     sessionStorage.setItem("scrollPosition", scrollY.toString());
-    setExpandedPhotoId(id);
+
+    // Preload the full resolution image before navigating
+    const img = new Image();
+    img.src = cards.find((card) => card.id === id)?.thumbnail || "";
+
+    img.onload = () => {
+      document.body.style.overflow = "hidden";
+      setExpandedPhotoId(id);
+      window.dispatchEvent(new Event("navigationStart"));
+
+      // Navigate immediately since image is ready
+      navigate(`/photo/${id}`);
+      document.body.style.overflow = "";
+      setExpandedPhotoId(null);
+      setTimeout(() => {
+        window.dispatchEvent(new Event("navigationEnd"));
+      }, 100);
+    };
   };
 
+  // Remove the navigation effect since we handle it in the click handler
   useEffect(() => {
-    if (expandedPhotoId !== null) {
-      // Use a short timeout to ensure the black background is visible before navigation
-      const timeoutId = setTimeout(() => {
-        navigate(`/photo/${expandedPhotoId}`);
-      }, 50);
-      return () => clearTimeout(timeoutId);
+    if (expandedPhotoId) {
+      return () => {
+        document.body.style.overflow = "";
+      };
     }
-  }, [expandedPhotoId, navigate]);
+  }, [expandedPhotoId]);
 
   const toggleViewMode = () => {
     const newViewMode =
@@ -129,21 +145,26 @@ export const LayoutGrid = ({
 
   return (
     <>
+      {/* Black overlay with loading indicator */}
       <AnimatePresence>
         {expandedPhotoId && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black"
-          />
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
+          >
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-rose-500 border-t-transparent"></div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      <div
-        className={`space-y-4 transition-opacity duration-200 ${
-          isLoading ? "opacity-0" : "opacity-100"
-        }`}
+      {/* Main content */}
+      <motion.div
+        animate={{ opacity: expandedPhotoId ? 0.3 : 1 }}
+        transition={{ duration: 0.2 }}
+        className="space-y-4"
       >
         <div className="flex justify-end px-4 sm:px-0 gap-2">
           <button
@@ -268,7 +289,7 @@ export const LayoutGrid = ({
               </div>
             ))}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };
