@@ -1,16 +1,9 @@
 "use client";
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect } from "react";
 import { SortOption } from "../../hooks/usePhotos";
 import { useNavigate } from "react-router-dom";
 import { useEvent } from "../../hooks/useEvent";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Lazy load PhotoView
-const PhotoView = lazy(() =>
-  import("../PhotoView").then((module) => ({
-    default: module.PhotoView,
-  }))
-);
 
 type Card = {
   id: number;
