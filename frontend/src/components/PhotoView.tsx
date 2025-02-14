@@ -139,45 +139,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const bindGesture = useGesture(
     {
       onDragStart: ({ event }) => {
-        if (!(event instanceof TouchEvent)) return;
-
-        if (getTouchDistance(event.touches)) {
-          setIsZooming(true);
-          return false; // Prevent drag from starting
-        }
-
         setIsDragging(true);
-        setIsZooming(false);
       },
-      onDrag: ({ movement: [x], event, cancel }) => {
-        if (!(event instanceof TouchEvent)) {
-          setDragX(x * 0.8);
-          return;
-        }
-
-        // Handle touch events
-        if (getTouchDistance(event.touches)) {
-          setIsZooming(true);
-          cancel();
-          return;
-        }
-
-        if (!isZooming) {
-          const dampedX =
-            x > 0
-              ? Math.min(x * 0.8, windowWidth)
-              : Math.max(x * 0.8, -windowWidth);
-          setDragX(dampedX);
-        }
+      onDrag: ({ movement: [x], event }) => {
+        // Apply resistance to the drag
+        const dampedX =
+          x > 0
+            ? Math.min(x * 0.8, windowWidth)
+            : Math.max(x * 0.8, -windowWidth);
+        setDragX(dampedX);
       },
       onDragEnd: ({ movement: [x], velocity }) => {
-        if (isZooming) {
-          setDragX(0);
-          return;
-        }
-
         setIsDragging(false);
-        setIsZooming(false);
 
         const swipeVelocityThreshold = 0.5;
         const shouldSwipe =
@@ -194,20 +167,13 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           setDragX(0);
         }
       },
-      onTouchStart: ({ event }) => {
-        if (event instanceof TouchEvent) {
-          setIsZooming(getTouchDistance(event.touches));
-        }
-      },
-      onTouchEnd: () => {
-        setIsZooming(false);
-      },
     },
     {
       drag: {
         filterTaps: true,
         threshold: 5,
         rubberband: true,
+        axis: "x", // Only allow horizontal dragging
       },
     }
   );
@@ -250,7 +216,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               ref={touchLayerRef}
               className="absolute inset-0 z-10"
               style={{
-                touchAction: isZooming ? "auto" : "none",
+                touchAction: "pan-y pinch-zoom", // Allow vertical pan and pinch zoom
               }}
               {...bindGesture()}
             />
@@ -274,7 +240,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setPrevImageLoaded(true)}
                 style={{
-                  touchAction: isZooming ? "auto" : "none",
+                  touchAction: "pan-y pinch-zoom",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
@@ -319,7 +285,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   onLoad={() => setImageLoaded(true)}
                   ref={imageRef}
                   style={{
-                    touchAction: isZooming ? "auto" : "none",
+                    touchAction: "pan-y pinch-zoom",
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     maxWidth: "100%",
@@ -351,7 +317,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 initial={false}
                 onLoad={() => setNextImageLoaded(true)}
                 style={{
-                  touchAction: isZooming ? "auto" : "none",
+                  touchAction: "pan-y pinch-zoom",
                   userSelect: "none",
                   WebkitUserSelect: "none",
                   willChange: "transform",
