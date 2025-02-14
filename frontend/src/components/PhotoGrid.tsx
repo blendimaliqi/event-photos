@@ -1,4 +1,4 @@
-import { useState, Suspense, lazy } from "react";
+import { useState, Suspense, lazy, useEffect } from "react";
 import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
@@ -25,9 +25,18 @@ interface PhotoGridProps {
 }
 
 export function PhotoGrid({ eventId, isPhotoView = false }: PhotoGridProps) {
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [sortBy, setSortBy] = useState<SortOption>(() => {
+    const savedSort = sessionStorage.getItem("photoSortPreference");
+    return (savedSort as SortOption) || "newest";
+  });
+
   const { data: photos = [], isLoading, error } = usePhotos(eventId, sortBy);
   const { data: event } = useEvent(eventId);
+
+  // Update session storage when sort changes
+  useEffect(() => {
+    sessionStorage.setItem("photoSortPreference", sortBy);
+  }, [sortBy]);
 
   if (isLoading) {
     return (

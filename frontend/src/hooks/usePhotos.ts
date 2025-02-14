@@ -25,13 +25,26 @@ const sortPhotos = (photos: Photo[], sortBy: SortOption = "newest") => {
           new Date(a.uploadDate).getTime() - new Date(b.uploadDate).getTime()
       );
     case "withDescription":
-      return sortedPhotos.sort((a, b) => {
-        if (a.description && !b.description) return -1;
-        if (!a.description && b.description) return 1;
-        return (
+      // First separate photos with and without descriptions
+      const withDesc = sortedPhotos.filter((photo) =>
+        photo.description?.trim()
+      );
+      const withoutDesc = sortedPhotos.filter(
+        (photo) => !photo.description?.trim()
+      );
+
+      // Sort each group by newest first
+      withDesc.sort(
+        (a, b) =>
           new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
-        );
-      });
+      );
+      withoutDesc.sort(
+        (a, b) =>
+          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+      );
+
+      // Return photos with descriptions first, followed by those without
+      return [...withDesc, ...withoutDesc];
     default:
       return sortedPhotos;
   }
