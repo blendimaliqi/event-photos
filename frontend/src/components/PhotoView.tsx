@@ -148,7 +148,9 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           setDragX(dampedX);
         }
       },
-      onDragEnd: ({ movement: [x], velocity }) => {
+      onDragEnd: ({ movement: [x], velocity, active }) => {
+        if (active) return; // Don't navigate if still dragging
+
         setIsDragging(false);
 
         if (
@@ -172,7 +174,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           }
         }
 
-        // Always reset dragX to 0, either after navigation or if swipe wasn't strong enough
         setDragX(0);
       },
     },
