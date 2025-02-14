@@ -3,6 +3,7 @@ import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
 import { config } from "../config/config";
+import { useEvent } from "../hooks/useEvent";
 
 // Lazy load PhotoView component
 const PhotoView = lazy(() =>
@@ -26,6 +27,7 @@ interface PhotoGridProps {
 export function PhotoGrid({ eventId, isPhotoView = false }: PhotoGridProps) {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const { data: photos = [], isLoading, error } = usePhotos(eventId, sortBy);
+  const { data: event } = useEvent(eventId);
 
   if (isLoading) {
     return (
@@ -52,7 +54,15 @@ export function PhotoGrid({ eventId, isPhotoView = false }: PhotoGridProps) {
     );
   }
 
-  const cards = photos.map((photo) => ({
+  // Filter out hero photo before creating cards
+  const filteredPhotos = photos.filter((photo) => {
+    if (event?.heroPhoto) {
+      return photo.id !== event.heroPhoto.id;
+    }
+    return true; // If no hero photo, include all photos
+  });
+
+  const cards = filteredPhotos.map((photo) => ({
     id: photo.id,
     content: <PhotoContent photo={photo} />,
     className: "",

@@ -208,80 +208,72 @@ export const LayoutGrid = ({
           </select>
         </div>
         <div className={containerClassName}>
-          {cards
-            .filter((card) => {
-              // Only filter out hero photo if it exists
-              if (event?.heroPhoto) {
-                return card.id !== event.heroPhoto.id;
+          {cards.map((card) => (
+            <div
+              key={card.id}
+              className={
+                viewMode === "masonry" ? "break-inside-avoid mb-6" : ""
               }
-              return true; // If no hero photo, show all cards
-            })
-            .map((card) => (
+            >
               <div
-                key={card.id}
-                className={
-                  viewMode === "masonry" ? "break-inside-avoid mb-6" : ""
-                }
+                onClick={() => handleClick(card.id)}
+                className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group ${
+                  viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
+                }`}
               >
-                <div
-                  onClick={() => handleClick(card.id)}
-                  className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group ${
-                    viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
+                <img
+                  src={card.thumbnail}
+                  alt=""
+                  className={`w-full object-cover ${
+                    viewMode === "masonry"
+                      ? "aspect-square"
+                      : viewMode === "grid"
+                      ? "aspect-[3/4]"
+                      : "aspect-[1/1]"
                   }`}
-                >
-                  <img
-                    src={card.thumbnail}
-                    alt=""
-                    className={`w-full object-cover ${
-                      viewMode === "masonry"
-                        ? "aspect-square"
-                        : viewMode === "grid"
-                        ? "aspect-[3/4]"
-                        : "aspect-[1/1]"
-                    }`}
-                  />
-                  {(card.content as any)?.props?.photo?.description && (
-                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                        className="w-3 h-3"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-                        />
-                      </svg>
-                    </div>
-                  )}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
-                  />
-                  <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
-                    <p className="text-xs text-white/80 mb-2">
-                      {new Date(
-                        (card.content as any)?.props?.photo?.uploadDate
-                      ).toLocaleDateString()}{" "}
-                      {new Date(
-                        (card.content as any)?.props?.photo?.uploadDate
-                      ).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    {(card.content as any)?.props?.photo?.description && (
-                      <p className="text-sm line-clamp-3">
-                        {(card.content as any)?.props?.photo?.description}
-                      </p>
-                    )}
+                />
+                {(card.content as any)?.props?.photo?.description && (
+                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="w-3 h-3"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
+                      />
+                    </svg>
                   </div>
+                )}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
+                />
+                <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
+                  <p className="text-xs text-white/80 mb-2">
+                    {new Date(
+                      (card.content as any)?.props?.photo?.uploadDate
+                    ).toLocaleDateString()}{" "}
+                    {new Date(
+                      (card.content as any)?.props?.photo?.uploadDate
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                  {(card.content as any)?.props?.photo?.description && (
+                    <p className="text-sm line-clamp-3">
+                      {(card.content as any)?.props?.photo?.description}
+                    </p>
+                  )}
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
         </div>
       </motion.div>
     </>
