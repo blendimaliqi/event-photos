@@ -12,7 +12,7 @@ export function AdminPanel({ eventId }: { eventId: number }) {
     data: photos,
     isLoading: photosLoading,
     error: photosError,
-  } = usePhotos(eventId, "newest", event?.heroPhotoId);
+  } = usePhotos(eventId, "newest", event?.heroPhotoId || undefined);
 
   const handleDeletePhoto = async (photoId: number) => {
     try {
@@ -89,20 +89,44 @@ export function AdminPanel({ eventId }: { eventId: number }) {
           Select an image to set as the event's hero photo. This will be
           displayed prominently on the event page.
         </p>
-        {event?.heroPhotoId && (
+
+        {/* Current hero photo display */}
+        {event.heroPhoto && (
           <div className="mb-4">
             <p className="text-sm font-medium text-gray-700 mb-2">
               Current Hero Photo:
             </p>
             <img
-              src={config.getImageUrl(
-                event.heroPhoto?.url || "/path/to/fallback-image.jpg"
-              )}
+              src={config.getImageUrl(event.heroPhoto.url)}
               alt="Current hero photo"
               className="w-full max-w-md h-48 object-cover rounded"
             />
+            <button
+              onClick={async () => {
+                try {
+                  await photoService.deletePhoto(event.heroPhoto!.id);
+                  // Invalidate both event and photos queries
+                  await Promise.all([
+                    queryClient.invalidateQueries({
+                      queryKey: EVENT_QUERY_KEY.event(eventId),
+                    }),
+                    queryClient.invalidateQueries({
+                      queryKey: QUERY_KEYS.allPhotos(eventId),
+                    }),
+                  ]);
+                } catch (error) {
+                  console.error("Failed to delete hero photo:", error);
+                  alert("Failed to delete hero photo. Please try again.");
+                }
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors mt-4"
+            >
+              Delete Hero Photo
+            </button>
           </div>
         )}
+
+        {/* Hero photo upload input */}
         <input
           type="file"
           accept="image/*"
@@ -111,50 +135,9 @@ export function AdminPanel({ eventId }: { eventId: number }) {
             file:mr-4 file:py-2 file:px-4
             file:rounded-full file:border-0
             file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
+            file:bg-rose-50 file:text-rose-700
+            hover:file:bg-rose-100"
         />
-
-        {/* current hero photo */}
-        <div className="mb-4">
-          {event.heroPhoto && (
-            <>
-              <p className="text-sm font-medium text-gray-700 mb-2 py-4">
-                Current Hero Photo:
-              </p>
-              <img
-                src={config.getImageUrl(event.heroPhoto?.url)}
-                alt="Current hero photo"
-                className="w-full max-w-md h-48 object-cover rounded"
-              />
-
-              <button
-                onClick={async () => {
-                  if (event.heroPhoto) {
-                    try {
-                      await photoService.deletePhoto(event.heroPhoto.id);
-                      // Invalidate both event and photos queries
-                      await Promise.all([
-                        queryClient.invalidateQueries({
-                          queryKey: EVENT_QUERY_KEY.event(eventId),
-                        }),
-                        queryClient.invalidateQueries({
-                          queryKey: QUERY_KEYS.allPhotos(eventId),
-                        }),
-                      ]);
-                    } catch (error) {
-                      console.error("Failed to delete hero photo:", error);
-                      alert("Failed to delete hero photo. Please try again.");
-                    }
-                  }
-                }}
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors mt-4"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       <h3 className="text-xl font-semibold mb-4">Event Photos</h3>
