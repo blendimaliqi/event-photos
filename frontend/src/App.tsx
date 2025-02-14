@@ -13,7 +13,6 @@ import { motion } from "framer-motion";
 import { useEvent } from "./hooks/useEvent";
 import { config } from "./config/config";
 
-// Lazy load components
 const PhotoGrid = lazy(() =>
   import("./components/PhotoGrid").then((module) => ({
     default: module.PhotoGrid,
