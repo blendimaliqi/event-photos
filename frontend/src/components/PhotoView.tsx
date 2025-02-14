@@ -25,6 +25,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isCounterVisible, setIsCounterVisible] = useState(false);
+  const counterTimeoutRef = useRef<number>();
 
   // Get the original scroll position when the component mounts
   const originalScrollPosition = useRef(
@@ -61,6 +63,30 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     }
     navigate("/");
   };
+
+  const showCounterTemporarily = useCallback(() => {
+    setIsCounterVisible(true);
+    if (counterTimeoutRef.current) {
+      clearTimeout(counterTimeoutRef.current);
+    }
+    counterTimeoutRef.current = setTimeout(() => {
+      setIsCounterVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    // Show counter when photo changes
+    showCounterTemporarily();
+  }, [currentPhotoIndex, showCounterTemporarily]);
+
+  useEffect(() => {
+    // Cleanup timeout on unmount
+    return () => {
+      if (counterTimeoutRef.current) {
+        clearTimeout(counterTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const navigateImage = useCallback(
     (direction: "prev" | "next") => {
@@ -271,7 +297,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           </div>
 
           {/* Image Counter */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-white/90 text-sm font-medium">
+          <div
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full text-white/90 text-sm font-medium transition-opacity duration-300 ${
+              isCounterVisible ? "opacity-100" : "opacity-0"
+            }`}
+          >
             {currentPhotoIndex + 1} / {cards.length}
           </div>
 
