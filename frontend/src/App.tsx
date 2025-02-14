@@ -5,6 +5,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Suspense, lazy } from "react";
 import { motion } from "framer-motion";
+import { useEvent } from "./hooks/useEvent";
+import { config } from "./config/config";
 
 // Lazy load components
 const PhotoGrid = lazy(() =>
@@ -58,18 +60,23 @@ function AdminRoute() {
 
 function App() {
   const isAdminPage = window.location.pathname === "/admin";
+  const isPhotoViewPage = window.location.pathname.startsWith("/photo/");
+  const { data: event } = useEvent(DEMO_EVENT_ID);
+  const heroImageUrl = event?.heroPhoto?.url
+    ? config.getImageUrl(event.heroPhoto.url)
+    : "/wedphoto.jpg"; // Fallback to default image if no hero photo
 
   return (
     <QueryProvider>
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-gray-100">
-            {!isAdminPage && (
+            {!isAdminPage && !isPhotoViewPage && (
               <div className="relative h-[90vh] bg-black">
                 <div
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                   style={{
-                    backgroundImage: 'url("/wedphoto.jpg")',
+                    backgroundImage: `url("${heroImageUrl}")`,
                     backgroundPosition: "center 35%",
                   }}
                 >
@@ -119,7 +126,7 @@ function App() {
               </div>
             )}
 
-            {isAdminPage && (
+            {(isAdminPage || isPhotoViewPage) && (
               <nav className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex justify-between h-16">

@@ -1,5 +1,6 @@
 import { Photo } from "../types/photo";
 import { config } from "../config/config";
+import { Event } from "../types/event";
 
 interface PhotoUploadResponse {
   id: string;
@@ -32,13 +33,22 @@ export const photoService = {
   },
 
   async getPhotos(eventId: number): Promise<Photo[]> {
-    const response = await fetch(`${API_URL}/photos/event/${eventId}`);
+    // First get the event to know which photo is the hero
+    const eventResponse = await fetch(`${API_URL}/events/${eventId}`);
+    if (!eventResponse.ok) {
+      throw new Error("Failed to fetch event");
+    }
+    const event: Event = await eventResponse.json();
 
-    if (!response.ok) {
+    // Then get all photos
+    const photosResponse = await fetch(`${API_URL}/photos/event/${eventId}`);
+    if (!photosResponse.ok) {
       throw new Error("Failed to fetch photos");
     }
+    const photos: Photo[] = await photosResponse.json();
 
-    return response.json();
+    // Filter out the hero photo
+    return photos.filter((photo) => photo.id !== event.heroPhotoId);
   },
 
   async deletePhoto(photoId: number): Promise<void> {
@@ -49,5 +59,28 @@ export const photoService = {
     if (!response.ok) {
       throw new Error("Failed to delete photo");
     }
+  },
+
+  async setHeroPhoto(
+    eventId: number,
+    file: File,
+    description?: string
+  ): Promise<Event> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (description) {
+      formData.append("description", description);
+    }
+
+    const response = await fetch(`${API_URL}/events/${eventId}/hero-photo`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to set hero photo");
+    }
+
+    return response.json();
   },
 };
