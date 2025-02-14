@@ -1,8 +1,16 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { SortOption } from "../../hooks/usePhotos";
 import { useNavigate } from "react-router-dom";
 import { useEvent } from "../../hooks/useEvent";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Lazy load PhotoView
+const PhotoView = lazy(() =>
+  import("../PhotoView").then((module) => ({
+    default: module.PhotoView,
+  }))
+);
 
 type Card = {
   id: number;
@@ -28,6 +36,7 @@ export const LayoutGrid = ({
   const [isLoading, setIsLoading] = useState(
     !!sessionStorage.getItem("scrollPosition")
   );
+  const [expandedPhotoId, setExpandedPhotoId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
     if (savedViewMode) return savedViewMode;
@@ -68,7 +77,7 @@ export const LayoutGrid = ({
         sessionStorage.removeItem("scrollPosition");
         // Show content after scrolling
         setIsLoading(false);
-      }, 0); // Reduced timeout since we're hiding content
+      }, 0);
 
       return () => clearTimeout(timeoutId);
     } else {
@@ -77,16 +86,21 @@ export const LayoutGrid = ({
   }, [cards]);
 
   const handleClick = (id: number) => {
-    handleExpand(id);
-  };
-
-  const handleExpand = (id: number) => {
     const scrollY = window.scrollY;
-    console.log("LayoutGrid: Saving scroll position before expand:", scrollY);
     sessionStorage.setItem("originalScrollPosition", scrollY.toString());
     sessionStorage.setItem("scrollPosition", scrollY.toString());
-    navigate(`/photo/${id}`);
+    setExpandedPhotoId(id);
   };
+
+  useEffect(() => {
+    if (expandedPhotoId !== null) {
+      // Use a short timeout to ensure the black background is visible before navigation
+      const timeoutId = setTimeout(() => {
+        navigate(`/photo/${expandedPhotoId}`);
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [expandedPhotoId, navigate]);
 
   const toggleViewMode = () => {
     const newViewMode =
@@ -116,129 +130,152 @@ export const LayoutGrid = ({
     return <div>Loading...</div>;
   }
 
+  if (!event) {
+    return <div className="text-center p-4">Loading event...</div>;
+  }
+
   return (
-    <div
-      className={`space-y-4 transition-opacity duration-200 ${
-        isLoading ? "opacity-0" : "opacity-100"
-      }`}
-    >
-      <div className="flex justify-end px-4 sm:px-0 gap-2">
-        <button
-          onClick={toggleViewMode}
-          className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+    <>
+      <AnimatePresence>
+        {expandedPhotoId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black"
+          />
+        )}
+      </AnimatePresence>
+
+      <div
+        className={`space-y-4 transition-opacity duration-200 ${
+          isLoading ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        <div className="flex justify-end px-4 sm:px-0 gap-2">
+          <button
+            onClick={toggleViewMode}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16m-7 6h7"
-            />
-          </svg>
-          {viewMode === "masonry"
-            ? "Pamja Grid"
-            : viewMode === "grid"
-            ? "Pamja Kompakte"
-            : "Pamja Masonry"}
-        </button>
-        <select
-          value={sortBy}
-          onChange={(e) => onSortChange(e.target.value as SortOption)}
-          className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors appearance-none pr-8 cursor-pointer border-none focus:ring-0 focus:outline-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23991B1B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 8px center",
-            backgroundSize: "16px",
-          }}
-        >
-          {sortOptions.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              className="text-gray-900"
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className={containerClassName}>
-        {cards
-          .filter((card) => card.id !== event.heroPhoto.id)
-          .map((card) => (
-            <div
-              key={card.id}
-              className={
-                viewMode === "masonry" ? "break-inside-avoid mb-6" : ""
-              }
-            >
-              <div
-                onClick={() => handleClick(card.id)}
-                className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group ${
-                  viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
-                }`}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16m-7 6h7"
+              />
+            </svg>
+            {viewMode === "masonry"
+              ? "Pamja Grid"
+              : viewMode === "grid"
+              ? "Pamja Kompakte"
+              : "Pamja Masonry"}
+          </button>
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as SortOption)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-800 rounded-full text-sm font-medium hover:bg-rose-200 transition-colors appearance-none pr-8 cursor-pointer border-none focus:ring-0 focus:outline-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23991B1B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 8px center",
+              backgroundSize: "16px",
+            }}
+          >
+            {sortOptions.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+                className="text-gray-900"
               >
-                <img
-                  src={card.thumbnail}
-                  alt=""
-                  className={`w-full object-cover ${
-                    viewMode === "masonry"
-                      ? "aspect-square"
-                      : viewMode === "grid"
-                      ? "aspect-[3/4]"
-                      : "aspect-[1/1]"
-                  }`}
-                />
-                {(card.content as any)?.props?.photo?.description && (
-                  <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                      className="w-3 h-3"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-                      />
-                    </svg>
-                  </div>
-                )}
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={containerClassName}>
+          {cards
+            .filter((card) => {
+              // Only filter out hero photo if it exists
+              if (event?.heroPhoto) {
+                return card.id !== event.heroPhoto.id;
+              }
+              return true; // If no hero photo, show all cards
+            })
+            .map((card) => (
+              <div
+                key={card.id}
+                className={
+                  viewMode === "masonry" ? "break-inside-avoid mb-6" : ""
+                }
+              >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
-                />
-                <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
-                  <p className="text-xs text-white/80 mb-2">
-                    {new Date(
-                      (card.content as any)?.props?.photo?.uploadDate
-                    ).toLocaleDateString()}{" "}
-                    {new Date(
-                      (card.content as any)?.props?.photo?.uploadDate
-                    ).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                  onClick={() => handleClick(card.id)}
+                  className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group ${
+                    viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
+                  }`}
+                >
+                  <img
+                    src={card.thumbnail}
+                    alt=""
+                    className={`w-full object-cover ${
+                      viewMode === "masonry"
+                        ? "aspect-square"
+                        : viewMode === "grid"
+                        ? "aspect-[3/4]"
+                        : "aspect-[1/1]"
+                    }`}
+                  />
                   {(card.content as any)?.props?.photo?.description && (
-                    <p className="text-sm line-clamp-3">
-                      {(card.content as any)?.props?.photo?.description}
-                    </p>
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        className="w-3 h-3"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
+                        />
+                      </svg>
+                    </div>
                   )}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70 transition-opacity duration-300 opacity-0 group-hover:opacity-100`}
+                  />
+                  <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
+                    <p className="text-xs text-white/80 mb-2">
+                      {new Date(
+                        (card.content as any)?.props?.photo?.uploadDate
+                      ).toLocaleDateString()}{" "}
+                      {new Date(
+                        (card.content as any)?.props?.photo?.uploadDate
+                      ).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    {(card.content as any)?.props?.photo?.description && (
+                      <p className="text-sm line-clamp-3">
+                        {(card.content as any)?.props?.photo?.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 };

@@ -64,7 +64,7 @@ function App() {
   const { data: event } = useEvent(DEMO_EVENT_ID);
   const heroImageUrl = event?.heroPhoto?.url
     ? config.getImageUrl(event.heroPhoto.url)
-    : "/wedphoto.jpg"; // Fallback to default image if no hero photo
+    : "https://images.unsplash.com/photo-1563865436914-44ee14a35e4b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // Fallback to default image if no hero photo
 
   return (
     <QueryProvider>
@@ -72,7 +72,12 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-100">
             {!isAdminPage && !isPhotoViewPage && (
-              <div className="relative h-[90vh] bg-black">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="relative h-[90vh] bg-black"
+              >
                 <div
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                   style={{
@@ -123,7 +128,7 @@ function App() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {(isAdminPage || isPhotoViewPage) && (
@@ -169,13 +174,16 @@ function App() {
                       path="/"
                       element={
                         <motion.div
+                          key="home"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.2 }}
                         >
                           <PhotoUpload eventId={DEMO_EVENT_ID} />
-                          <PhotoGrid eventId={DEMO_EVENT_ID} />
+                          <Suspense fallback={<LoadingSpinner />}>
+                            <PhotoGrid eventId={DEMO_EVENT_ID} />
+                          </Suspense>
                         </motion.div>
                       }
                     />
@@ -183,12 +191,15 @@ function App() {
                       path="/photo/:photoId"
                       element={
                         <motion.div
+                          key="photo-view"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <PhotoGrid eventId={DEMO_EVENT_ID} isPhotoView />
+                          <Suspense fallback={<LoadingSpinner />}>
+                            <PhotoGrid eventId={DEMO_EVENT_ID} isPhotoView />
+                          </Suspense>
                         </motion.div>
                       }
                     />

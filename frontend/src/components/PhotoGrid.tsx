@@ -1,9 +1,22 @@
-import { useState } from "react";
+import { useState, Suspense, lazy } from "react";
 import { LayoutGrid } from "./ui/layout-grid";
 import { usePhotos, SortOption } from "../hooks/usePhotos";
 import { PhotoContent } from "./PhotoContent";
 import { config } from "../config/config";
-import { PhotoView } from "./PhotoView";
+
+// Lazy load PhotoView component
+const PhotoView = lazy(() =>
+  import("./PhotoView").then((module) => ({
+    default: module.PhotoView,
+  }))
+);
+
+// Loading component for photo view
+const PhotoViewLoading = () => (
+  <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+  </div>
+);
 
 interface PhotoGridProps {
   eventId: number;
@@ -47,7 +60,11 @@ export function PhotoGrid({ eventId, isPhotoView = false }: PhotoGridProps) {
   }));
 
   if (isPhotoView) {
-    return <PhotoView cards={cards} />;
+    return (
+      <Suspense fallback={<PhotoViewLoading />}>
+        <PhotoView cards={cards} />
+      </Suspense>
+    );
   }
 
   return <LayoutGrid cards={cards} onSortChange={setSortBy} sortBy={sortBy} />;

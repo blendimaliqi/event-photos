@@ -24,6 +24,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Get the original scroll position when the component mounts
   const originalScrollPosition = useRef(
@@ -38,6 +39,16 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     cards[currentPhotoIndex > 0 ? currentPhotoIndex - 1 : cards.length - 1];
   const nextPhoto =
     cards[currentPhotoIndex < cards.length - 1 ? currentPhotoIndex + 1 : 0];
+
+  useEffect(() => {
+    // Preload the current image
+    const img = new Image();
+    img.src = currentPhoto?.thumbnail;
+    img.onload = () => {
+      setImageLoaded(true);
+      setIsVisible(true);
+    };
+  }, [currentPhoto]);
 
   const handleClose = () => {
     console.log(
@@ -124,6 +135,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     setNextImageLoaded(false);
   }, [currentPhotoIndex]);
 
+  if (!isVisible) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (!currentPhoto) {
     navigate("/");
     return null;
@@ -134,7 +153,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black"
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[100] bg-black"
     >
       <div className="relative w-full h-full flex flex-col sm:flex-row">
         <div

@@ -69,6 +69,10 @@ export function AdminPanel({ eventId }: { eventId: number }) {
     );
   }
 
+  if (!event) {
+    return <div className="text-center p-4">Loading event...</div>;
+  }
+
   console.log(event);
   console.log(photos);
 
@@ -125,9 +129,25 @@ export function AdminPanel({ eventId }: { eventId: number }) {
               />
 
               <button
-                onClick={() =>
-                  event.heroPhoto && handleDeletePhoto(event.heroPhoto.id)
-                }
+                onClick={async () => {
+                  if (event.heroPhoto) {
+                    try {
+                      await photoService.deletePhoto(event.heroPhoto.id);
+                      // Invalidate both event and photos queries
+                      await Promise.all([
+                        queryClient.invalidateQueries({
+                          queryKey: EVENT_QUERY_KEY.event(eventId),
+                        }),
+                        queryClient.invalidateQueries({
+                          queryKey: QUERY_KEYS.allPhotos(eventId),
+                        }),
+                      ]);
+                    } catch (error) {
+                      console.error("Failed to delete hero photo:", error);
+                      alert("Failed to delete hero photo. Please try again.");
+                    }
+                  }
+                }}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors mt-4"
               >
                 Delete
