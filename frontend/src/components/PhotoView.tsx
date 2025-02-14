@@ -133,13 +133,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const bindGesture = useGesture(
     {
       onDragStart: () => {
-        // Only start drag if we're not zoomed in
-        if (
-          imageRef.current &&
-          imageRef.current.getBoundingClientRect().width <= window.innerWidth
-        ) {
-          setIsDragging(true);
-        }
+        setIsDragging(true);
       },
       onDrag: ({ movement: [x] }) => {
         // Only allow dragging if we're not zoomed in
@@ -155,16 +149,16 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         }
       },
       onDragEnd: ({ movement: [x], velocity }) => {
+        setIsDragging(false);
+
         if (
           !imageRef.current ||
           imageRef.current.getBoundingClientRect().width > window.innerWidth
         ) {
           setDragX(0);
-          setIsDragging(false);
           return;
         }
 
-        setIsDragging(false);
         const swipeVelocityThreshold = 0.5;
         const shouldSwipe =
           Math.abs(x) >= swipeThreshold ||
@@ -176,9 +170,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           } else {
             navigateImage("next");
           }
-        } else {
-          setDragX(0);
         }
+
+        // Always reset dragX to 0, either after navigation or if swipe wasn't strong enough
+        setDragX(0);
       },
     },
     {
@@ -187,6 +182,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         threshold: 5,
         rubberband: true,
         axis: "x",
+        bounds: { left: -windowWidth, right: windowWidth },
+        swipeVelocity: 0.1,
       },
     }
   );
@@ -224,26 +221,32 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
           } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
         >
-          <div className="relative w-full h-full" {...bindGesture()}>
+          <div className="relative w-full h-full">
             <motion.div
               ref={touchLayerRef}
               className="absolute inset-0 z-10"
               style={{
-                touchAction: "none",
-                pointerEvents: "none",
+                touchAction: "pan-y pinch-zoom",
               }}
+              {...bindGesture()}
             />
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
               initial={false}
-              style={{
+              animate={{
                 x: dragX - windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
-                scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
+                scale: 0.95 + (Math.abs(dragX) / windowWidth) * 0.05,
+              }}
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+              }}
+              style={{
                 zIndex: dragX > 0 ? 1 : 0,
                 visibility: prevImageLoaded ? "visible" : "hidden",
-                pointerEvents: "none",
               }}
             >
               <motion.img
@@ -265,17 +268,19 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
               initial={false}
-              style={{
+              animate={{
                 x: dragX,
-                scale: isDragging ? 0.95 : 1,
+                scale: isDragging ? 0.98 : 1,
+              }}
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                scale: { duration: 0.2 },
+              }}
+              style={{
                 zIndex: 2,
                 width: "100%",
                 height: "100%",
                 overflow: "hidden",
-                pointerEvents: "none",
-              }}
-              transition={{
-                scale: { type: "spring", stiffness: 300, damping: 30 },
               }}
             >
               <div className="w-full h-full flex items-center justify-center relative">
@@ -316,13 +321,19 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
               initial={false}
-              style={{
+              animate={{
                 x: dragX + windowWidth,
                 opacity: Math.abs(dragX) / (windowWidth / 2),
-                scale: 0.9 + (Math.abs(dragX) / windowWidth) * 0.1,
+                scale: 0.95 + (Math.abs(dragX) / windowWidth) * 0.05,
+              }}
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+              }}
+              style={{
                 zIndex: dragX < 0 ? 1 : 0,
                 visibility: nextImageLoaded ? "visible" : "hidden",
-                pointerEvents: "none",
               }}
             >
               <motion.img
