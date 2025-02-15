@@ -195,6 +195,15 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     setNextImageLoaded(false);
   }, [currentPhotoIndex]);
 
+  // Add effect to set initial description collapsed state
+  useEffect(() => {
+    if (currentPhoto) {
+      const hasDescription = !!(currentPhoto?.content as any)?.props?.photo
+        ?.description;
+      setIsDescriptionCollapsed(!hasDescription);
+    }
+  }, [currentPhoto]);
+
   if (!isVisible) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
