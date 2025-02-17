@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Navigation } from "./Navigation";
-import { config } from "../config/config";
 import { Event } from "../types/event";
+import { useQuery } from "@tanstack/react-query";
+import { EVENT_QUERY_KEY } from "../hooks/useEvent";
+import { useHeroImage } from "../hooks/useHeroImage";
 
 interface HeroSectionProps {
   event?: Event;
@@ -15,44 +16,17 @@ export const HeroSection = ({
   isAdmin,
   isPhotoView,
 }: HeroSectionProps) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentImageUrl, setCurrentImageUrl] = useState<string>("");
-  const fallbackImageUrl =
-    "https://images.unsplash.com/photo-1563865436914-44ee14a35e4b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+  // First get the event data to ensure we have the latest hero photo
+  const { data: latestEvent } = useQuery({
+    queryKey: EVENT_QUERY_KEY.event(event?.id || 0),
+    enabled: !!event?.id,
+    initialData: event,
+  });
 
-  useEffect(() => {
-    const loadImage = async (url: string) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.src = url;
-        img.onload = () => resolve(url);
-        img.onerror = reject;
-      });
-    };
-
-    const initializeImage = async () => {
-      setIsLoading(true);
-
-      if (event?.heroPhoto?.url) {
-        try {
-          const heroUrl = config.getImageUrl(event.heroPhoto.url);
-          await loadImage(heroUrl);
-          setCurrentImageUrl(heroUrl);
-        } catch (error) {
-          console.error("Failed to load hero image:", error);
-          await loadImage(fallbackImageUrl);
-          setCurrentImageUrl(fallbackImageUrl);
-        }
-      } else {
-        await loadImage(fallbackImageUrl);
-        setCurrentImageUrl(fallbackImageUrl);
-      }
-
-      setIsLoading(false);
-    };
-
-    initializeImage();
-  }, [event?.heroPhoto?.url]);
+  // Then preload the hero image
+  const { data: currentImageUrl, isLoading } = useHeroImage(
+    latestEvent?.heroPhoto?.url
+  );
 
   return (
     <motion.div
