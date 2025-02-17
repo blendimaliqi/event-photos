@@ -63,7 +63,11 @@ export const HeroSection = ({
       className="relative h-[90vh] bg-black"
     >
       <div className="absolute inset-0">
-        {isLoading ? null : (
+        {isLoading ? (
+          <div className="absolute inset-0 bg-black flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+          </div>
+        ) : (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
