@@ -17,6 +17,14 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 
+// Add antiforgery services
+builder.Services.AddAntiforgery(options => 
+{
+    // Set Cookie properties to match your application
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.SuppressXFrameOptionsHeader = false;
+});
+
 // Add response compression
 builder.Services.AddResponseCompression();
 
@@ -47,6 +55,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register repositories
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
+builder.Services.AddScoped<IVideoRepository, VideoRepository>();
 
 // Register FileStorageService
 builder.Services.AddScoped<FileStorageService>();
@@ -87,18 +96,30 @@ app.UseResponseCompression();
 // Configure static file serving for uploads
 app.UseStaticFiles();
 
-// Create uploads directory if it doesn't exist
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "photos");
-if (!Directory.Exists(uploadsPath))
+// Create uploads directories if they don't exist
+var photoUploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "photos");
+if (!Directory.Exists(photoUploadsPath))
 {
-    Directory.CreateDirectory(uploadsPath);
+    Directory.CreateDirectory(photoUploadsPath);
 }
 
-// Map the uploads directory to a URL path
+var videoUploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads", "videos");
+if (!Directory.Exists(videoUploadsPath))
+{
+    Directory.CreateDirectory(videoUploadsPath);
+}
+
+// Map the uploads directories to URL paths
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(uploadsPath),
+    FileProvider = new PhysicalFileProvider(photoUploadsPath),
     RequestPath = "/uploads/photos"
+});
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(videoUploadsPath),
+    RequestPath = "/uploads/videos"
 });
 
 app.UseHttpsRedirection();

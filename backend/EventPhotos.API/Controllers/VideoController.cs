@@ -14,22 +14,25 @@ using Microsoft.AspNetCore.Antiforgery;
 
 namespace EventPhotos.API.Controllers
 {
-    [Route("/api/photos")]
+    [Route("/api/videos")]
     [ApiController]
-    public class PhotoController : ControllerBase
+    public class VideoController : ControllerBase
     {
-        private readonly IPhotoRepository _photoRepository;
+        private readonly IVideoRepository _videoRepository;
         private readonly IEventRepository _eventRepository;
         private readonly FileStorageService _fileStorageService;
         private readonly IAntiforgery _antiforgery;
+        
+        // Max total size per event in bytes (default: 500MB)
+        private const long MaxTotalVideoSizePerEventBytes = 524288000;
 
-        public PhotoController(
-            IPhotoRepository photoRepository, 
+        public VideoController(
+            IVideoRepository videoRepository, 
             IEventRepository eventRepository,
             FileStorageService fileStorageService,
             IAntiforgery antiforgery)
         {
-            _photoRepository = photoRepository;
+            _videoRepository = videoRepository;
             _eventRepository = eventRepository;
             _fileStorageService = fileStorageService;
             _antiforgery = antiforgery;
@@ -43,21 +46,21 @@ namespace EventPhotos.API.Controllers
                 return NotFound("Event not found");
             }
 
-            var photos = await _photoRepository.GetPhotosByEventIdAsync(eventId);
-            return Ok(photos.Select(p => p.ToPhotoDto()));
+            var videos = await _videoRepository.GetVideosByEventIdAsync(eventId);
+            return Ok(videos.Select(v => v.ToVideoDto()));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var photo = await _photoRepository.GetPhotoByIdAsync(id);
+            var video = await _videoRepository.GetVideoByIdAsync(id);
 
-            if (photo == null)
+            if (video == null)
             {
                 return NotFound();
             }
 
-            return Ok(photo.ToPhotoDto());
+            return Ok(video.ToVideoDto());
         }
 
         [HttpDelete("{id}")]
@@ -65,21 +68,21 @@ namespace EventPhotos.API.Controllers
         {
             try
             {
-                var photo = await _photoRepository.DeletePhotoAsync(id);
+                var video = await _videoRepository.DeleteVideoAsync(id);
 
-                if (photo == null)
+                if (video == null)
                 {
                     return NotFound();
                 }
 
                 // Delete the physical file
-                _fileStorageService.DeletePhoto(photo.Url);
+                _fileStorageService.DeleteVideo(video.Url);
 
                 return NoContent();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, "An error occurred while deleting the photo. Please try again later.");
+                return StatusCode(500, $"An error occurred while deleting the video: {ex.Message}");
             }
         }
 
@@ -100,22 +103,38 @@ namespace EventPhotos.API.Controllers
             {
                 return BadRequest("Event does not exist");
             }
+            
+            // Check if file size exceeds individual limit
+            if (file.Length > FileStorageService.MaxVideoSizeBytes)
+            {
+                return BadRequest($"Video file size exceeds the maximum allowed size of {FileStorageService.MaxVideoSizeBytes / 1024 / 1024}MB.");
+            }
+            
+            // Check if total video size for the event would exceed the limit
+            var currentTotalSize = await _videoRepository.GetTotalVideoSizeByEventIdAsync(eventId);
+            if (currentTotalSize + file.Length > MaxTotalVideoSizePerEventBytes)
+            {
+                return BadRequest($"Total video size for this event would exceed the maximum limit of {MaxTotalVideoSizePerEventBytes / 1024 / 1024}MB. " +
+                                 $"Current total: {currentTotalSize / 1024 / 1024}MB.");
+            }
 
             try
             {
-                // Save the file and get its URL
-                var fileUrl = await _fileStorageService.SavePhotoAsync(file);
+                // Save the file and get its URL, size, and content type
+                var (fileUrl, fileSize, contentType) = await _fileStorageService.SaveVideoAsync(file);
 
-                // Create the photo record
-                var photoDto = new CreatePhotoDto
+                // Create the video record
+                var videoDto = new CreateVideoDto
                 {
                     Url = fileUrl,
                     EventId = eventId,
-                    Description = description
+                    Description = description,
+                    FileSize = fileSize,
+                    ContentType = contentType
                 };
 
-                var photo = await _photoRepository.AddPhotoAsync(photoDto);
-                return CreatedAtAction(nameof(GetById), new { id = photo.Id }, photo.ToPhotoDto());
+                var video = await _videoRepository.AddVideoAsync(videoDto);
+                return CreatedAtAction(nameof(GetById), new { id = video.Id }, video.ToVideoDto());
             }
             catch (ArgumentException ex)
             {
@@ -123,7 +142,7 @@ namespace EventPhotos.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An error occurred while uploading the photo: {ex.Message}");
+                return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
             }
         }
     }
