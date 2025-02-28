@@ -1,5 +1,5 @@
 import { DragAndDrop } from "./DragAndDrop";
-import { usePhotoUpload } from "../hooks/usePhotos";
+import { useMediaUpload } from "../hooks/useMedia";
 import { useState } from "react";
 import { PhotoUploadModal } from "./PhotoUploadModal";
 
@@ -8,7 +8,7 @@ interface PhotoUploadProps {
 }
 
 export function PhotoUpload({ eventId }: PhotoUploadProps) {
-  const { uploadPhoto, isUploading, error } = usePhotoUpload(eventId);
+  const { uploadFiles, isUploading, error } = useMediaUpload(eventId);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const handleFileUpload = async (files: FileList) => {
@@ -17,15 +17,11 @@ export function PhotoUpload({ eventId }: PhotoUploadProps) {
 
   const handleConfirm = async (descriptions: string[]) => {
     try {
-      // Upload all photos with their descriptions
-      await Promise.all(
-        selectedFiles.map((file, index) =>
-          uploadPhoto(file, eventId.toString(), descriptions[index] || "")
-        )
-      );
+      // Upload all media with their descriptions
+      await uploadFiles(selectedFiles, descriptions);
       setSelectedFiles([]);
     } catch (error) {
-      console.error("Failed to upload photos:", error);
+      console.error("Failed to upload media:", error);
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { SortOption } from "../../hooks/usePhotos";
-import { useNavigate } from "react-router-dom";
+import { SortOption } from "../../hooks/useMedia";
+import { useNavigate, Link } from "react-router-dom";
 import { useEvent } from "../../hooks/useEvent";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -10,6 +10,7 @@ type Card = {
   content: React.ReactNode;
   className: string;
   thumbnail: string;
+  type?: 'photo' | 'video';
 };
 
 type ViewMode = "masonry" | "grid" | "compact";
@@ -72,21 +73,48 @@ export const LayoutGrid = ({
     }
   }, [cards]);
 
-  const handleClick = (id: number) => {
+  const handleClick = (id: number, event: React.MouseEvent) => {
+    // Prevent default browser behavior
+    event.preventDefault();
+    event.stopPropagation();
+    
     const scrollY = window.scrollY;
     sessionStorage.setItem("originalScrollPosition", scrollY.toString());
     sessionStorage.setItem("scrollPosition", scrollY.toString());
 
-    // Preload the full resolution image before navigating
+    // Get the card that was clicked
+    const card = cards.find((card) => card.id === id);
+    
+    // Set UI states
+    document.body.style.overflow = "hidden";
+    setExpandedPhotoId(id);
+    window.dispatchEvent(new Event("navigationStart"));
+
+    // For videos or if the card type is undefined, navigate immediately
+    if (card?.type === 'video' || !card?.type) {
+      navigate(`/photo/${id}`);
+      document.body.style.overflow = "";
+      setExpandedPhotoId(null);
+      setTimeout(() => {
+        window.dispatchEvent(new Event("navigationEnd"));
+      }, 100);
+      return;
+    }
+
+    // For photos, preload the image before navigating
     const img = new Image();
-    img.src = cards.find((card) => card.id === id)?.thumbnail || "";
+    img.src = card?.thumbnail || "";
+
+    // Set a timeout to ensure navigation happens even if image loading fails
+    const navigationTimeout = setTimeout(() => {
+      navigate(`/photo/${id}`);
+      document.body.style.overflow = "";
+      setExpandedPhotoId(null);
+      window.dispatchEvent(new Event("navigationEnd"));
+    }, 1000); // Fallback after 1 second
 
     img.onload = () => {
-      document.body.style.overflow = "hidden";
-      setExpandedPhotoId(id);
-      window.dispatchEvent(new Event("navigationStart"));
-
-      // Navigate immediately since image is ready
+      clearTimeout(navigationTimeout);
       navigate(`/photo/${id}`);
       document.body.style.overflow = "";
       setExpandedPhotoId(null);
@@ -215,24 +243,71 @@ export const LayoutGrid = ({
                 viewMode === "masonry" ? "break-inside-avoid mb-6" : ""
               }
             >
-              <div
-                onClick={() => handleClick(card.id)}
-                className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group ${
+              <Link
+                to={`/photo/${card.id}`}
+                className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group block ${
                   viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
                 }`}
+                onClick={(event) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  sessionStorage.setItem("originalScrollPosition", scrollY.toString());
+                  sessionStorage.setItem("scrollPosition", scrollY.toString());
+                  
+                  // Dispatch navigation event
+                  window.dispatchEvent(new Event("navigationStart"));
+                }}
               >
-                <img
-                  src={card.thumbnail}
-                  alt=""
-                  className={`w-full object-cover ${
+                {card.type === 'video' ? (
+                  <div className={`w-full bg-gray-100 ${
                     viewMode === "masonry"
                       ? "aspect-square"
                       : viewMode === "grid"
                       ? "aspect-[3/4]"
                       : "aspect-[1/1]"
-                  }`}
-                />
-                {(card.content as any)?.props?.photo?.description && (
+                  } flex items-center justify-center`}>
+                    <video 
+                      src={card.thumbnail}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      onClick={(e) => e.stopPropagation()}
+                      controls={false}
+                      muted
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={card.thumbnail}
+                    alt=""
+                    className={`w-full object-cover ${
+                      viewMode === "masonry"
+                        ? "aspect-square"
+                        : viewMode === "grid"
+                        ? "aspect-[3/4]"
+                        : "aspect-[1/1]"
+                    }`}
+                  />
+                )}
+                {card.type === 'video' && (
+                  <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      strokeWidth={1.5} 
+                      stroke="currentColor" 
+                      className="w-3 h-3"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" 
+                      />
+                    </svg>
+                    Video
+                  </div>
+                )}
+                {(card.content as any)?.props?.media?.description && (
                   <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -256,22 +331,22 @@ export const LayoutGrid = ({
                 <div className="absolute inset-x-0 top-1/2 bottom-0 p-4 text-white transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 flex flex-col justify-end">
                   <p className="text-xs text-white/80 mb-2">
                     {new Date(
-                      (card.content as any)?.props?.photo?.uploadDate
+                      (card.content as any)?.props?.media?.uploadDate
                     ).toLocaleDateString()}{" "}
                     {new Date(
-                      (card.content as any)?.props?.photo?.uploadDate
+                      (card.content as any)?.props?.media?.uploadDate
                     ).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </p>
-                  {(card.content as any)?.props?.photo?.description && (
+                  {(card.content as any)?.props?.media?.description && (
                     <p className="text-sm line-clamp-3">
-                      {(card.content as any)?.props?.photo?.description}
+                      {(card.content as any)?.props?.media?.description}
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             </div>
           ))}
         </div>

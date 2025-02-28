@@ -77,7 +77,7 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
             <>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 onChange={handleFileInput}
                 className="hidden"
                 id="file-input"
@@ -87,7 +87,7 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
                 htmlFor="file-input"
                 className="inline-block px-6 sm:px-8 py-2.5 sm:py-3 bg-rose-100 text-rose-800 rounded-full cursor-pointer hover:bg-rose-200 transition-colors font-serif text-sm sm:text-base"
               >
-                Zgjidhni Foto
+                Zgjidhni Foto/Video
               </label>
             </>
           )}

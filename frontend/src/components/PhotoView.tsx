@@ -9,12 +9,15 @@ interface PhotoViewProps {
     content: React.ReactElement;
     className: string;
     thumbnail: string;
+    type?: 'photo' | 'video';
   }[];
 }
 
 export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
+  console.log("PhotoView: Rendering with", cards.length, "cards");
   const navigate = useNavigate();
   const { photoId } = useParams();
+  console.log("PhotoView: photoId from params:", photoId);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [dragX, setDragX] = useState(0);
@@ -37,6 +40,22 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const currentPhotoIndex = cards.findIndex(
     (card) => card.id === Number(photoId)
   );
+
+  // If the photo ID doesn't match any card, navigate back to the main page
+  useEffect(() => {
+    if (currentPhotoIndex === -1 && cards.length > 0) {
+      console.error(`Photo with ID ${photoId} not found in ${cards.length} cards`);
+      console.log("Available card IDs:", cards.map(card => card.id).join(", "));
+      navigate('/');
+      return;
+    }
+  }, [currentPhotoIndex, photoId, navigate, cards]);
+
+  // If we can't find the current photo, don't try to render anything
+  if (currentPhotoIndex === -1) {
+    return null;
+  }
+
   const currentPhoto = cards[currentPhotoIndex];
   const prevPhoto =
     cards[currentPhotoIndex > 0 ? currentPhotoIndex - 1 : cards.length - 1];
@@ -44,14 +63,54 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     cards[currentPhotoIndex < cards.length - 1 ? currentPhotoIndex + 1 : 0];
 
   useEffect(() => {
-    // Preload the current image
-    const img = new Image();
-    img.src = currentPhoto?.thumbnail;
-    img.onload = () => {
-      setImageLoaded(true);
-      setIsVisible(true);
-    };
-  }, [currentPhoto]);
+    if (currentPhoto) {
+      // Preload the current image or video
+      if (currentPhoto.type === 'video') {
+        // For videos, we'll consider them loaded once the component renders
+        setTimeout(() => setImageLoaded(true), 100);
+      } else {
+        const img = new Image();
+        img.src = currentPhoto?.thumbnail;
+        img.onload = () => {
+          setImageLoaded(true);
+        };
+      }
+
+      // Preload the next image
+      if (nextPhoto && nextPhoto.type !== 'video') {
+        const nextImg = new Image();
+        nextImg.src = nextPhoto?.thumbnail;
+        nextImg.onload = () => {
+          setNextImageLoaded(true);
+        };
+      } else if (nextPhoto) {
+        // For videos, just mark as loaded
+        setNextImageLoaded(true);
+      }
+
+      // Preload the previous image
+      if (prevPhoto && prevPhoto.type !== 'video') {
+        const prevImg = new Image();
+        prevImg.src = prevPhoto?.thumbnail;
+        prevImg.onload = () => {
+          setPrevImageLoaded(true);
+        };
+      } else if (prevPhoto) {
+        // For videos, just mark as loaded
+        setPrevImageLoaded(true);
+      }
+
+      // Show the component after a short delay
+      setTimeout(() => {
+        setIsVisible(true);
+      }, 100);
+
+      // Update the description collapsed state
+      const hasDescription = !!(currentPhoto?.content as any)?.props?.media
+        ?.description;
+      setIsDescriptionCollapsed(!hasDescription);
+    }
+  }, [currentPhoto, nextPhoto, prevPhoto]);
 
   const handleClose = () => {
     console.log(
@@ -104,7 +163,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       if (nextCard) {
         setDragX(0);
         navigate(`/photo/${nextCard.id}`);
-        const hasDescription = !!(nextCard?.content as any)?.props?.photo
+        const hasDescription = !!(nextCard?.content as any)?.props?.media
           ?.description;
         setIsDescriptionCollapsed(!hasDescription);
       }
@@ -198,11 +257,27 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   // Add effect to set initial description collapsed state
   useEffect(() => {
     if (currentPhoto) {
-      const hasDescription = !!(currentPhoto?.content as any)?.props?.photo
+      const hasDescription = !!(currentPhoto?.content as any)?.props?.media
         ?.description;
       setIsDescriptionCollapsed(!hasDescription);
     }
   }, [currentPhoto]);
+
+  // Add an effect to handle the navigation end event
+  useEffect(() => {
+    // Set body overflow to hidden when component mounts
+    document.body.style.overflow = "hidden";
+    
+    // Dispatch navigation end event when component mounts
+    setTimeout(() => {
+      window.dispatchEvent(new Event("navigationEnd"));
+    }, 100);
+
+    return () => {
+      // Reset body overflow when component unmounts
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   if (!isVisible) {
     return (
@@ -259,20 +334,35 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 visibility: prevImageLoaded ? "visible" : "hidden",
               }}
             >
-              <motion.img
-                src={prevPhoto.thumbnail}
-                alt=""
-                className="max-h-full w-auto object-contain select-none"
-                draggable="false"
-                initial={false}
-                onLoad={() => setPrevImageLoaded(true)}
-                style={{
-                  touchAction: "none",
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                  willChange: "transform",
-                }}
-              />
+              {prevPhoto.type === 'video' ? (
+                <video
+                  src={prevPhoto.thumbnail || ''}
+                  className="max-h-full w-auto object-contain select-none"
+                  preload="metadata"
+                  style={{
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    maxHeight: "100%",
+                    maxWidth: "100%",
+                  }}
+                />
+              ) : (
+                <motion.img
+                  src={prevPhoto.thumbnail}
+                  alt=""
+                  className="max-h-full w-auto object-contain select-none"
+                  draggable="false"
+                  initial={false}
+                  onLoad={() => setPrevImageLoaded(true)}
+                  style={{
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    willChange: "transform",
+                  }}
+                />
+              )}
             </motion.div>
 
             <motion.div
@@ -299,32 +389,44 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
                   </div>
                 )}
-                <motion.img
-                  key={currentPhoto.id}
-                  src={currentPhoto.thumbnail}
-                  alt=""
-                  className="max-h-full w-auto object-contain select-none"
-                  draggable="false"
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: imageLoaded ? 1 : 0,
-                  }}
-                  transition={{
-                    duration: 0.2,
-                  }}
-                  onLoad={() => setImageLoaded(true)}
-                  ref={imageRef}
-                  style={{
-                    touchAction: "manipulation",
-                    userSelect: "none",
-                    WebkitUserSelect: "none",
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    width: "auto",
-                    height: "auto",
-                    willChange: "transform",
-                  }}
-                />
+
+                {currentPhoto.type === 'video' ? (
+                  <video
+                    className="max-h-full w-auto object-contain select-none"
+                    controls
+                    autoPlay
+                    preload="metadata"
+                    style={{
+                      touchAction: "none",
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      maxHeight: "100%",
+                      maxWidth: "100%",
+                    }}
+                    onLoadedMetadata={() => setImageLoaded(true)}
+                    src={currentPhoto.thumbnail}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <motion.img
+                    ref={imageRef}
+                    src={currentPhoto.thumbnail}
+                    alt=""
+                    className="max-h-full w-auto object-contain select-none"
+                    draggable="false"
+                    initial={false}
+                    onLoad={() => setImageLoaded(true)}
+                    style={{
+                      touchAction: "none",
+                      userSelect: "none",
+                      WebkitUserSelect: "none",
+                      willChange: "transform",
+                      maxHeight: "100%",
+                      maxWidth: "100%",
+                    }}
+                  />
+                )}
               </div>
             </motion.div>
 
@@ -346,20 +448,35 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 visibility: nextImageLoaded ? "visible" : "hidden",
               }}
             >
-              <motion.img
-                src={nextPhoto.thumbnail}
-                alt=""
-                className="max-h-full w-auto object-contain select-none"
-                draggable="false"
-                initial={false}
-                onLoad={() => setNextImageLoaded(true)}
-                style={{
-                  touchAction: "none",
-                  userSelect: "none",
-                  WebkitUserSelect: "none",
-                  willChange: "transform",
-                }}
-              />
+              {nextPhoto.type === 'video' ? (
+                <video
+                  src={nextPhoto.thumbnail || ''}
+                  className="max-h-full w-auto object-contain select-none"
+                  preload="metadata"
+                  style={{
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    maxHeight: "100%",
+                    maxWidth: "100%",
+                  }}
+                />
+              ) : (
+                <motion.img
+                  src={nextPhoto.thumbnail}
+                  alt=""
+                  className="max-h-full w-auto object-contain select-none"
+                  draggable="false"
+                  initial={false}
+                  onLoad={() => setNextImageLoaded(true)}
+                  style={{
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    willChange: "transform",
+                  }}
+                />
+              )}
             </motion.div>
           </div>
 

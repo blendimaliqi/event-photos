@@ -9,9 +9,9 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { DEMO_EVENT_ID } from "../App";
 import AdminRoute from "./AdminRoute";
 
-const PhotoGrid = lazy(() =>
-  import("./PhotoGrid").then((module) => ({
-    default: module.PhotoGrid,
+const MediaGrid = lazy(() =>
+  import("./MediaGrid").then((module) => ({
+    default: module.MediaGrid,
   }))
 );
 const PhotoUpload = lazy(() =>
@@ -19,6 +19,7 @@ const PhotoUpload = lazy(() =>
     default: module.PhotoUpload,
   }))
 );
+
 function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname === "/admin";
@@ -74,7 +75,7 @@ function AppContent() {
                   >
                     <PhotoUpload eventId={DEMO_EVENT_ID} />
                     <Suspense fallback={<LoadingSpinner />}>
-                      <PhotoGrid eventId={DEMO_EVENT_ID} />
+                      <MediaGrid eventId={DEMO_EVENT_ID} />
                     </Suspense>
                   </motion.div>
                 }
@@ -90,7 +91,7 @@ function AppContent() {
                     transition={{ duration: 0.2 }}
                   >
                     <Suspense fallback={<LoadingSpinner />}>
-                      <PhotoGrid eventId={DEMO_EVENT_ID} isPhotoView />
+                      <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />
                     </Suspense>
                   </motion.div>
                 }
