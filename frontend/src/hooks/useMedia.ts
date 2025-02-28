@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { photoService } from "../services/photoService";
 import { videoService } from "../services/videoService";
-import { Photo } from "../types/photo";
-import { Video } from "../types/video";
 import { Media, photoToMedia, videoToMedia } from "../types/media";
 
 export type SortOption = "newest" | "oldest" | "withDescription";
@@ -35,9 +33,7 @@ const sortMedia = (media: Media[], sortBy: SortOption = "newest") => {
       );
     case "withDescription":
       // First separate media with and without descriptions
-      const withDesc = sortedMedia.filter((item) =>
-        item.description?.trim()
-      );
+      const withDesc = sortedMedia.filter((item) => item.description?.trim());
       const withoutDesc = sortedMedia.filter(
         (item) => !item.description?.trim()
       );
@@ -71,12 +67,12 @@ export function useMedia(
     queryFn: async () => {
       const [photos, videos] = await Promise.all([
         photoService.getPhotos(eventId),
-        videoService.getVideos(eventId)
+        videoService.getVideos(eventId),
       ]);
-      
+
       const photoMedia = photos.map(photoToMedia);
       const videoMedia = videos.map(videoToMedia);
-      
+
       return [...photoMedia, ...videoMedia];
     },
     select: (data: Media[]) => {
@@ -87,7 +83,7 @@ export function useMedia(
 
       // Filter out hero photo (only for photos, not videos) and then sort
       const filteredMedia = data.filter(
-        (media) => !(media.type === 'photo' && media.id === event?.heroPhotoId)
+        (media) => !(media.type === "photo" && media.id === event?.heroPhotoId)
       );
       return sortMedia(filteredMedia, sortBy);
     },
@@ -107,8 +103,8 @@ export function useMediaUpload(eventId: number) {
   const uploadMutation = useMutation({
     mutationFn: async ({ file, eventId, description }: UploadMediaParams) => {
       // Determine if the file is a video or photo based on its type
-      const isVideo = file.type.startsWith('video/');
-      
+      const isVideo = file.type.startsWith("video/");
+
       if (isVideo) {
         return videoService.uploadVideo(file, eventId, description);
       } else {

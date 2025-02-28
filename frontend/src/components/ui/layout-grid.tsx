@@ -1,16 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { SortOption } from "../../hooks/useMedia";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEvent } from "../../hooks/useEvent";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 type Card = {
   id: number;
   content: React.ReactNode;
   className: string;
   thumbnail: string;
-  type?: 'photo' | 'video';
+  type?: "photo" | "video";
 };
 
 type ViewMode = "masonry" | "grid" | "compact";
@@ -26,8 +26,6 @@ export const LayoutGrid = ({
   onSortChange,
   sortBy,
 }: LayoutGridProps) => {
-  const navigate = useNavigate();
-  const [expandedPhotoId, setExpandedPhotoId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedViewMode = localStorage.getItem("viewMode") as ViewMode;
     if (savedViewMode) return savedViewMode;
@@ -73,66 +71,6 @@ export const LayoutGrid = ({
     }
   }, [cards]);
 
-  const handleClick = (id: number, event: React.MouseEvent) => {
-    // Prevent default browser behavior
-    event.preventDefault();
-    event.stopPropagation();
-    
-    const scrollY = window.scrollY;
-    sessionStorage.setItem("originalScrollPosition", scrollY.toString());
-    sessionStorage.setItem("scrollPosition", scrollY.toString());
-
-    // Get the card that was clicked
-    const card = cards.find((card) => card.id === id);
-    
-    // Set UI states
-    document.body.style.overflow = "hidden";
-    setExpandedPhotoId(id);
-    window.dispatchEvent(new Event("navigationStart"));
-
-    // For videos or if the card type is undefined, navigate immediately
-    if (card?.type === 'video' || !card?.type) {
-      navigate(`/photo/${id}`);
-      document.body.style.overflow = "";
-      setExpandedPhotoId(null);
-      setTimeout(() => {
-        window.dispatchEvent(new Event("navigationEnd"));
-      }, 100);
-      return;
-    }
-
-    // For photos, preload the image before navigating
-    const img = new Image();
-    img.src = card?.thumbnail || "";
-
-    // Set a timeout to ensure navigation happens even if image loading fails
-    const navigationTimeout = setTimeout(() => {
-      navigate(`/photo/${id}`);
-      document.body.style.overflow = "";
-      setExpandedPhotoId(null);
-      window.dispatchEvent(new Event("navigationEnd"));
-    }, 1000); // Fallback after 1 second
-
-    img.onload = () => {
-      clearTimeout(navigationTimeout);
-      navigate(`/photo/${id}`);
-      document.body.style.overflow = "";
-      setExpandedPhotoId(null);
-      setTimeout(() => {
-        window.dispatchEvent(new Event("navigationEnd"));
-      }, 100);
-    };
-  };
-
-  // Remove the navigation effect since we handle it in the click handler
-  useEffect(() => {
-    if (expandedPhotoId) {
-      return () => {
-        document.body.style.overflow = "";
-      };
-    }
-  }, [expandedPhotoId]);
-
   const toggleViewMode = () => {
     const newViewMode =
       viewMode === "masonry"
@@ -167,27 +105,8 @@ export const LayoutGrid = ({
 
   return (
     <>
-      {/* Black overlay with loading indicator */}
-      <AnimatePresence>
-        {expandedPhotoId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="fixed inset-0 z-[200] bg-black flex items-center justify-center"
-          >
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-rose-500 border-t-transparent"></div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main content */}
-      <motion.div
-        animate={{ opacity: expandedPhotoId ? 0.3 : 1 }}
-        transition={{ duration: 0.2 }}
-        className="space-y-4"
-      >
+      <motion.div className="space-y-4">
         <div className="flex justify-end px-4 sm:px-0 gap-2">
           <button
             onClick={toggleViewMode}
@@ -248,25 +167,30 @@ export const LayoutGrid = ({
                 className={`relative overflow-hidden rounded-3xl cursor-pointer shadow-xl group block ${
                   viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
                 }`}
-                onClick={(event) => {
+                onClick={(_) => {
                   // Save scroll position
                   const scrollY = window.scrollY;
-                  sessionStorage.setItem("originalScrollPosition", scrollY.toString());
+                  sessionStorage.setItem(
+                    "originalScrollPosition",
+                    scrollY.toString()
+                  );
                   sessionStorage.setItem("scrollPosition", scrollY.toString());
-                  
+
                   // Dispatch navigation event
                   window.dispatchEvent(new Event("navigationStart"));
                 }}
               >
-                {card.type === 'video' ? (
-                  <div className={`w-full bg-gray-100 ${
-                    viewMode === "masonry"
-                      ? "aspect-square"
-                      : viewMode === "grid"
-                      ? "aspect-[3/4]"
-                      : "aspect-[1/1]"
-                  } flex items-center justify-center`}>
-                    <video 
+                {card.type === "video" ? (
+                  <div
+                    className={`w-full bg-gray-100 ${
+                      viewMode === "masonry"
+                        ? "aspect-square"
+                        : viewMode === "grid"
+                        ? "aspect-[3/4]"
+                        : "aspect-[1/1]"
+                    } flex items-center justify-center`}
+                  >
+                    <video
                       src={card.thumbnail}
                       className="w-full h-full object-cover"
                       preload="metadata"
@@ -288,20 +212,20 @@ export const LayoutGrid = ({
                     }`}
                   />
                 )}
-                {card.type === 'video' && (
+                {card.type === "video" && (
                   <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs font-medium flex items-center gap-1 z-10">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      strokeWidth={1.5} 
-                      stroke="currentColor" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
                       className="w-3 h-3"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
                       />
                     </svg>
                     Video
