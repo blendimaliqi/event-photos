@@ -188,16 +188,34 @@ export const LayoutGrid = ({
                         : viewMode === "grid"
                         ? "aspect-[3/4]"
                         : "aspect-[1/1]"
-                    } flex items-center justify-center`}
+                    } flex items-center justify-center relative overflow-hidden`}
                   >
                     <video
                       src={card.thumbnail}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover absolute inset-0"
                       preload="metadata"
                       onClick={(e) => e.stopPropagation()}
                       controls={false}
                       muted
+                      playsInline
                     />
+                    {/* Play button overlay */}
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity group-hover:opacity-0">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="w-12 h-12 text-white/90"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
+                        />
+                      </svg>
+                    </div>
                   </div>
                 ) : (
                   <img
