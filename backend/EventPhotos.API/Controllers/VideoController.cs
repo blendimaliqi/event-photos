@@ -38,7 +38,7 @@ namespace EventPhotos.API.Controllers
             _antiforgery = antiforgery;
         }
 
-        [HttpGet("event/{eventId}")]
+        [HttpGet("event/{eventId:int}")]
         public async Task<IActionResult> GetByEventId([FromRoute] int eventId)
         {
             if (!await _eventRepository.EventExists(eventId))
