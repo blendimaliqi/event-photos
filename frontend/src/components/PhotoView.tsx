@@ -9,7 +9,7 @@ interface PhotoViewProps {
     content: React.ReactElement;
     className: string;
     thumbnail: string;
-    type?: 'photo' | 'video';
+    type?: "photo" | "video";
   }[];
 }
 
@@ -24,6 +24,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [isDragging, setIsDragging] = useState(false);
   const touchLayerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const swipeThreshold = 80;
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const [prevImageLoaded, setPrevImageLoaded] = useState(false);
@@ -31,6 +32,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isCounterVisible, setIsCounterVisible] = useState(false);
   const counterTimeoutRef = useRef<number>();
+  const [isPlaying, setIsPlaying] = useState(true);
 
   // Get the original scroll position when the component mounts
   const originalScrollPosition = useRef(
@@ -44,9 +46,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   // If the photo ID doesn't match any card, navigate back to the main page
   useEffect(() => {
     if (currentPhotoIndex === -1 && cards.length > 0) {
-      console.error(`Photo with ID ${photoId} not found in ${cards.length} cards`);
-      console.log("Available card IDs:", cards.map(card => card.id).join(", "));
-      navigate('/');
+      console.error(
+        `Photo with ID ${photoId} not found in ${cards.length} cards`
+      );
+      console.log(
+        "Available card IDs:",
+        cards.map((card) => card.id).join(", ")
+      );
+      navigate("/");
       return;
     }
   }, [currentPhotoIndex, photoId, navigate, cards]);
@@ -65,7 +72,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   useEffect(() => {
     if (currentPhoto) {
       // Preload the current image or video
-      if (currentPhoto.type === 'video') {
+      if (currentPhoto.type === "video") {
         // For videos, we'll consider them loaded once the component renders
         setTimeout(() => setImageLoaded(true), 100);
       } else {
@@ -77,7 +84,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       }
 
       // Preload the next image
-      if (nextPhoto && nextPhoto.type !== 'video') {
+      if (nextPhoto && nextPhoto.type !== "video") {
         const nextImg = new Image();
         nextImg.src = nextPhoto?.thumbnail;
         nextImg.onload = () => {
@@ -89,7 +96,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       }
 
       // Preload the previous image
-      if (prevPhoto && prevPhoto.type !== 'video') {
+      if (prevPhoto && prevPhoto.type !== "video") {
         const prevImg = new Image();
         prevImg.src = prevPhoto?.thumbnail;
         prevImg.onload = () => {
@@ -179,15 +186,47 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         navigateImage("next");
       } else if (e.key === "Escape") {
         handleClose();
+      } else if (e.key === " ") {  // Space bar to toggle video playback
+        if (currentPhoto.type === "video") {
+          toggleVideoPlayback();
+        }
       }
     },
-    [navigateImage]
+    [navigateImage, currentPhoto]
   );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  const toggleVideoPlayback = useCallback(() => {
+    if (videoRef.current) {
+      if (videoRef.current.paused || videoRef.current.ended) {
+        videoRef.current
+          .play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(console.error);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  }, []);
+
+  const restartVideo = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(console.error);
+    }
+  }, []);
 
   const bindGesture = useGesture(
     {
@@ -197,8 +236,11 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       onDrag: ({ movement: [x] }) => {
         // Only allow dragging if we're not zoomed in
         if (
-          imageRef.current &&
-          imageRef.current.getBoundingClientRect().width <= window.innerWidth
+          (imageRef.current &&
+            imageRef.current.getBoundingClientRect().width <=
+              window.innerWidth) ||
+          (videoRef.current &&
+            videoRef.current.getBoundingClientRect().width <= window.innerWidth)
         ) {
           const dampedX =
             x > 0
@@ -213,23 +255,23 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         setIsDragging(false);
 
         if (
-          !imageRef.current ||
-          imageRef.current.getBoundingClientRect().width > window.innerWidth
+          (!imageRef.current ||
+            imageRef.current.getBoundingClientRect().width <=
+              window.innerWidth) &&
+          (!videoRef.current ||
+            videoRef.current.getBoundingClientRect().width <= window.innerWidth)
         ) {
-          setDragX(0);
-          return;
-        }
+          const swipeVelocityThreshold = 0.5;
+          const shouldSwipe =
+            Math.abs(x) >= swipeThreshold ||
+            Math.abs(velocity) > swipeVelocityThreshold;
 
-        const swipeVelocityThreshold = 0.5;
-        const shouldSwipe =
-          Math.abs(x) >= swipeThreshold ||
-          Math.abs(velocity) > swipeVelocityThreshold;
-
-        if (shouldSwipe) {
-          if (x > 0) {
-            navigateImage("prev");
-          } else {
-            navigateImage("next");
+          if (shouldSwipe) {
+            if (x > 0) {
+              navigateImage("prev");
+            } else {
+              navigateImage("next");
+            }
           }
         }
 
@@ -250,8 +292,29 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   // Add effect to reset preview image states when navigating
   useEffect(() => {
+    setImageLoaded(false);
     setPrevImageLoaded(false);
     setNextImageLoaded(false);
+    setIsPlaying(true);
+  }, [currentPhotoIndex]);
+
+  // Add video event listeners
+  useEffect(() => {
+    const videoElement = videoRef.current;
+
+    const handleVideoEnded = () => {
+      setIsPlaying(false);
+    };
+
+    if (videoElement) {
+      videoElement.addEventListener("ended", handleVideoEnded);
+    }
+
+    return () => {
+      if (videoElement) {
+        videoElement.removeEventListener("ended", handleVideoEnded);
+      }
+    };
   }, [currentPhotoIndex]);
 
   // Add effect to set initial description collapsed state
@@ -267,7 +330,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   useEffect(() => {
     // Set body overflow to hidden when component mounts
     document.body.style.overflow = "hidden";
-    
+
     // Dispatch navigation end event when component mounts
     setTimeout(() => {
       window.dispatchEvent(new Event("navigationEnd"));
@@ -307,14 +370,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           } sm:h-full flex-1 flex items-center justify-center transition-all duration-300 relative overflow-hidden`}
         >
           <div className="relative w-full h-full">
-            <motion.div
-              ref={touchLayerRef}
-              className="absolute inset-0 z-10"
-              style={{
-                touchAction: "pan-y pinch-zoom",
-              }}
-              {...bindGesture()}
-            />
+            {/* Only add the touch layer for swipe gestures if it's not a video */}
+            {currentPhoto.type !== "video" && (
+              <motion.div
+                ref={touchLayerRef}
+                className="absolute inset-0 z-10"
+                style={{
+                  touchAction: "pan-y pinch-zoom",
+                }}
+                {...bindGesture()}
+              />
+            )}
 
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
@@ -334,19 +400,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 visibility: prevImageLoaded ? "visible" : "hidden",
               }}
             >
-              {prevPhoto.type === 'video' ? (
-                <video
-                  src={prevPhoto.thumbnail || ''}
-                  className="max-h-full w-auto object-contain select-none"
-                  preload="metadata"
-                  style={{
-                    touchAction: "none",
-                    userSelect: "none",
-                    WebkitUserSelect: "none",
-                    maxHeight: "100%",
-                    maxWidth: "100%",
-                  }}
-                />
+              {prevPhoto.type === "video" ? (
+                <div className="video-container relative w-full h-full flex items-center justify-center">
+                  <video
+                    className="max-h-full w-auto object-contain"
+                    preload="metadata"
+                    style={{
+                      maxHeight: "100%",
+                      maxWidth: "100%",
+                    }}
+                  />
+                </div>
               ) : (
                 <motion.img
                   src={prevPhoto.thumbnail}
@@ -360,6 +424,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     willChange: "transform",
+                    maxHeight: "100%",
+                    maxWidth: "100%",
                   }}
                 />
               )}
@@ -390,24 +456,87 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                   </div>
                 )}
 
-                {currentPhoto.type === 'video' ? (
-                  <video
-                    className="max-h-full w-auto object-contain select-none"
-                    controls
-                    autoPlay
-                    preload="metadata"
-                    style={{
-                      touchAction: "none",
-                      userSelect: "none",
-                      WebkitUserSelect: "none",
-                      maxHeight: "100%",
-                      maxWidth: "100%",
-                    }}
-                    onLoadedMetadata={() => setImageLoaded(true)}
-                    src={currentPhoto.thumbnail}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
+                {currentPhoto.type === "video" ? (
+                  <div className="video-container relative w-full h-full flex items-center justify-center">
+                    {/* Video element */}
+                    <video
+                      ref={videoRef}
+                      className="max-h-full w-auto object-contain"
+                      autoPlay
+                      playsInline
+                      preload="metadata"
+                      style={{
+                        maxHeight: "100%",
+                        maxWidth: "100%",
+                      }}
+                      onLoadedMetadata={() => setImageLoaded(true)}
+                      src={currentPhoto.thumbnail}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    
+                    {/* Video controls overlay - full area click handler */}
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center z-30"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isDragging) {
+                          toggleVideoPlayback();
+                        }
+                      }}
+                    />
+                    
+                    {/* Play/Pause/Replay button overlay */}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center z-40 transition-opacity duration-200"
+                      style={{
+                        opacity: !isPlaying || (videoRef.current && videoRef.current.ended) ? 1 : 0,
+                      }}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (videoRef.current && videoRef.current.ended) {
+                            restartVideo();
+                          } else {
+                            toggleVideoPlayback();
+                          }
+                        }}
+                        className="bg-black/40 backdrop-blur-sm rounded-full p-4 transition-all duration-200 hover:bg-black/60"
+                      >
+                        {videoRef.current && videoRef.current.ended ? (
+                          // Replay icon
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                          </svg>
+                        ) : (
+                          // Play icon
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            viewBox="0 0 24 24"
+                            fill="white"
+                          >
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <motion.img
                     ref={imageRef}
@@ -425,6 +554,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                       maxHeight: "100%",
                       maxWidth: "100%",
                     }}
+                    {...bindGesture()}
                   />
                 )}
               </div>
@@ -448,19 +578,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 visibility: nextImageLoaded ? "visible" : "hidden",
               }}
             >
-              {nextPhoto.type === 'video' ? (
-                <video
-                  src={nextPhoto.thumbnail || ''}
-                  className="max-h-full w-auto object-contain select-none"
-                  preload="metadata"
-                  style={{
-                    touchAction: "none",
-                    userSelect: "none",
-                    WebkitUserSelect: "none",
-                    maxHeight: "100%",
-                    maxWidth: "100%",
-                  }}
-                />
+              {nextPhoto.type === "video" ? (
+                <div className="video-container relative w-full h-full flex items-center justify-center">
+                  <video
+                    className="max-h-full w-auto object-contain"
+                    preload="metadata"
+                    style={{
+                      maxHeight: "100%",
+                      maxWidth: "100%",
+                    }}
+                  />
+                </div>
               ) : (
                 <motion.img
                   src={nextPhoto.thumbnail}
@@ -474,6 +602,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     userSelect: "none",
                     WebkitUserSelect: "none",
                     willChange: "transform",
+                    maxHeight: "100%",
+                    maxWidth: "100%",
                   }}
                 />
               )}
