@@ -35,6 +35,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const counterTimeoutRef = useRef<number>();
   const [isPlaying, setIsPlaying] = useState(true);
 
+  // Add state for X button visibility
+  const [isCloseButtonVisible, setIsCloseButtonVisible] = useState(true);
+  const closeButtonTimeoutRef = useRef<number>();
+
   // Get the original scroll position when the component mounts
   const originalScrollPosition = useRef(
     sessionStorage.getItem("originalScrollPosition")
@@ -348,6 +352,10 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
 
   // Add this new function for handling video navigation
   const handleVideoAreaClick = (e: React.MouseEvent) => {
+    // First, toggle the close button visibility
+    toggleCloseButtonVisibility();
+
+    // Then handle the video navigation
     // Calculate the position relative to the container width
     const container = e.currentTarget as HTMLElement;
     const containerWidth = container.offsetWidth;
@@ -364,6 +372,51 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     }
     // Middle area (60%) is reserved for video controls
   };
+
+  // Function to hide close button after delay
+  const hideCloseButtonAfterDelay = useCallback(() => {
+    if (closeButtonTimeoutRef.current) {
+      clearTimeout(closeButtonTimeoutRef.current);
+    }
+    closeButtonTimeoutRef.current = setTimeout(() => {
+      setIsCloseButtonVisible(false);
+    }, 3000); // Hide after 3 seconds
+  }, []);
+
+  // Initially hide close button after delay
+  useEffect(() => {
+    if (isVisible) {
+      hideCloseButtonAfterDelay();
+    }
+
+    return () => {
+      if (closeButtonTimeoutRef.current) {
+        clearTimeout(closeButtonTimeoutRef.current);
+      }
+    };
+  }, [isVisible, hideCloseButtonAfterDelay]);
+
+  // Function to toggle close button visibility
+  const toggleCloseButtonVisibility = useCallback(() => {
+    setIsCloseButtonVisible((prevVisible) => {
+      const newState = !prevVisible;
+
+      // If we're making it visible, set timeout to hide it again
+      if (newState) {
+        hideCloseButtonAfterDelay();
+      } else if (closeButtonTimeoutRef.current) {
+        // If we're manually hiding it, clear any existing timeout
+        clearTimeout(closeButtonTimeoutRef.current);
+      }
+
+      return newState;
+    });
+  }, [hideCloseButtonAfterDelay]);
+
+  // Renamed handleContainerClick to be more specific
+  const handleImageContainerClick = useCallback(() => {
+    toggleCloseButtonVisibility();
+  }, [toggleCloseButtonVisibility]);
 
   if (!isVisible) {
     return (
@@ -386,7 +439,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[100] bg-black"
     >
-      <div className="relative w-full h-full flex flex-col sm:flex-row">
+      <div
+        className="relative w-full h-full flex flex-col sm:flex-row"
+        onClick={
+          currentPhoto.type !== "video" ? handleImageContainerClick : undefined
+        }
+      >
         <div
           className={`${
             isDescriptionCollapsed ? "h-[90vh]" : "h-[60vh]"
@@ -516,6 +574,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                       onClick={(e) => {
                         // Allow clicks on the video element for controls
                         e.stopPropagation();
+                        // Also toggle the close button visibility
+                        toggleCloseButtonVisibility();
                       }}
                       onTouchStart={(e) => {
                         // Handle touch events to allow native controls to work
@@ -712,11 +772,18 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
           </button>
 
           <button
-            onClick={handleClose}
-            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-rose-100/80 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-200"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent container click from triggering
+              handleClose();
+            }}
+            className={`absolute top-4 right-4 z-20 p-3 rounded-full bg-rose-100/90 hover:bg-rose-200/90 text-rose-800/90 hover:text-rose-900 transition-all duration-300 shadow-md ${
+              isCloseButtonVisible
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
+            }`}
           >
             <svg
-              className="w-3 h-3"
+              className="w-5 h-5"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -724,14 +791,14 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
               <path
                 d="M18 6L6 18"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
                 d="M6 6L18 18"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
