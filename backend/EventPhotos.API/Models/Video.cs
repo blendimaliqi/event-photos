@@ -28,6 +28,10 @@ namespace EventPhotos.API.Models
         [Required]
         public string ContentType { get; set; } = string.Empty;
 
+        [Url]
+        [StringLength(2048)]
+        public string? ThumbnailUrl { get; set; }
+
         [Required]
         public int EventId { get; set; }
 

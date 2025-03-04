@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useGesture } from "react-use-gesture";
+import { config } from "../config/config";
 
 interface PhotoViewProps {
   cards: {
@@ -186,7 +187,8 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
         navigateImage("next");
       } else if (e.key === "Escape") {
         handleClose();
-      } else if (e.key === " ") {  // Space bar to toggle video playback
+      } else if (e.key === " ") {
+        // Space bar to toggle video playback
         if (currentPhoto.type === "video") {
           toggleVideoPlayback();
         }
@@ -200,21 +202,23 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const toggleVideoPlayback = useCallback(() => {
+  const toggleVideoPlayback = () => {
     if (videoRef.current) {
-      if (videoRef.current.paused || videoRef.current.ended) {
+      if (videoRef.current.paused) {
         videoRef.current
           .play()
           .then(() => {
             setIsPlaying(true);
           })
-          .catch(console.error);
+          .catch((error) => {
+            console.error("Error playing video:", error);
+          });
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
       }
     }
-  }, []);
+  };
 
   const restartVideo = useCallback(() => {
     if (videoRef.current) {
@@ -402,12 +406,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             >
               {prevPhoto.type === "video" ? (
                 <div className="video-container relative w-full h-full flex items-center justify-center">
-                  <video
+                  <div
                     className="max-h-full w-auto object-contain"
-                    preload="metadata"
                     style={{
                       maxHeight: "100%",
                       maxWidth: "100%",
+                      backgroundImage: `url(${prevPhoto.thumbnail})`,
+                      backgroundSize: "contain",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                      width: "100%",
+                      height: "100%",
                     }}
                   />
                 </div>
@@ -462,21 +471,24 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                     <video
                       ref={videoRef}
                       className="max-h-full w-auto object-contain"
-                      autoPlay
                       playsInline
-                      preload="metadata"
+                      preload="auto"
+                      controls
                       style={{
                         maxHeight: "100%",
                         maxWidth: "100%",
                       }}
                       onLoadedMetadata={() => setImageLoaded(true)}
-                      src={currentPhoto.thumbnail}
+                      src={config.getImageUrl(
+                        (currentPhoto?.content as any)?.props?.media?.url
+                      )}
+                      poster={currentPhoto.thumbnail}
                     >
                       Your browser does not support the video tag.
                     </video>
-                    
+
                     {/* Video controls overlay - full area click handler */}
-                    <div 
+                    <div
                       className="absolute inset-0 flex items-center justify-center z-30"
                       onClick={(e) => {
                         e.preventDefault();
@@ -486,12 +498,16 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                         }
                       }}
                     />
-                    
+
                     {/* Play/Pause/Replay button overlay */}
                     <div
                       className="absolute inset-0 flex items-center justify-center z-40 transition-opacity duration-200"
                       style={{
-                        opacity: !isPlaying || (videoRef.current && videoRef.current.ended) ? 1 : 0,
+                        opacity:
+                          !isPlaying ||
+                          (videoRef.current && videoRef.current.ended)
+                            ? 1
+                            : 0,
                       }}
                     >
                       <button
@@ -580,12 +596,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
             >
               {nextPhoto.type === "video" ? (
                 <div className="video-container relative w-full h-full flex items-center justify-center">
-                  <video
+                  <div
                     className="max-h-full w-auto object-contain"
-                    preload="metadata"
                     style={{
                       maxHeight: "100%",
                       maxWidth: "100%",
+                      backgroundImage: `url(${nextPhoto.thumbnail})`,
+                      backgroundSize: "contain",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                      width: "100%",
+                      height: "100%",
                     }}
                   />
                 </div>

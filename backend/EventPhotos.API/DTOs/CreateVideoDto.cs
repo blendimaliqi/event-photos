@@ -20,5 +20,8 @@ namespace EventPhotos.API.DTOs
         
         [Required]
         public string ContentType { get; set; } = string.Empty;
+        
+        [Url]
+        public string? ThumbnailUrl { get; set; }
     }
 }

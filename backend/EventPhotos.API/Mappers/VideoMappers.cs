@@ -15,6 +15,7 @@ namespace EventPhotos.API.Mappers
                 UploadDate = video.UploadDate,
                 FileSize = video.FileSize,
                 ContentType = video.ContentType,
+                ThumbnailUrl = video.ThumbnailUrl,
                 EventId = video.EventId
             };
         }
@@ -28,7 +29,8 @@ namespace EventPhotos.API.Mappers
                 EventId = videoDto.EventId,
                 UploadDate = DateTime.UtcNow,
                 FileSize = videoDto.FileSize,
-                ContentType = videoDto.ContentType
+                ContentType = videoDto.ContentType,
+                ThumbnailUrl = videoDto.ThumbnailUrl
             };
         }
     }

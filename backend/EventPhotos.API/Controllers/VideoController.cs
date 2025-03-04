@@ -92,7 +92,8 @@ namespace EventPhotos.API.Controllers
         public async Task<IActionResult> Create(
             [FromForm] IFormFile file,
             [FromForm] int eventId,
-            [FromForm] string? description)
+            [FromForm] string? description,
+            [FromForm] IFormFile? thumbnail)
         {
             if (file == null || file.Length == 0)
             {
@@ -120,8 +121,15 @@ namespace EventPhotos.API.Controllers
 
             try
             {
-                // Save the file and get its URL, size, and content type
+                // Save the video file and get its URL, size, and content type
                 var (fileUrl, fileSize, contentType) = await _fileStorageService.SaveVideoAsync(file);
+                
+                // Save thumbnail if provided
+                string? thumbnailUrl = null;
+                if (thumbnail != null && thumbnail.Length > 0)
+                {
+                    thumbnailUrl = await _fileStorageService.SavePhotoAsync(thumbnail);
+                }
 
                 // Create the video record
                 var videoDto = new CreateVideoDto
@@ -130,7 +138,8 @@ namespace EventPhotos.API.Controllers
                     EventId = eventId,
                     Description = description,
                     FileSize = fileSize,
-                    ContentType = contentType
+                    ContentType = contentType,
+                    ThumbnailUrl = thumbnailUrl
                 };
 
                 var video = await _videoRepository.AddVideoAsync(videoDto);

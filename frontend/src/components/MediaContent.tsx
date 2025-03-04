@@ -41,14 +41,17 @@ export const MediaContent: React.FC<MediaContentProps> = ({
 
   const renderMediaContent = () => {
     const mediaUrl = config.getImageUrl(media.url);
-    
-    if (media.type === 'video') {
+
+    if (media.type === "video") {
       return (
         <div className="relative w-full h-full">
-          <video 
-            controls 
+          <video
+            controls
             className="w-full h-full object-contain"
-            preload="metadata"
+            preload="none"
+            playsInline
+            src={mediaUrl}
+            poster={config.getVideoThumbnailUrl(media.url)}
           >
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
@@ -57,10 +60,10 @@ export const MediaContent: React.FC<MediaContentProps> = ({
       );
     } else {
       return (
-        <img 
-          src={mediaUrl} 
-          alt={media.description || "Photo"} 
-          className="w-full h-full object-contain" 
+        <img
+          src={mediaUrl}
+          alt={media.description || "Photo"}
+          className="w-full h-full object-contain"
         />
       );
     }
@@ -174,7 +177,7 @@ export const MediaContent: React.FC<MediaContentProps> = ({
           {!isExpanded && (
             <div className="relative w-full aspect-video mb-3">
               {renderMediaContent()}
-              {media.type === 'video' && (
+              {media.type === "video" && (
                 <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs">
                   Video
                 </div>

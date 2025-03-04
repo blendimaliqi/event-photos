@@ -11,6 +11,7 @@ namespace EventPhotos.API.DTOs
         public DateTime UploadDate { get; set; }
         public long FileSize { get; set; } // Size in bytes
         public string ContentType { get; set; } = string.Empty;
+        public string? ThumbnailUrl { get; set; }
         public int EventId { get; set; }
     }
 }

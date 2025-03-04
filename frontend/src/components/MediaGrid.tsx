@@ -69,7 +69,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   // Filter out hero photo before creating cards
   const filteredMedia = mediaItems.filter((media) => {
     if (event?.heroPhoto) {
-      return media.id !== event.heroPhoto.id || media.type === 'video';
+      return media.id !== event.heroPhoto.id || media.type === "video";
     }
     return true; // If no hero photo, include all media
   });
@@ -78,13 +78,23 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
     id: media.id,
     content: <MediaContent media={media} />,
     className: "",
-    thumbnail: config.getImageUrl(media.url),
+    thumbnail:
+      media.type === "video" && (media as any).thumbnailUrl
+        ? config.getImageUrl((media as any).thumbnailUrl)
+        : config.getImageUrl(media.url),
     type: media.type,
   }));
 
   if (isMediaView) {
-    console.log("MediaGrid: isMediaView is true, rendering MediaView with", cards.length, "cards");
-    console.log("MediaGrid: Card IDs:", cards.map(card => card.id).join(", "));
+    console.log(
+      "MediaGrid: isMediaView is true, rendering MediaView with",
+      cards.length,
+      "cards"
+    );
+    console.log(
+      "MediaGrid: Card IDs:",
+      cards.map((card) => card.id).join(", ")
+    );
     return (
       <Suspense fallback={<MediaViewLoading />}>
         <MediaView cards={cards} />

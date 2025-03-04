@@ -189,18 +189,14 @@ export const LayoutGrid = ({
                         ? "aspect-[3/4]"
                         : "aspect-[1/1]"
                     } flex items-center justify-center relative overflow-hidden`}
+                    style={{
+                      backgroundImage: `url(${card.thumbnail})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
                   >
-                    <video
-                      src={card.thumbnail}
-                      className="w-full h-full object-cover absolute inset-0"
-                      preload="metadata"
-                      onClick={(e) => e.stopPropagation()}
-                      controls={false}
-                      muted
-                      playsInline
-                    />
                     {/* Play button overlay */}
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center transition-opacity group-hover:opacity-0">
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
