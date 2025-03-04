@@ -87,16 +87,43 @@ namespace EventPhotos.API.Repositories
 
         public async Task<Video?> DeleteVideoAsync(int id)
         {
-            var video = await _context.Videos.FindAsync(id);
-
-            if (video == null)
+            try
             {
-                return null;
-            }
+                var video = await _context.Videos.FindAsync(id);
 
-            _context.Videos.Remove(video);
-            await _context.SaveChangesAsync();
-            return video;
+                if (video == null)
+                {
+                    return null;
+                }
+
+                _context.Videos.Remove(video);
+                await _context.SaveChangesAsync();
+                return video;
+            }
+            catch (Exception)
+            {
+                // If the normal FindAsync/Delete fails, try with a more specific approach
+                // First retrieve the video data we need for deletion
+                var videoToDelete = await _context.Videos
+                    .Where(v => v.Id == id)
+                    .Select(v => new Video
+                    {
+                        Id = v.Id,
+                        Url = v.Url,
+                        EventId = v.EventId
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (videoToDelete == null)
+                {
+                    return null;
+                }
+
+                // Execute a direct SQL command to delete by ID to avoid column issues
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM \"Videos\" WHERE \"Id\" = {0}", id);
+                
+                return videoToDelete;
+            }
         }
 
         public async Task<long> GetTotalVideoSizeByEventIdAsync(int eventId)
