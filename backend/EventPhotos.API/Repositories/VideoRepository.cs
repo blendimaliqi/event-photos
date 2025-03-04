@@ -21,15 +21,60 @@ namespace EventPhotos.API.Repositories
 
         public async Task<IEnumerable<Video>> GetVideosByEventIdAsync(int eventId)
         {
-            return await _context.Videos
-                .Where(v => v.EventId == eventId)
-                .OrderByDescending(v => v.UploadDate)
-                .ToListAsync();
+            try 
+            {
+                // Try normal query first
+                return await _context.Videos
+                    .Where(v => v.EventId == eventId)
+                    .OrderByDescending(v => v.UploadDate)
+                    .ToListAsync();
+            }
+            catch (Exception)
+            {
+                // Fallback to explicit column selection if ThumbnailUrl column doesn't exist
+                return await _context.Videos
+                    .Where(v => v.EventId == eventId)
+                    .OrderByDescending(v => v.UploadDate)
+                    .Select(v => new Video
+                    {
+                        Id = v.Id,
+                        Url = v.Url,
+                        Description = v.Description,
+                        UploadDate = v.UploadDate,
+                        FileSize = v.FileSize,
+                        ContentType = v.ContentType,
+                        EventId = v.EventId,
+                        // Set ThumbnailUrl to null since column might not exist
+                        ThumbnailUrl = null
+                    })
+                    .ToListAsync();
+            }
         }
 
         public async Task<Video?> GetVideoByIdAsync(int id)
         {
-            return await _context.Videos.FindAsync(id);
+            try
+            {
+                return await _context.Videos.FindAsync(id);
+            }
+            catch (Exception)
+            {
+                // If FindAsync fails, try with explicit column selection
+                return await _context.Videos
+                    .Where(v => v.Id == id)
+                    .Select(v => new Video
+                    {
+                        Id = v.Id,
+                        Url = v.Url,
+                        Description = v.Description,
+                        UploadDate = v.UploadDate,
+                        FileSize = v.FileSize,
+                        ContentType = v.ContentType,
+                        EventId = v.EventId,
+                        ThumbnailUrl = null
+                    })
+                    .FirstOrDefaultAsync();
+            }
         }
 
         public async Task<Video> AddVideoAsync(CreateVideoDto videoDto)
