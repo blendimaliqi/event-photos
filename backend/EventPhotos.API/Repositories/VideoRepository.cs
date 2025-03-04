@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Data.Common;
+using Npgsql;
 
 namespace EventPhotos.API.Repositories
 {
@@ -100,43 +102,82 @@ namespace EventPhotos.API.Repositories
 
         public async Task<Video> AddVideoAsync(CreateVideoDto videoDto)
         {
+            // Create a new Video object for return purposes
+            var video = videoDto.ToVideoFromCreate();
+            
             try
             {
-                var video = videoDto.ToVideoFromCreate();
+                // Use raw SQL to insert without mentioning ThumbnailUrl column
+                var sql = @"
+                    INSERT INTO ""Videos"" (""Url"", ""Description"", ""EventId"", ""FileSize"", ""ContentType"", ""UploadDate"")
+                    VALUES (@url, @description, @eventId, @fileSize, @contentType, @uploadDate)
+                    RETURNING ""Id""";
                 
-                // Ensure ThumbnailUrl is null to prevent issues
-                video.ThumbnailUrl = null;
+                // Use ADO.NET directly to avoid Entity Framework's model mapping
+                using (var connection = _context.Database.GetDbConnection() as NpgsqlConnection)
+                {
+                    // Open connection if needed
+                    if (connection.State != System.Data.ConnectionState.Open)
+                        await connection.OpenAsync();
+                    
+                    // Create command
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        // Add parameters
+                        cmd.Parameters.AddWithValue("@url", videoDto.Url);
+                        cmd.Parameters.AddWithValue("@description", videoDto.Description ?? (object)DBNull.Value);
+                        cmd.Parameters.AddWithValue("@eventId", videoDto.EventId);
+                        cmd.Parameters.AddWithValue("@fileSize", videoDto.FileSize);
+                        cmd.Parameters.AddWithValue("@contentType", videoDto.ContentType);
+                        cmd.Parameters.AddWithValue("@uploadDate", DateTime.UtcNow);
+                        
+                        // Execute and get the ID
+                        var result = await cmd.ExecuteScalarAsync();
+                        if (result != null)
+                            video.Id = Convert.ToInt32(result);
+                    }
+                }
                 
-                _context.Videos.Add(video);
-                await _context.SaveChangesAsync();
                 return video;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // If the normal approach fails, try using raw SQL
-                // Create a new Video object with the provided data
-                var video = videoDto.ToVideoFromCreate();
-                
-                // For demonstration, using a simplified approach - in production would need proper SQL params
+                // Try an even more direct approach with string formatting (less secure but more likely to work)
                 try
                 {
-                    await _context.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO \"Videos\" (\"Url\", \"Description\", \"UploadDate\", \"FileSize\", \"ContentType\", \"EventId\") " +
-                        "VALUES ({0}, {1}, {2}, {3}, {4}, {5})",
-                        video.Url, 
-                        video.Description ?? (object)DBNull.Value, 
-                        video.UploadDate,
-                        video.FileSize,
-                        video.ContentType,
-                        video.EventId);
+                    // Minimal approach with no parameters
+                    var directSql = string.Format(
+                        @"INSERT INTO ""Videos"" (""Url"", ""Description"", ""EventId"", ""FileSize"", ""ContentType"", ""UploadDate"")
+                        VALUES ('{0}', {1}, {2}, {3}, '{4}', '{5}')
+                        RETURNING ""Id""",
+                        videoDto.Url.Replace("'", "''"),
+                        videoDto.Description != null ? "'" + videoDto.Description.Replace("'", "''") + "'" : "NULL", 
+                        videoDto.EventId,
+                        videoDto.FileSize,
+                        videoDto.ContentType.Replace("'", "''"),
+                        DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff"));
                     
-                    // Since we don't have the ID that was generated, we'll need to retrieve it
-                    // This is a simplification - would need proper implementation in production
+                    // Use raw ADO.NET to execute
+                    using (var connection = _context.Database.GetDbConnection())
+                    {
+                        if (connection.State != System.Data.ConnectionState.Open)
+                            await connection.OpenAsync();
+                            
+                        using (var cmd = connection.CreateCommand())
+                        {
+                            cmd.CommandText = directSql;
+                            var result = await cmd.ExecuteScalarAsync();
+                            if (result != null)
+                                video.Id = Convert.ToInt32(result);
+                        }
+                    }
+                    
                     return video;
                 }
-                catch
+                catch (Exception innerEx)
                 {
-                    throw; // Re-throw after attempted workaround
+                    // If all else fails, throw with details
+                    throw new Exception($"Failed to add video. Original error: {ex.Message}, Second attempt error: {innerEx.Message}", ex);
                 }
             }
         }
