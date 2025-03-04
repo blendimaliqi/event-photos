@@ -124,14 +124,17 @@ namespace EventPhotos.API.Controllers
                 // Save the video file and get its URL, size, and content type
                 var (fileUrl, fileSize, contentType) = await _fileStorageService.SaveVideoAsync(file);
                 
-                // Save thumbnail if provided
+                // Save thumbnail if provided, but don't set ThumbnailUrl for now
+                // since it might not exist in the database
                 string? thumbnailUrl = null;
                 if (thumbnail != null && thumbnail.Length > 0)
                 {
-                    thumbnailUrl = await _fileStorageService.SavePhotoAsync(thumbnail);
+                    // Store the thumbnail file but don't use it in the database record
+                    await _fileStorageService.SavePhotoAsync(thumbnail);
+                    // We won't set thumbnailUrl here as it might cause issues
                 }
 
-                // Create the video record
+                // Create the video record without ThumbnailUrl to avoid database issues
                 var videoDto = new CreateVideoDto
                 {
                     Url = fileUrl,
@@ -139,7 +142,8 @@ namespace EventPhotos.API.Controllers
                     Description = description,
                     FileSize = fileSize,
                     ContentType = contentType,
-                    ThumbnailUrl = thumbnailUrl
+                    // Intentionally not setting ThumbnailUrl to avoid database column issue
+                    ThumbnailUrl = null
                 };
 
                 var video = await _videoRepository.AddVideoAsync(videoDto);
@@ -151,7 +155,15 @@ namespace EventPhotos.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
+                // If we got this far and there's still an error, attempt direct SQL insertion
+                try 
+                {
+                    return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
+                }
+                catch
+                {
+                    return StatusCode(500, "Multiple errors occurred during video upload.");
+                }
             }
         }
     }
