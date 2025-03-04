@@ -346,6 +346,25 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
     };
   }, []);
 
+  // Add this new function for handling video navigation
+  const handleVideoAreaClick = (e: React.MouseEvent) => {
+    // Calculate the position relative to the container width
+    const container = e.currentTarget as HTMLElement;
+    const containerWidth = container.offsetWidth;
+    const clickX = e.nativeEvent.offsetX;
+    const relativePosition = clickX / containerWidth;
+
+    // Check if click is in the left or right third of the video area
+    if (relativePosition < 0.2) {
+      // Left 20% - navigate to previous
+      navigateImage("prev");
+    } else if (relativePosition > 0.8) {
+      // Right 20% - navigate to next
+      navigateImage("next");
+    }
+    // Middle area (60%) is reserved for video controls
+  };
+
   if (!isVisible) {
     return (
       <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
@@ -466,7 +485,21 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                 )}
 
                 {currentPhoto.type === "video" ? (
-                  <div className="video-container relative w-full h-full flex items-center justify-center">
+                  <div
+                    className="video-container relative w-full h-full flex items-center justify-center"
+                    onClick={handleVideoAreaClick}
+                    onDoubleClick={(e) => {
+                      // Handle double click to toggle fullscreen
+                      e.preventDefault();
+                      if (videoRef.current) {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen();
+                        } else {
+                          videoRef.current.requestFullscreen();
+                        }
+                      }
+                    }}
+                  >
                     {/* Video element */}
                     <video
                       ref={videoRef}
@@ -477,8 +510,17 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                       style={{
                         maxHeight: "100%",
                         maxWidth: "100%",
+                        zIndex: 40, // Ensure controls are accessible
                       }}
                       onLoadedMetadata={() => setImageLoaded(true)}
+                      onClick={(e) => {
+                        // Allow clicks on the video element for controls
+                        e.stopPropagation();
+                      }}
+                      onTouchStart={(e) => {
+                        // Handle touch events to allow native controls to work
+                        e.stopPropagation();
+                      }}
                       src={config.getImageUrl(
                         (currentPhoto?.content as any)?.props?.media?.url
                       )}
@@ -487,21 +529,9 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                       Your browser does not support the video tag.
                     </video>
 
-                    {/* Video controls overlay - full area click handler */}
+                    {/* Play/Pause/Replay button overlay - only shown when paused or ended */}
                     <div
-                      className="absolute inset-0 flex items-center justify-center z-30"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!isDragging) {
-                          toggleVideoPlayback();
-                        }
-                      }}
-                    />
-
-                    {/* Play/Pause/Replay button overlay */}
-                    <div
-                      className="absolute inset-0 flex items-center justify-center z-40 transition-opacity duration-200"
+                      className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none transition-opacity duration-200"
                       style={{
                         opacity:
                           !isPlaying ||
@@ -511,6 +541,7 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                       }}
                     >
                       <button
+                        className="bg-black/40 backdrop-blur-sm rounded-full p-4 transition-all duration-200 hover:bg-black/60 pointer-events-auto"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -520,7 +551,6 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
                             toggleVideoPlayback();
                           }
                         }}
-                        className="bg-black/40 backdrop-blur-sm rounded-full p-4 transition-all duration-200 hover:bg-black/60"
                       >
                         {videoRef.current && videoRef.current.ended ? (
                           // Replay icon
