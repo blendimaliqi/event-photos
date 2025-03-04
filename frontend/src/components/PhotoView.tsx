@@ -32,12 +32,12 @@ export const PhotoView: React.FC<PhotoViewProps> = ({ cards }) => {
   const [nextImageLoaded, setNextImageLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isCounterVisible, setIsCounterVisible] = useState(false);
-  const counterTimeoutRef = useRef<number>();
+  const counterTimeoutRef = useRef<NodeJS.Timeout | undefined>();
   const [isPlaying, setIsPlaying] = useState(true);
 
   // Add state for X button
   const [isCloseButtonVisible, setIsCloseButtonVisible] = useState(true);
-  const closeButtonTimeoutRef = useRef<number>();
+  const closeButtonTimeoutRef = useRef<NodeJS.Timeout | undefined>();
 
   // Get the original scroll position when the component mounts
   const originalScrollPosition = useRef(
