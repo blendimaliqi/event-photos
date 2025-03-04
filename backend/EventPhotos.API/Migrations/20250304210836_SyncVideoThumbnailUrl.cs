@@ -10,14 +10,22 @@ namespace EventPhotos.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // No-op migration since the ThumbnailUrl column already exists in the database
-            // This migration is just to synchronize the model with the database state
+            // Add ThumbnailUrl column to Videos table
+            migrationBuilder.AddColumn<string>(
+                name: "ThumbnailUrl",
+                table: "Videos",
+                type: "character varying(2048)",
+                maxLength: 2048,
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // No-op down migration since we're not adding anything in Up
+            // Remove ThumbnailUrl column if we need to roll back
+            migrationBuilder.DropColumn(
+                name: "ThumbnailUrl",
+                table: "Videos");
         }
     }
 }
