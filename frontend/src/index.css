@@ -1,6 +1,27 @@
+/* Import gallery styles */
+@import "react-image-gallery/styles/css/image-gallery.css";
+@import "lightgallery/css/lightgallery.css";
+@import "lightgallery/css/lg-zoom.css";
+@import "lightgallery/css/lg-thumbnail.css";
+@import "lightgallery/css/lg-video.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --primary: #ff525b;
+  --primary-darker: #e4181f;
+  --secondary: #fbbdc7;
+  --bg-primary: #fff;
+  --text-primary: #111;
+  --text-secondary: #444;
+}
+
+body {
+  @apply text-gray-800 bg-gray-100 min-h-screen;
+  margin: 0;
+}
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
