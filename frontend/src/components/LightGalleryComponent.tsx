@@ -1,6 +1,4 @@
-import React, { useEffect, useRef } from "react";
-import LightGallery from "lightgallery/react";
-import { LightGallerySettings } from "lightgallery/lg-settings";
+import React, { useEffect, useRef, useState } from "react";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
 import lgZoom from "lightgallery/plugins/zoom";
 
@@ -33,11 +31,33 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
 }) => {
   const lightGalleryRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const initializedRef = useRef(false);
 
   console.log("LightGalleryComponent rendering with startIndex:", startIndex);
 
+  // Update current index when startIndex changes, but only on mount or when startIndex actually changes
+  useEffect(() => {
+    if (startIndex !== currentIndex) {
+      setCurrentIndex(startIndex);
+    }
+  }, [startIndex, currentIndex]);
+
   // Initialize gallery
   useEffect(() => {
+    // Skip if already initialized with the same index
+    if (initializedRef.current && lightGalleryRef.current) {
+      // If the gallery is already initialized but the index changed, just update the index
+      if (lightGalleryRef.current.index !== currentIndex) {
+        try {
+          lightGalleryRef.current.slide(currentIndex, false);
+        } catch (e) {
+          console.error("Failed to update slide index:", e);
+        }
+      }
+      return;
+    }
+
     if (containerRef.current) {
       // Create gallery container if it doesn't exist
       let galleryContainer =
@@ -51,7 +71,7 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
       // Create gallery items
       galleryContainer.innerHTML = "";
 
-      mediaItems.forEach((media, idx) => {
+      mediaItems.forEach((media) => {
         const url = config.getImageUrl(media.url);
         const thumbnailUrl = media.thumbnailUrl
           ? config.getImageUrl(media.thumbnailUrl)
@@ -66,6 +86,15 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
         if (media.type === "video") {
           item.setAttribute("data-iframe", "true");
           item.setAttribute("data-src", url);
+          // Add attributes to prevent autoplay
+          item.setAttribute("data-autoplay", "false");
+          item.setAttribute(
+            "data-html",
+            `<video class="lg-video-object lg-html5" controls preload="none" poster="${thumbnailUrl}">
+              <source src="${url}" type="video/mp4">
+              Your browser does not support HTML5 video.
+            </video>`
+          );
         }
 
         const img = document.createElement("img");
@@ -108,13 +137,22 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
               showCloseIcon: true,
               download: false,
             },
+            index: currentIndex,
           }
         );
 
+        initializedRef.current = true;
+
         // Add event listeners
         galleryContainer.addEventListener("lgAfterSlide", (e: any) => {
-          if (onSlide && e.detail && typeof e.detail.index === "number") {
-            onSlide(e.detail.index);
+          if (e.detail && typeof e.detail.index === "number") {
+            // Only update state if the index actually changed
+            if (e.detail.index !== currentIndex) {
+              setCurrentIndex(e.detail.index);
+              if (onSlide) {
+                onSlide(e.detail.index);
+              }
+            }
           }
         });
 
@@ -126,14 +164,14 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
         setTimeout(() => {
           if (lightGalleryRef.current) {
             try {
-              lightGalleryRef.current.openGallery(startIndex);
+              lightGalleryRef.current.openGallery(currentIndex);
             } catch (e) {
               console.error("Failed to open gallery:", e);
 
               // Try direct method if open gallery fails
               const slides = galleryContainer.querySelectorAll("a");
-              if (slides && slides.length > startIndex) {
-                (slides[startIndex] as HTMLElement).click();
+              if (slides && slides.length > currentIndex) {
+                (slides[currentIndex] as HTMLElement).click();
               }
             }
           }
@@ -150,9 +188,10 @@ export const LightGalleryComponent: React.FC<LightGalleryComponentProps> = ({
           console.error("Failed to destroy gallery:", e);
         }
         lightGalleryRef.current = null;
+        initializedRef.current = false;
       }
     };
-  }, [mediaItems, startIndex, onClose, onSlide, thumbnailsEnabled]);
+  }, [mediaItems, onClose, onSlide, thumbnailsEnabled, startIndex]);
 
   // Notify that navigation is complete
   useEffect(() => {

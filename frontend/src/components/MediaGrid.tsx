@@ -27,6 +27,7 @@ interface MediaGridProps {
 export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   const { photoId } = useParams<{ photoId: string }>();
   const navigate = useNavigate();
+  const [galleryKey, setGalleryKey] = useState<string>(`gallery-initial`);
 
   const [sortBy, setSortBy] = useState<SortOption>(() => {
     const savedSort = sessionStorage.getItem("mediaSortPreference");
@@ -65,12 +66,14 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
       const filteredIndex = filteredMedia.findIndex(
         (media) => media.id === Number(photoId)
       );
-      if (filteredIndex !== -1) {
+      if (filteredIndex !== -1 && filteredIndex !== selectedMediaIndex) {
         setSelectedMediaIndex(filteredIndex);
+        // Update gallery key to force re-render
+        setGalleryKey(`gallery-${photoId}-${filteredIndex}-${Date.now()}`);
         console.log(
           `Selected media index set to ${filteredIndex} for photo ID ${photoId}`
         );
-      } else {
+      } else if (filteredIndex === -1) {
         // If photo not found in filtered array, navigate back to main view
         console.log(
           `Photo ID ${photoId} not found in filtered media, navigating back`
@@ -78,7 +81,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
         navigate("/");
       }
     }
-  }, [isMediaView, photoId, filteredMedia, navigate]);
+  }, [isMediaView, photoId, filteredMedia, navigate, selectedMediaIndex]);
 
   // Handle close of media view
   const handleCloseMediaView = () => {
@@ -91,11 +94,19 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   };
 
   // Handle media item selection
-  const handleMediaSelect = (media: Media, index: number) => {
+  const handleMediaSelect = (media: Media) => {
     // Save current scroll position
     const scrollY = window.scrollY;
     sessionStorage.setItem("originalScrollPosition", scrollY.toString());
     sessionStorage.setItem("scrollPosition", scrollY.toString());
+
+    // Find the index of the selected media
+    const index = filteredMedia.findIndex((item) => item.id === media.id);
+    if (index !== -1) {
+      // Update the selected index and gallery key
+      setSelectedMediaIndex(index);
+      setGalleryKey(`gallery-select-${media.id}-${index}-${Date.now()}`);
+    }
 
     // Navigate to media view
     navigate(`/photo/${media.id}`);
@@ -103,7 +114,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
 
   // Handle slide change in gallery
   const handleSlideChange = (index: number) => {
-    if (filteredMedia[index]) {
+    if (filteredMedia[index] && Number(photoId) !== filteredMedia[index].id) {
       // Update URL without triggering a full navigation
       window.history.replaceState(
         null,
@@ -142,7 +153,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
     return (
       <Suspense fallback={<GalleryLoadingComponent />}>
         <LightGalleryComponent
-          key={`gallery-${photoId}`}
+          key={galleryKey}
           mediaItems={filteredMedia}
           startIndex={selectedMediaIndex < 0 ? 0 : selectedMediaIndex}
           onClose={handleCloseMediaView}
@@ -231,13 +242,13 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
       </div>
 
       <div className={containerClassName}>
-        {filteredMedia.map((media, index) => (
+        {filteredMedia.map((media) => (
           <div
             key={media.id}
             className={viewMode === "masonry" ? "break-inside-avoid mb-6" : ""}
           >
             <div
-              onClick={() => handleMediaSelect(media, index)}
+              onClick={() => handleMediaSelect(media)}
               className={`relative overflow-hidden cursor-pointer shadow-xl group block ${
                 viewMode === "compact" ? "rounded-lg" : "rounded-3xl"
               }`}
