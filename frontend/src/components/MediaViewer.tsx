@@ -43,7 +43,8 @@ export const MediaViewer = ({
   const [commentsVisible, setCommentsVisible] = useState(true);
 
   // Handle slide change
-  const handleSlideChange = (detail: { index: number }) => {
+  // @ts-expect-error - This function is kept for future use but currently not called
+  const _handleSlideChange = (detail: { index: number }) => {
     const { index } = detail;
     if (index >= 0 && index < mediaItems.length && onNavigate) {
       const mediaId = mediaItems[index].id;
@@ -121,7 +122,7 @@ export const MediaViewer = ({
         const allVideoElements = currentSlide.querySelectorAll("video");
         if (allVideoElements.length > 1) {
           // Keep only the one with controls
-          allVideoElements.forEach((videoEl, idx) => {
+          allVideoElements.forEach((videoEl) => {
             const video = videoEl as HTMLVideoElement;
             if (!video.controls) {
               // Not the main video, remove it
