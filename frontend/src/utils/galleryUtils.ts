@@ -42,7 +42,7 @@ export function convertToGalleryItems(mediaItems: Media[]): GalleryItem[] {
     const thumbnailUrl = media.thumbnailUrl
       ? config.getImageUrl(media.thumbnailUrl)
       : media.type === "video"
-      ? config.getVideoThumbnailUrl(media.url)
+      ? `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/></svg>`
       : url;
 
     // Base properties for both types
@@ -76,7 +76,7 @@ export function convertToLightGalleryItems(
     const thumbnailUrl = media.thumbnailUrl
       ? config.getImageUrl(media.thumbnailUrl)
       : media.type === "video"
-      ? config.getVideoThumbnailUrl(media.url)
+      ? `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/></svg>`
       : url;
 
     // Base properties

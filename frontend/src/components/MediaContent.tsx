@@ -50,8 +50,23 @@ export const MediaContent: React.FC<MediaContentProps> = ({
             className="w-full h-full object-contain"
             preload="none"
             playsInline
+            controlsList="nodownload"
+            disablePictureInPicture
+            onPlay={(e) => {
+              // Pause any other videos when this one starts playing
+              const videos = document.querySelectorAll("video");
+              videos.forEach((v) => {
+                if (v !== e.target && !v.paused) {
+                  v.pause();
+                }
+              });
+            }}
             src={mediaUrl}
-            poster={config.getVideoThumbnailUrl(media.url)}
+            poster={
+              media.thumbnailUrl
+                ? config.getImageUrl(media.thumbnailUrl)
+                : `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/><circle cx="50" cy="50" r="20" fill="%23FFFFFF" opacity="0.7"/><polygon points="45,40 45,60 60,50" fill="%23374151"/></svg>`
+            }
           >
             <source src={mediaUrl} type="video/mp4" />
             Your browser does not support the video tag.
