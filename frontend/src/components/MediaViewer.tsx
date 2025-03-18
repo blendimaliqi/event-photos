@@ -41,6 +41,25 @@ export const MediaViewer = ({
 }: MediaViewerProps) => {
   // Add state to track comment visibility
   const [commentsVisible, setCommentsVisible] = useState(true);
+  // Add state to track if we're on a mobile device
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check for mobile device on component mount
+  useEffect(() => {
+    // Simple mobile detection
+    const checkMobile = () => {
+      const isMobileDevice =
+        window.innerWidth < 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+      setIsMobile(isMobileDevice);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Handle slide change
   // @ts-expect-error - This function is kept for future use but currently not called
@@ -73,12 +92,15 @@ export const MediaViewer = ({
     });
   };
 
-  // Remove all background/preview videos
+  // Optimize cleanup function to be less aggressive
   const cleanupBackgroundVideos = () => {
     // Find all preview videos and remove them
     const previewVideos = document.querySelectorAll(
       ".lg-video-object:not([controls])"
     );
+
+    if (previewVideos.length === 0) return; // Skip if nothing to clean
+
     previewVideos.forEach((video) => {
       if (video.parentElement) {
         video.parentElement.removeChild(video);
@@ -90,19 +112,7 @@ export const MediaViewer = ({
     posterElements.forEach((poster) => {
       if (poster.parentElement) {
         const posterEl = poster as HTMLElement;
-        posterEl.style.opacity = "0";
         posterEl.style.display = "none";
-        posterEl.style.visibility = "hidden";
-      }
-    });
-
-    // Find any background video containers and clean them
-    const videoContainers = document.querySelectorAll(
-      ".lg-media-container > :not(.lg-video-cont)"
-    );
-    videoContainers.forEach((container) => {
-      if (container.parentElement) {
-        container.parentElement.removeChild(container);
       }
     });
   };
@@ -113,7 +123,7 @@ export const MediaViewer = ({
 
     // Find the current slide and ensure video controls are shown
     setTimeout(() => {
-      // First clean up any background videos
+      // Clean up any background videos
       cleanupBackgroundVideos();
 
       const currentSlide = document.querySelector(".lg-current");
@@ -128,8 +138,6 @@ export const MediaViewer = ({
               // Not the main video, remove it
               if (video.parentElement) {
                 video.pause();
-                video.src = "";
-                video.load();
                 video.parentElement.removeChild(video);
               }
             }
@@ -144,69 +152,35 @@ export const MediaViewer = ({
           video.controls = true;
 
           // Remove any poster or preview elements
-          const posterContainers = currentSlide.querySelectorAll(
-            ".lg-img-wrap, .lg-poster, .lg-video-poster"
-          );
+          const posterContainers = currentSlide.querySelectorAll(".lg-poster");
           posterContainers.forEach((container) => {
             if (container.parentElement) {
               container.parentElement.removeChild(container);
             }
           });
 
-          // Hide the poster image when video is ready to play
-          // This prevents the overlapping poster + video issue
-          video.addEventListener(
-            "canplay",
-            () => {
-              // Clean up again after video can play
-              cleanupBackgroundVideos();
+          // Make sure the video is visible and properly positioned
+          video.style.visibility = "visible";
+          video.style.opacity = "1";
+          video.style.zIndex = "1000";
 
-              // Make sure the video is visible and properly positioned
-              video.style.visibility = "visible";
-              video.style.opacity = "1";
-              video.style.zIndex = "1000";
-
-              // Ensure parent containers are correctly styled
-              const videoContainer = video.closest(".lg-video-cont");
-              if (videoContainer) {
-                const containerEl = videoContainer as HTMLElement;
-                containerEl.style.visibility = "visible";
-                containerEl.style.opacity = "1";
-                containerEl.style.zIndex = "1000";
-
-                // Remove any background videos or poster elements
-                const bgElements = videoContainer.querySelectorAll(
-                  ".lg-poster, .lg-video-play-button"
-                );
-                bgElements.forEach((el) => {
-                  if (el.parentElement) {
-                    el.parentElement.removeChild(el);
-                  }
-                });
-              }
-            },
-            { once: true }
-          );
-
-          // Autoplay the video (if browser allows it)
-          try {
-            video.play().catch((err) => {
-              console.log("Autoplay prevented by browser:", err);
-              // Show play button or relevant UI when autoplay is blocked
-            });
-          } catch (e) {
-            console.log("Error trying to autoplay:", e);
+          // Ensure parent containers are correctly styled
+          const videoContainer = video.closest(".lg-video-cont");
+          if (videoContainer) {
+            const containerEl = videoContainer as HTMLElement;
+            containerEl.style.visibility = "visible";
+            containerEl.style.opacity = "1";
+            containerEl.style.zIndex = "1000";
           }
 
-          // Make sure videojs doesn't hide our controls
-          const videoContainer = currentSlide.querySelector(".lg-video-cont");
-          if (videoContainer) {
-            videoContainer.classList.add("lg-has-html5");
-
-            // Remove any stray poster elements that might be causing overlap
-            const posterElement = videoContainer.querySelector(".lg-poster");
-            if (posterElement && posterElement.parentElement) {
-              posterElement.parentElement.removeChild(posterElement);
+          // Only attempt autoplay on desktop, not mobile
+          if (!isMobile) {
+            try {
+              video.play().catch(() => {
+                // Silent catch for autoplay restrictions
+              });
+            } catch (e) {
+              // Silent catch
             }
           }
         }
@@ -320,18 +294,11 @@ export const MediaViewer = ({
       console.log("Gallery opened, adding comment button");
       // Try multiple times to ensure button is added
       setTimeout(addCommentButton, 300);
-      setTimeout(addCommentButton, 800);
-      setTimeout(addCommentButton, 1500);
-    });
-
-    // Also add the button when slides change
-    document.addEventListener("lgAfterSlide", () => {
-      setTimeout(addCommentButton, 300);
     });
 
     // Add event listener to fix any weird video behavior
     const videoFixHandler = () => {
-      // Remove any duplicate/preview videos
+      // Clean up only once when gallery is opened
       cleanupBackgroundVideos();
 
       // Fix video player controls if needed
@@ -342,89 +309,81 @@ export const MediaViewer = ({
 
         // Add class to ensure correct mode for full video container
         lgOuterEl.classList.add("lg-use-css3");
-        lgOuterEl.classList.add("lg-css3");
-        lgOuterEl.classList.add("lg-no-transition");
 
-        // Setup MutationObserver to handle changes in gallery slides
+        // Setup MutationObserver with optimized settings
         const observer = new MutationObserver((mutations) => {
+          // Use a debounce mechanism to avoid excessive operations
+          let hasVideoChanges = false;
+
           mutations.forEach((mutation) => {
-            if (
-              mutation.type === "childList" ||
-              mutation.type === "attributes"
-            ) {
-              // Clean up any background/preview videos
-              cleanupBackgroundVideos();
-
-              // Find videos and ensure they have controls
-              const videos = document.querySelectorAll("video.lg-video-object");
-              videos.forEach((video) => {
-                const videoEl = video as HTMLVideoElement;
-                videoEl.controls = true;
-
-                // Hide any poster elements
-                const parentSlide = videoEl.closest(".lg-item");
-                if (parentSlide) {
-                  const posterElements =
-                    parentSlide.querySelectorAll(".lg-poster");
-                  posterElements.forEach((poster) => {
-                    poster.classList.add("lg-poster-force-hide");
-                    // Also remove it to ensure it doesn't interfere
-                    if (poster.parentElement) {
-                      poster.parentElement.removeChild(poster);
-                    }
-                  });
-                }
-
-                // Try to autoplay when video is added to DOM
-                try {
-                  videoEl.play().catch(() => {
-                    // Silent catch - browser may block autoplay
-                  });
-                } catch (e) {
-                  // Silent catch
-                }
-              });
-
-              // Add class to video containers to ensure controls are shown
-              const videoContainers =
-                document.querySelectorAll(".lg-video-cont");
-              videoContainers.forEach((container) => {
-                container.classList.add("lg-has-html5");
-
-                // Remove any poster elements that might be causing overlay issues
-                const posterElement = container.querySelector(".lg-poster");
-                if (posterElement && posterElement.parentElement) {
-                  const posterEl = posterElement as HTMLElement;
-                  posterEl.style.display = "none";
-                  // Add null check before attempting to remove child
-                  if (posterEl.parentElement) {
-                    posterEl.parentElement.removeChild(posterEl);
-                  }
-                }
-              });
+            if (mutation.type === "childList") {
+              const targetNode = mutation.target as Node;
+              // Only process mutations that involve video elements or their containers
+              if (
+                targetNode.nodeName === "VIDEO" ||
+                (targetNode as Element).classList?.contains("lg-video-cont") ||
+                mutation.addedNodes.length > 0
+              ) {
+                hasVideoChanges = true;
+              }
             }
           });
+
+          // Only run video fixes if we detected relevant changes
+          if (hasVideoChanges) {
+            // Find videos and ensure they have controls
+            const videos = document.querySelectorAll("video.lg-video-object");
+            videos.forEach((video) => {
+              const videoEl = video as HTMLVideoElement;
+              videoEl.controls = true;
+
+              // Hide any poster elements
+              const parentSlide = videoEl.closest(".lg-item");
+              if (parentSlide) {
+                const posterElements =
+                  parentSlide.querySelectorAll(".lg-poster");
+                posterElements.forEach((poster) => {
+                  if (poster.parentElement) {
+                    poster.parentElement.removeChild(poster);
+                  }
+                });
+              }
+            });
+
+            // Add class to video containers to ensure controls are shown
+            const videoContainers = document.querySelectorAll(".lg-video-cont");
+            videoContainers.forEach((container) => {
+              container.classList.add("lg-has-html5");
+            });
+          }
         });
 
-        // Start observing the gallery
+        // Start observing the gallery with optimized options
         observer.observe(lgOuterEl, {
           childList: true,
           subtree: true,
-          attributes: true,
+          attributeFilter: ["class", "style"], // Only observe specific attributes
         });
+
+        // Store observer for cleanup
+        return observer;
       }
+
+      return null;
     };
 
     document.addEventListener("lgAfterOpen", videoFixHandler);
 
-    // Monitor for any changes and cleanup background videos regularly
-    const videoCleanupInterval = setInterval(cleanupBackgroundVideos, 500);
+    // Run cleanup less frequently, especially on mobile
+    const videoCleanupInterval = setInterval(
+      cleanupBackgroundVideos,
+      isMobile ? 2000 : 1000
+    );
 
     return () => {
       document.body.classList.remove("lg-open");
       document.removeEventListener("lgAfterOpen", videoFixHandler);
       document.removeEventListener("lgAfterOpen", addCommentButton);
-      document.removeEventListener("lgAfterSlide", addCommentButton);
       window.toggleLgDescription = undefined;
       clearInterval(videoCleanupInterval);
 
@@ -443,7 +402,7 @@ export const MediaViewer = ({
         videoElement.load();
       });
     };
-  }, [mediaItems, commentsVisible]);
+  }, [mediaItems, commentsVisible, isMobile]);
 
   // Handle gallery close
   const handleClose = () => {
@@ -477,21 +436,23 @@ export const MediaViewer = ({
         videojsOptions={{
           muted: false,
           controls: true,
-          preload: "auto",
-          autoplay: true,
+          preload: isMobile ? "metadata" : "auto", // Optimize for mobile - only load metadata
+          autoplay: false, // Disable autoplay by default
           controlBar: {
             pictureInPictureToggle: false,
           },
         }}
         videojs={false}
         autoplayFirstVideo={false}
-        autoplayVideoOnSlide={true}
+        autoplayVideoOnSlide={!isMobile} // Disable auto-playing videos on slide change for mobile
         gotoNextSlideOnVideoEnd={false}
         hideControlOnEnd={false}
         addClass="lg-video-poster-fix lg-prevent-duplicate"
         mobileSettings={{
           controls: true,
           showCloseIcon: true,
+          download: false,
+          rotate: false, // Disable rotation on mobile for better performance
         }}
       >
         {mediaItems.map((item, index) => {
@@ -510,7 +471,7 @@ export const MediaViewer = ({
                 data-video={`{
                   "source": [{"src": "${mediaUrl}", "type": "video/mp4"}],
                   "attributes": {
-                    "preload": "auto",
+                    "preload": "${isMobile ? "metadata" : "auto"}", 
                     "controls": true,
                     "playsinline": true,
                     "autoplay": false,
@@ -532,6 +493,7 @@ export const MediaViewer = ({
                   src={thumbnailUrl}
                   className="img-responsive"
                   alt={item.description || `Video ${index + 1}`}
+                  loading="lazy"
                 />
               </a>
             );
@@ -710,103 +672,43 @@ export const MediaViewer = ({
             background-color: rgba(0, 0, 0, 0.1);
           }
 
+          /* Video optimizations */
           .lg-video-cont {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            padding: 0 !important;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 100vh;
+            padding: 0;
           }
-          .lg-video {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            object-fit: contain !important;
-          }
+          
           video.lg-video-object {
-            width: 100% !important;
-            height: 100% !important;
-            max-width: 100vw !important;
-            max-height: 90vh !important;
-            object-fit: contain !important;
-            z-index: 1000 !important;
-            position: relative !important;
+            width: 100%;
+            height: 100%;
+            max-width: 100vw;
+            max-height: 90vh;
+            object-fit: contain;
+            z-index: 1000;
+            position: relative;
           }
-          /* Hide the default play button to prevent double play buttons */
+          
+          /* Hide the default play button */
           .lg-video-play-button {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
+            display: none;
+            opacity: 0;
+            visibility: hidden;
           }
-          /* Make sure video controls are always visible */
-          .lg-show-autoplay-video .lg-video-container .lg-video-play-button {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-          }
-          /* Fix for showing video controls immediately */
-          .lg-outer .lg-video-cont.lg-has-html5 video {
-            display: block !important;
-            opacity: 1 !important;
-          }
-          /* Hide any preview overlays */
-          .lg-outer .lg-item.lg-complete .lg-object {
-            opacity: 1 !important;
-          }
-          /* Force video container to show video immediately */
-          .lg-outer.lg-show-actual-size .lg-video-cont {
-            overflow: visible !important;
-          }
+          
           /* Fix for poster image overlapping with video */
           .lg-poster {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-          }
-          /* Hide any background preview videos */
-          .lg-video-object:not([controls]) {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-          }
-          /* Force hide any poster elements */
-          .lg-poster-force-hide {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-          }
-          /* Fix for video element containment */
-          .lg-video-cont {
-            z-index: 1000 !important;
-            position: relative !important;
-          }
-          /* Ensure proper video layer ordering */
-          .lg-video-poster-fix .lg-video {
-            z-index: 100 !important;
-          }
-          .lg-video-poster-fix .lg-video-object {
-            z-index: 1000 !important;
-          }
-          /* Hide any background containers */
-          .lg-media-container > :not(.lg-video-cont) {
-            display: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
+            display: none;
+            opacity: 0;
+            visibility: hidden;
           }
           
-          /* Hide thumbnail container */
-          .lg-thumb-outer {
-            display: none !important;
-          }
-          
-          /* Increase space for main content by removing thumbnail space */
-          .lg-outer .lg-inner {
-            height: 100% !important;
-          }
-          
-          .lg-outer .lg-object {
-            max-height: calc(100vh - 80px) !important;
+          /* Simplified video container styling */
+          .lg-video-cont.lg-has-html5 video {
+            display: block;
+            opacity: 1;
           }
         `,
         }}
