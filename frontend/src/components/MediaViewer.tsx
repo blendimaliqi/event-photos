@@ -1,16 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Media } from "../types/media";
 import { config } from "../config/config";
+
+// Add type declaration for our global function
+declare global {
+  interface Window {
+    toggleLgDescription?: () => void;
+  }
+}
 
 // Import lightgallery
 import LightGallery from "lightgallery/react";
 import "lightgallery/css/lightgallery.css";
 import "lightgallery/css/lg-zoom.css";
-import "lightgallery/css/lg-thumbnail.css";
 import "lightgallery/css/lg-video.css";
 
 // Import lightgallery plugins
-import lgThumbnail from "lightgallery/plugins/thumbnail";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgVideo from "lightgallery/plugins/video";
 
@@ -34,6 +39,9 @@ export const MediaViewer = ({
   onClose,
   onNavigate,
 }: MediaViewerProps) => {
+  // Add state to track comment visibility
+  const [commentsVisible, setCommentsVisible] = useState(true);
+
   // Handle slide change
   const handleSlideChange = (detail: { index: number }) => {
     const { index } = detail;
@@ -229,6 +237,97 @@ export const MediaViewer = ({
   useEffect(() => {
     document.body.classList.add("lg-open");
 
+    // Function to toggle comment visibility
+    function toggleCommentVisibility() {
+      console.log("Toggling comment visibility");
+      setCommentsVisible((prev) => !prev);
+
+      const subHtmlEl = document.querySelector(".lg-sub-html");
+      if (subHtmlEl) {
+        if (commentsVisible) {
+          // Currently visible, hide them
+          subHtmlEl.classList.add("lg-description-hidden");
+        } else {
+          // Currently hidden, show them
+          subHtmlEl.classList.remove("lg-description-hidden");
+        }
+      }
+    }
+
+    // Make this function globally available
+    window.toggleLgDescription = toggleCommentVisibility;
+
+    // Function to add the comment button
+    const addCommentButton = () => {
+      console.log("Adding comment button to gallery");
+
+      // If button already exists, don't add another one
+      if (document.querySelector(".lg-comment-button")) {
+        console.log("Comment button already exists");
+        return;
+      }
+
+      // Create button element
+      const commentBtn = document.createElement("button");
+      commentBtn.className = "lg-comment-button";
+      commentBtn.setAttribute("aria-label", "Toggle image comments");
+      commentBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-circle"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+
+      // Add a badge if descriptions exist
+      const hasDescriptions = mediaItems.some(
+        (item) => item.description && item.description.trim() !== ""
+      );
+      if (hasDescriptions) {
+        const badge = document.createElement("span");
+        badge.className = "lg-comment-badge";
+        badge.textContent = "i";
+        commentBtn.appendChild(badge);
+      }
+
+      // Add click handler
+      commentBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Comment button clicked");
+        toggleCommentVisibility();
+      };
+
+      // Try all possible containers to add the button
+      const toolbar = document.querySelector(".lg-toolbar");
+      const container = document.querySelector(".lg-container");
+      const outer = document.querySelector(".lg-outer");
+
+      console.log("Available containers:", { toolbar, container, outer });
+
+      if (toolbar) {
+        console.log("Adding button to toolbar");
+        toolbar.appendChild(commentBtn);
+      } else if (container) {
+        console.log("Adding button to container");
+        container.appendChild(commentBtn);
+      } else if (outer) {
+        console.log("Adding button to outer container");
+        outer.appendChild(commentBtn);
+      } else {
+        console.log("Fallback to body for comment button");
+        document.body.appendChild(commentBtn);
+      }
+    };
+
+    // Add our button when gallery opens
+    document.addEventListener("lgAfterOpen", () => {
+      console.log("Gallery opened, adding comment button");
+      // Try multiple times to ensure button is added
+      setTimeout(addCommentButton, 300);
+      setTimeout(addCommentButton, 800);
+      setTimeout(addCommentButton, 1500);
+    });
+
+    // Also add the button when slides change
+    document.addEventListener("lgAfterSlide", () => {
+      setTimeout(addCommentButton, 300);
+    });
+
     // Add event listener to fix any weird video behavior
     const videoFixHandler = () => {
       // Remove any duplicate/preview videos
@@ -323,7 +422,16 @@ export const MediaViewer = ({
     return () => {
       document.body.classList.remove("lg-open");
       document.removeEventListener("lgAfterOpen", videoFixHandler);
+      document.removeEventListener("lgAfterOpen", addCommentButton);
+      document.removeEventListener("lgAfterSlide", addCommentButton);
+      window.toggleLgDescription = undefined;
       clearInterval(videoCleanupInterval);
+
+      // Remove any comment buttons that might have been added
+      const commentBtn = document.querySelector(".lg-comment-button");
+      if (commentBtn && commentBtn.parentElement) {
+        commentBtn.parentElement.removeChild(commentBtn);
+      }
 
       // Clean up any remaining videos when component unmounts
       const videos = document.querySelectorAll("video");
@@ -334,7 +442,7 @@ export const MediaViewer = ({
         videoElement.load();
       });
     };
-  }, []);
+  }, [mediaItems, commentsVisible]);
 
   // Handle gallery close
   const handleClose = () => {
@@ -355,7 +463,7 @@ export const MediaViewer = ({
     <div className="media-viewer">
       <LightGallery
         elementClassNames="hidden"
-        plugins={[lgThumbnail, lgZoom, lgVideo]}
+        plugins={[lgZoom, lgVideo]}
         closable={true}
         escKey={true}
         onAfterSlide={handleAfterSlide}
@@ -364,6 +472,7 @@ export const MediaViewer = ({
         controls={true}
         counter={true}
         download={false}
+        thumbnail={false}
         videojsOptions={{
           muted: false,
           controls: true,
@@ -412,9 +521,10 @@ export const MediaViewer = ({
                   }
                 }`}
                 data-poster=""
-                data-sub-html={`<div class="lg-sub-html"><h4>${new Date(
+                data-sub-html={`<div class="lg-sub-html-inner"><h4>${new Date(
                   item.uploadDate
                 ).toLocaleString()}</h4><p>${item.description || ""}</p></div>`}
+                data-has-description="${!!item.description}"
                 data-loop="false"
               >
                 <img
@@ -430,9 +540,10 @@ export const MediaViewer = ({
                 key={item.id}
                 className="lg-gallery-item"
                 data-src={mediaUrl}
-                data-sub-html={`<div class="lg-sub-html"><h4>${new Date(
+                data-sub-html={`<div class="lg-sub-html-inner"><h4>${new Date(
                   item.uploadDate
                 ).toLocaleString()}</h4><p>${item.description || ""}</p></div>`}
+                data-has-description="${!!item.description}"
               >
                 <img
                   src={thumbnailUrl}
@@ -458,10 +569,146 @@ export const MediaViewer = ({
         <LoadingSpinner />
       </div>
 
+      {/* Directly rendered comment button as a backup */}
+      <button
+        id="fallback-comment-button"
+        className="fixed bottom-[25px] right-[25px] z-[1090] w-[50px] h-[50px] bg-red-500 bg-opacity-85 rounded-full hidden items-center justify-center text-white border-2 border-white shadow-md"
+        style={{ display: "none" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log("Backup comment button clicked");
+          const subHtmlEl = document.querySelector(".lg-sub-html");
+          if (subHtmlEl) {
+            if (subHtmlEl.classList.contains("lg-description-hidden")) {
+              subHtmlEl.classList.remove("lg-description-hidden");
+            } else {
+              subHtmlEl.classList.add("lg-description-hidden");
+            }
+          }
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))" }}
+        >
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+        {mediaItems.some(
+          (item) => item.description && item.description.trim() !== ""
+        ) && (
+          <span className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold border-2 border-white shadow-sm">
+            i
+          </span>
+        )}
+      </button>
+
       {/* Add custom CSS to control video sizing and fix double play button */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
+          /* Comment button styles */
+          .lg-comment-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1090;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(231, 76, 60, 0.85);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 2px solid white;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          }
+
+          .lg-comment-button:hover, 
+          .lg-comment-button:active {
+            background-color: rgba(231, 76, 60, 1);
+            transform: scale(1.05);
+          }
+
+          .lg-comment-button svg {
+            width: 26px;
+            height: 26px;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+          }
+          
+          /* Badge to indicate comments are available */
+          .lg-comment-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #2980b9;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+          }
+
+          /* Description visibility states */
+          .lg-description-hidden {
+            display: none !important;
+          }
+
+          /* Styling for the description container */
+          .lg-sub-html {
+            bottom: 10px !important;
+            padding: 10px !important;
+            background-color: rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(4px) !important;
+            border-radius: 8px !important;
+            margin: 0 10px !important;
+            max-width: 80% !important;
+            margin: 0 auto !important;
+            text-align: left !important;
+            overflow-y: auto !important;
+            max-height: 30vh !important;
+          }
+
+          /* Ensure subhtml content is properly styled */
+          .lg-sub-html-inner {
+            max-height: 30vh;
+            overflow-y: auto;
+            padding-right: 10px;
+          }
+          
+          /* Custom scrollbar for descriptions */
+          .lg-sub-html-inner::-webkit-scrollbar {
+            width: 6px;
+            background-color: rgba(0, 0, 0, 0.1);
+          }
+          
+          .lg-sub-html-inner::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+          }
+          
+          .lg-sub-html-inner::-webkit-scrollbar-track {
+            background-color: rgba(0, 0, 0, 0.1);
+          }
+
           .lg-video-cont {
             width: 100% !important;
             height: 100% !important;
@@ -545,6 +792,20 @@ export const MediaViewer = ({
             display: none !important;
             opacity: 0 !important;
             visibility: hidden !important;
+          }
+          
+          /* Hide thumbnail container */
+          .lg-thumb-outer {
+            display: none !important;
+          }
+          
+          /* Increase space for main content by removing thumbnail space */
+          .lg-outer .lg-inner {
+            height: 100% !important;
+          }
+          
+          .lg-outer .lg-object {
+            max-height: calc(100vh - 80px) !important;
           }
         `,
         }}
