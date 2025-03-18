@@ -1,10 +1,3 @@
-/* Import gallery styles */
-@import "react-image-gallery/styles/css/image-gallery.css";
-@import "lightgallery/css/lightgallery.css";
-@import "lightgallery/css/lg-zoom.css";
-@import "lightgallery/css/lg-thumbnail.css";
-@import "lightgallery/css/lg-video.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

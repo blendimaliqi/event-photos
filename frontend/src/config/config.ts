@@ -42,7 +42,7 @@ export const config = {
     return `${baseUrl}${path}`;
   },
 
-  getVideoThumbnailUrl: (path: string) => {
+  getVideoThumbnailUrl: () => {
     // Return a data URL for a gray gradient instead of trying to load a video thumbnail
     // This prevents the app from trying to load the entire video file for thumbnails
     return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/></svg>`;
