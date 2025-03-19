@@ -1,17 +1,10 @@
-import { useState, Suspense, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useMedia, SortOption } from "../hooks/useMedia";
 import { useEvent } from "../hooks/useEvent";
 import { useNavigate, useParams } from "react-router-dom";
 import { Media } from "../types/media";
 import { MediaViewer } from "./MediaViewer";
 import { config } from "../config/config";
-
-// Loading component for gallery view
-const GalleryLoadingComponent = () => (
-  <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-  </div>
-);
 
 interface MediaGridProps {
   eventId: number;
@@ -39,21 +32,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
 
   // Add state for selected media index
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number>(-1);
-
-  // Add mobile detection for viewport calculation
-  const [, setIsMobile] = useState<boolean>(false);
-
-  // Check if running on mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const [isViewerReady, setIsViewerReady] = useState<boolean>(false);
 
   // Update session storage when sort changes
   useEffect(() => {
@@ -68,60 +47,68 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
     return true; // If no hero photo, include all media
   });
 
-  // Recalculate the selected index based on the filtered media
+  // Handle media item selection
+  const handleMediaSelect = useCallback(
+    (media: Media) => {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      sessionStorage.setItem("originalScrollPosition", scrollY.toString());
+      sessionStorage.setItem("scrollPosition", scrollY.toString());
+
+      // Find the index of the selected media
+      const index = filteredMedia.findIndex((item) => item.id === media.id);
+      if (index !== -1) {
+        setSelectedMediaIndex(index);
+        // Pre-initialize the viewer before navigation
+        setIsViewerReady(true);
+        // Short timeout to allow state to update before navigation
+        setTimeout(() => {
+          navigate(`/photo/${media.id}`);
+        }, 0);
+      }
+    },
+    [filteredMedia, navigate]
+  );
+
+  // Find the media index whenever the photoId changes
   useEffect(() => {
     if (isMediaView && photoId && filteredMedia.length > 0) {
+      // Set viewer ready immediately to prevent loading delay
+      setIsViewerReady(true);
+
       const filteredIndex = filteredMedia.findIndex(
         (media) => media.id === Number(photoId)
       );
-      if (filteredIndex !== -1 && filteredIndex !== selectedMediaIndex) {
+
+      if (filteredIndex !== -1) {
         setSelectedMediaIndex(filteredIndex);
-        console.log(
-          `Selected media index set to ${filteredIndex} for photo ID ${photoId}`
-        );
-      } else if (filteredIndex === -1) {
-        // If photo not found in filtered array, navigate back to main view
-        console.log(
-          `Photo ID ${photoId} not found in filtered media, navigating back`
-        );
+      } else {
+        // If photo not found, navigate back to main view
+        console.log(`Photo ID ${photoId} not found in filtered media`);
         navigate("/");
       }
     }
-  }, [isMediaView, photoId, filteredMedia, navigate, selectedMediaIndex]);
+  }, [isMediaView, photoId, filteredMedia, navigate]);
 
   // Handle close of media view
-  const handleCloseMediaView = () => {
+  const handleCloseMediaView = useCallback(() => {
     // Save scroll position
     const scrollY = Number(
       sessionStorage.getItem("originalScrollPosition") || "0"
     );
     sessionStorage.setItem("scrollPosition", scrollY.toString());
+    setIsViewerReady(false);
     navigate("/");
-  };
-
-  // Handle media item selection
-  const handleMediaSelect = (media: Media) => {
-    // Save current scroll position
-    const scrollY = window.scrollY;
-    sessionStorage.setItem("originalScrollPosition", scrollY.toString());
-    sessionStorage.setItem("scrollPosition", scrollY.toString());
-
-    // Find the index of the selected media
-    const index = filteredMedia.findIndex((item) => item.id === media.id);
-    if (index !== -1) {
-      setSelectedMediaIndex(index);
-      navigate(`/photo/${media.id}`);
-    }
-  };
+  }, [navigate]);
 
   // Handle navigation in media view
-  const handleNavigate = (mediaId: number) => {
+  const handleNavigate = useCallback((mediaId: number) => {
     // Update URL without triggering a full navigation
     window.history.replaceState(null, "", `/photo/${mediaId}`);
-  };
+  }, []);
 
   // Toggle view mode function
-  const toggleViewMode = () => {
+  const toggleViewMode = useCallback(() => {
     const newViewMode =
       viewMode === "masonry"
         ? "grid"
@@ -130,7 +117,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
         : "masonry";
     setViewMode(newViewMode);
     localStorage.setItem("viewMode", newViewMode);
-  };
+  }, [viewMode]);
 
   // Sort options
   const sortOptions: { value: SortOption; label: string }[] = [
@@ -139,17 +126,20 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
     { value: "withDescription", label: "Me përshkrim" },
   ];
 
-  // Render the media viewer when in media view mode
-  if (isMediaView && selectedMediaIndex >= 0 && filteredMedia.length > 0) {
+  // Render the media viewer when in media view mode - keep it out of Suspense for faster loading
+  if (
+    isMediaView &&
+    isViewerReady &&
+    selectedMediaIndex >= 0 &&
+    filteredMedia.length > 0
+  ) {
     return (
-      <Suspense fallback={<GalleryLoadingComponent />}>
-        <MediaViewer
-          mediaItems={filteredMedia}
-          initialMediaIndex={selectedMediaIndex}
-          onClose={handleCloseMediaView}
-          onNavigate={handleNavigate}
-        />
-      </Suspense>
+      <MediaViewer
+        mediaItems={filteredMedia}
+        initialMediaIndex={selectedMediaIndex}
+        onClose={handleCloseMediaView}
+        onNavigate={handleNavigate}
+      />
     );
   }
 

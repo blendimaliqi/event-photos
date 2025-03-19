@@ -9,11 +9,9 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { DEMO_EVENT_ID } from "../App";
 import AdminRoute from "./AdminRoute";
 
-const MediaGrid = lazy(() =>
-  import("./MediaGrid").then((module) => ({
-    default: module.MediaGrid,
-  }))
-);
+// Pre-load MediaGrid to avoid lazy-loading delay on photo view
+import { MediaGrid } from "./MediaGrid";
+
 const PhotoUpload = lazy(() =>
   import("./PhotoUpload").then((module) => ({
     default: module.PhotoUpload,
@@ -74,9 +72,7 @@ function AppContent() {
                     transition={{ duration: 0.2 }}
                   >
                     <PhotoUpload eventId={DEMO_EVENT_ID} />
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <MediaGrid eventId={DEMO_EVENT_ID} />
-                    </Suspense>
+                    <MediaGrid eventId={DEMO_EVENT_ID} />
                   </motion.div>
                 }
               />
@@ -90,9 +86,7 @@ function AppContent() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />
-                    </Suspense>
+                    <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />
                   </motion.div>
                 }
               />

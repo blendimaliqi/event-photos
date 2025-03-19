@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Media } from "../types/media";
 import { config } from "../config/config";
 
@@ -44,45 +44,31 @@ export const MediaViewer = ({
   // Add state to track if we're on a mobile device
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check for mobile device on component mount
+  // Check for mobile device on component mount - do this immediately
   useEffect(() => {
     // Simple mobile detection
-    const checkMobile = () => {
-      const isMobileDevice =
+    const isMobileDevice =
+      window.innerWidth < 768 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+    setIsMobile(isMobileDevice);
+
+    const checkResize = () => {
+      setIsMobile(
         window.innerWidth < 768 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        );
-      setIsMobile(isMobileDevice);
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          )
+      );
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    window.addEventListener("resize", checkResize);
+    return () => window.removeEventListener("resize", checkResize);
   }, []);
 
-  // Handle slide change
-  // @ts-expect-error - This function is kept for future use but currently not called
-  const _handleSlideChange = (detail: { index: number }) => {
-    const { index } = detail;
-    if (index >= 0 && index < mediaItems.length && onNavigate) {
-      const mediaId = mediaItems[index].id;
-      onNavigate(mediaId);
-    }
-
-    // Just pause videos when changing slides, but don't remove sources
-    // This allows returning to them later
-    const videos = document.querySelectorAll("video");
-    videos.forEach((video) => {
-      const videoElement = video as HTMLVideoElement;
-      if (!videoElement.paused) {
-        videoElement.pause();
-      }
-    });
-  };
-
   // Handle before slide change - more gentle handling
-  const handleBeforeSlide = () => {
+  const handleBeforeSlide = useCallback(() => {
     // Just pause videos, don't remove sources or reset time
     // This prevents the black screen when returning to videos
     const videos = document.querySelectorAll("video");
@@ -90,10 +76,20 @@ export const MediaViewer = ({
       const videoElement = video as HTMLVideoElement;
       videoElement.pause();
     });
-  };
+  }, []);
 
   // Optimize cleanup function to be less aggressive
-  const cleanupBackgroundVideos = () => {
+  const cleanupBackgroundVideos = useCallback(() => {
+    // On mobile, only do essential cleanup to avoid performance issues
+    if (isMobile) {
+      const videos = document.querySelectorAll("video:not([controls])");
+      videos.forEach((video) => {
+        (video as HTMLVideoElement).pause();
+      });
+      return;
+    }
+
+    // On desktop, do more thorough cleanup
     // Find all preview videos and remove them
     const previewVideos = document.querySelectorAll(
       ".lg-video-object:not([controls])"
@@ -115,98 +111,97 @@ export const MediaViewer = ({
         posterEl.style.display = "none";
       }
     });
-  };
+  }, [isMobile]);
 
   // Handle after slide - initialize video properly
-  const handleAfterSlide = (detail: { index: number }) => {
-    const { index } = detail;
+  const handleAfterSlide = useCallback(
+    (detail: { index: number }) => {
+      const { index } = detail;
 
-    // Find the current slide and ensure video controls are shown
-    setTimeout(() => {
-      // Clean up any background videos
-      cleanupBackgroundVideos();
+      // Find the current slide and ensure video controls are shown
+      setTimeout(
+        () => {
+          // Clean up any background videos
+          cleanupBackgroundVideos();
 
-      const currentSlide = document.querySelector(".lg-current");
-      if (currentSlide) {
-        // Remove all extra/duplicate video elements in this slide
-        const allVideoElements = currentSlide.querySelectorAll("video");
-        if (allVideoElements.length > 1) {
-          // Keep only the one with controls
-          allVideoElements.forEach((videoEl) => {
-            const video = videoEl as HTMLVideoElement;
-            if (!video.controls) {
-              // Not the main video, remove it
-              if (video.parentElement) {
-                video.pause();
-                video.parentElement.removeChild(video);
+          const currentSlide = document.querySelector(".lg-current");
+          if (!currentSlide) return;
+
+          // Check if it's a video slide
+          const videoElement = currentSlide.querySelector("video");
+          if (videoElement) {
+            // Force reload and show controls
+            const video = videoElement as HTMLVideoElement;
+            video.controls = true;
+
+            // Make sure the video is visible and properly positioned
+            video.style.visibility = "visible";
+            video.style.opacity = "1";
+            video.style.zIndex = "1000";
+
+            // Only attempt autoplay on desktop, not mobile
+            if (!isMobile) {
+              try {
+                video.play().catch(() => {
+                  // Silent catch for autoplay restrictions
+                });
+              } catch (e) {
+                // Silent catch
               }
             }
-          });
-        }
-
-        // Check if it's a video slide
-        const videoElement = currentSlide.querySelector("video");
-        if (videoElement) {
-          // Force reload and show controls
-          const video = videoElement as HTMLVideoElement;
-          video.controls = true;
-
-          // Remove any poster or preview elements
-          const posterContainers = currentSlide.querySelectorAll(".lg-poster");
-          posterContainers.forEach((container) => {
-            if (container.parentElement) {
-              container.parentElement.removeChild(container);
-            }
-          });
-
-          // Make sure the video is visible and properly positioned
-          video.style.visibility = "visible";
-          video.style.opacity = "1";
-          video.style.zIndex = "1000";
-
-          // Ensure parent containers are correctly styled
-          const videoContainer = video.closest(".lg-video-cont");
-          if (videoContainer) {
-            const containerEl = videoContainer as HTMLElement;
-            containerEl.style.visibility = "visible";
-            containerEl.style.opacity = "1";
-            containerEl.style.zIndex = "1000";
           }
+        },
+        isMobile ? 100 : 50
+      ); // Give more time on mobile
 
-          // Only attempt autoplay on desktop, not mobile
-          if (!isMobile) {
-            try {
-              video.play().catch(() => {
-                // Silent catch for autoplay restrictions
-              });
-            } catch (e) {
-              // Silent catch
-            }
-          }
-        }
+      // Also handle routing
+      if (index >= 0 && index < mediaItems.length && onNavigate) {
+        const mediaId = mediaItems[index].id;
+        onNavigate(mediaId);
       }
-    }, 50);
+    },
+    [cleanupBackgroundVideos, isMobile, mediaItems, onNavigate]
+  );
 
-    // Also handle routing
-    if (index >= 0 && index < mediaItems.length && onNavigate) {
-      const mediaId = mediaItems[index].id;
-      onNavigate(mediaId);
-    }
-  };
+  // Handle close with cleanup
+  const handleClose = useCallback(() => {
+    // Clean up any event listeners or elements
+    document.body.classList.remove("lg-open");
+    window.toggleLgDescription = undefined;
+
+    // Clean up all video elements before closing
+    const videos = document.querySelectorAll("video");
+    videos.forEach((video) => {
+      (video as HTMLVideoElement).pause();
+      if (video.src) {
+        (video as HTMLVideoElement).src = "";
+        (video as HTMLVideoElement).load();
+      }
+    });
+
+    // Call the onClose handler
+    onClose();
+  }, [onClose]);
 
   // Auto-open gallery when component mounts
   useEffect(() => {
-    // Use setTimeout to ensure the component is fully rendered
-    const timer = setTimeout(() => {
-      // Find and click the gallery item that should be shown first
-      const galleryItems = document.querySelectorAll(".lg-gallery-item");
-      if (galleryItems.length > initialMediaIndex) {
-        (galleryItems[initialMediaIndex] as HTMLElement)?.click();
-      }
-    }, 100);
+    // Allow a short delay for component to render
+    const timer = setTimeout(
+      () => {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          // Find and click the gallery item that should be shown first
+          const galleryItems = document.querySelectorAll(".lg-gallery-item");
+          if (galleryItems.length > initialMediaIndex) {
+            (galleryItems[initialMediaIndex] as HTMLElement)?.click();
+          }
+        });
+      },
+      isMobile ? 50 : 100
+    ); // Shorter delay on mobile
 
     return () => clearTimeout(timer);
-  }, [initialMediaIndex]);
+  }, [initialMediaIndex, isMobile]);
 
   // Add body class when gallery is open
   useEffect(() => {
@@ -232,192 +227,12 @@ export const MediaViewer = ({
     // Make this function globally available
     window.toggleLgDescription = toggleCommentVisibility;
 
-    // Function to add the comment button
-    const addCommentButton = () => {
-      console.log("Adding comment button to gallery");
-
-      // If button already exists, don't add another one
-      if (document.querySelector(".lg-comment-button")) {
-        console.log("Comment button already exists");
-        return;
-      }
-
-      // Create button element
-      const commentBtn = document.createElement("button");
-      commentBtn.className = "lg-comment-button";
-      commentBtn.setAttribute("aria-label", "Toggle image comments");
-      commentBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-circle"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
-
-      // Add a badge if descriptions exist
-      const hasDescriptions = mediaItems.some(
-        (item) => item.description && item.description.trim() !== ""
-      );
-      if (hasDescriptions) {
-        const badge = document.createElement("span");
-        badge.className = "lg-comment-badge";
-        badge.textContent = "i";
-        commentBtn.appendChild(badge);
-      }
-
-      // Add click handler
-      commentBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log("Comment button clicked");
-        toggleCommentVisibility();
-      };
-
-      // Try all possible containers to add the button
-      const toolbar = document.querySelector(".lg-toolbar");
-      const container = document.querySelector(".lg-container");
-      const outer = document.querySelector(".lg-outer");
-
-      console.log("Available containers:", { toolbar, container, outer });
-
-      if (toolbar) {
-        console.log("Adding button to toolbar");
-        toolbar.appendChild(commentBtn);
-      } else if (container) {
-        console.log("Adding button to container");
-        container.appendChild(commentBtn);
-      } else if (outer) {
-        console.log("Adding button to outer container");
-        outer.appendChild(commentBtn);
-      } else {
-        console.log("Fallback to body for comment button");
-        document.body.appendChild(commentBtn);
-      }
-    };
-
-    // Add our button when gallery opens
-    document.addEventListener("lgAfterOpen", () => {
-      console.log("Gallery opened, adding comment button");
-      // Try multiple times to ensure button is added
-      setTimeout(addCommentButton, 300);
-    });
-
-    // Add event listener to fix any weird video behavior
-    const videoFixHandler = () => {
-      // Clean up only once when gallery is opened
-      cleanupBackgroundVideos();
-
-      // Fix video player controls if needed
-      const lgOuterEl = document.querySelector(".lg-outer");
-      if (lgOuterEl) {
-        // Add a class to identify when gallery is ready
-        lgOuterEl.classList.add("lg-custom-initialized");
-
-        // Add class to ensure correct mode for full video container
-        lgOuterEl.classList.add("lg-use-css3");
-
-        // Setup MutationObserver with optimized settings
-        const observer = new MutationObserver((mutations) => {
-          // Use a debounce mechanism to avoid excessive operations
-          let hasVideoChanges = false;
-
-          mutations.forEach((mutation) => {
-            if (mutation.type === "childList") {
-              const targetNode = mutation.target as Node;
-              // Only process mutations that involve video elements or their containers
-              if (
-                targetNode.nodeName === "VIDEO" ||
-                (targetNode as Element).classList?.contains("lg-video-cont") ||
-                mutation.addedNodes.length > 0
-              ) {
-                hasVideoChanges = true;
-              }
-            }
-          });
-
-          // Only run video fixes if we detected relevant changes
-          if (hasVideoChanges) {
-            // Find videos and ensure they have controls
-            const videos = document.querySelectorAll("video.lg-video-object");
-            videos.forEach((video) => {
-              const videoEl = video as HTMLVideoElement;
-              videoEl.controls = true;
-
-              // Hide any poster elements
-              const parentSlide = videoEl.closest(".lg-item");
-              if (parentSlide) {
-                const posterElements =
-                  parentSlide.querySelectorAll(".lg-poster");
-                posterElements.forEach((poster) => {
-                  if (poster.parentElement) {
-                    poster.parentElement.removeChild(poster);
-                  }
-                });
-              }
-            });
-
-            // Add class to video containers to ensure controls are shown
-            const videoContainers = document.querySelectorAll(".lg-video-cont");
-            videoContainers.forEach((container) => {
-              container.classList.add("lg-has-html5");
-            });
-          }
-        });
-
-        // Start observing the gallery with optimized options
-        observer.observe(lgOuterEl, {
-          childList: true,
-          subtree: true,
-          attributeFilter: ["class", "style"], // Only observe specific attributes
-        });
-
-        // Store observer for cleanup
-        return observer;
-      }
-
-      return null;
-    };
-
-    document.addEventListener("lgAfterOpen", videoFixHandler);
-
-    // Run cleanup less frequently, especially on mobile
-    const videoCleanupInterval = setInterval(
-      cleanupBackgroundVideos,
-      isMobile ? 2000 : 1000
-    );
-
     return () => {
+      // Clean up when component unmounts
       document.body.classList.remove("lg-open");
-      document.removeEventListener("lgAfterOpen", videoFixHandler);
-      document.removeEventListener("lgAfterOpen", addCommentButton);
       window.toggleLgDescription = undefined;
-      clearInterval(videoCleanupInterval);
-
-      // Remove any comment buttons that might have been added
-      const commentBtn = document.querySelector(".lg-comment-button");
-      if (commentBtn && commentBtn.parentElement) {
-        commentBtn.parentElement.removeChild(commentBtn);
-      }
-
-      // Clean up any remaining videos when component unmounts
-      const videos = document.querySelectorAll("video");
-      videos.forEach((video) => {
-        const videoElement = video as HTMLVideoElement;
-        videoElement.pause();
-        videoElement.src = "";
-        videoElement.load();
-      });
     };
-  }, [mediaItems, commentsVisible, isMobile]);
-
-  // Handle gallery close
-  const handleClose = () => {
-    // Pause any videos when closing
-    const videos = document.querySelectorAll("video");
-    videos.forEach((video) => {
-      const videoElement = video as HTMLVideoElement;
-      videoElement.pause();
-    });
-
-    // When lightgallery is closed, we call the onClose prop
-    setTimeout(() => {
-      onClose();
-    }, 100);
-  };
+  }, [commentsVisible]);
 
   return (
     <div className="media-viewer">
@@ -454,6 +269,7 @@ export const MediaViewer = ({
           download: false,
           rotate: false, // Disable rotation on mobile for better performance
         }}
+        speed={250} // Faster transitions for better performance
       >
         {mediaItems.map((item, index) => {
           const mediaUrl = config.getImageUrl(item.url);
@@ -497,25 +313,24 @@ export const MediaViewer = ({
                 />
               </a>
             );
-          } else {
-            return (
-              <a
-                key={item.id}
-                className="lg-gallery-item"
-                data-src={mediaUrl}
-                data-sub-html={`<div class="lg-sub-html-inner"><h4>${new Date(
-                  item.uploadDate
-                ).toLocaleString()}</h4><p>${item.description || ""}</p></div>`}
-                data-has-description="${!!item.description}"
-              >
-                <img
-                  src={thumbnailUrl}
-                  className="img-responsive"
-                  alt={item.description || `Photo ${index + 1}`}
-                />
-              </a>
-            );
           }
+          return (
+            <a
+              key={item.id}
+              className="lg-gallery-item"
+              data-src={mediaUrl}
+              data-sub-html={`<div class="lg-sub-html-inner"><h4>${new Date(
+                item.uploadDate
+              ).toLocaleString()}</h4><p>${item.description || ""}</p></div>`}
+              data-has-description="${!!item.description}"
+            >
+              <img
+                src={thumbnailUrl}
+                className="img-responsive"
+                alt={item.description || `Photo ${index + 1}`}
+              />
+            </a>
+          );
         })}
       </LightGallery>
 
