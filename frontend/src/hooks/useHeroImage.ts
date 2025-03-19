@@ -7,19 +7,30 @@ const fallbackImageUrl =
 export const useHeroImage = (heroPhotoUrl?: string) => {
   return useQuery({
     queryKey: ["heroImage", heroPhotoUrl],
-    enabled: !!heroPhotoUrl,
+    enabled: true, // Always run the query to at least get the fallback image
     staleTime: Infinity, // Image preload result doesn't need to be refetched
     queryFn: async () => {
-      if (!heroPhotoUrl) return fallbackImageUrl;
+      if (!heroPhotoUrl) {
+        console.log("No hero photo URL provided, using fallback");
+        return fallbackImageUrl;
+      }
 
       try {
+        console.log("Loading hero image from URL:", heroPhotoUrl);
         const url = config.getImageUrl(heroPhotoUrl);
+        console.log("Full image URL:", url);
+
+        // Preload the image
         await new Promise((resolve, reject) => {
           const img = new Image();
           img.src = url;
           img.onload = resolve;
-          img.onerror = reject;
+          img.onerror = (err) => {
+            console.error("Image load error:", err);
+            reject(err);
+          };
         });
+
         return url;
       } catch (error) {
         console.error("Failed to load hero image:", error);

@@ -1,173 +1,246 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { useState, useEffect, Suspense, lazy, useCallback } from "react";
-import { useLocation, Routes, Route } from "react-router-dom";
-import { useEvent } from "../hooks/useEvent";
-import { HeroSection } from "./HeroSection";
-import { Layout } from "./Layout";
-import { LoadingSpinner } from "./LoadingSpinner";
-
+import { useState, useEffect } from "react";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+  useLocation,
+} from "react-router-dom";
+import { Media } from "../types/media";
+import MediaGrid from "./MediaGrid";
+import MediaViewer from "./MediaViewer";
+import { photoService } from "../services/photoService";
+import { videoService } from "../services/videoService";
+import { photoToMedia, videoToMedia } from "../types/media";
 import { DEMO_EVENT_ID } from "../App";
-import AdminRoute from "./AdminRoute";
+import { HeroSection } from "./HeroSection";
+import { PhotoUpload } from "./PhotoUpload";
+import { Event } from "../types/event";
+import { eventService } from "../services/eventService";
+import { useQuery } from "@tanstack/react-query";
+import { EVENT_QUERY_KEY } from "../hooks/useEvent";
 
-// Pre-load MediaGrid to avoid lazy-loading delay on photo view
-import { MediaGrid } from "./MediaGrid";
-
-// Import LightGallery styles at the app root level for faster page transitions
-import "lightgallery/css/lightgallery.css";
-import "lightgallery/css/lg-zoom.css";
-import "lightgallery/css/lg-video.css";
-
-const PhotoUpload = lazy(() =>
-  import("./PhotoUpload").then((module) => ({
-    default: module.PhotoUpload,
-  }))
-);
-
-function AppContent() {
+const AppContent = () => {
+  const [allMediaItems, setAllMediaItems] = useState<Media[]>([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
-  const isAdminPage = location.pathname === "/admin";
-  const isPhotoViewPage = location.pathname.startsWith("/photo/");
-  const { data: event } = useEvent(DEMO_EVENT_ID);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const { mediaType, mediaId } = useParams<{
+    mediaType?: string;
+    mediaId?: string;
+  }>();
 
-  // Add debug on mount
+  // Fetch event data to get proper hero photo info
+  const { data: eventData } = useQuery({
+    queryKey: EVENT_QUERY_KEY.event(DEMO_EVENT_ID),
+    queryFn: async () => {
+      try {
+        return await eventService.getEvent(DEMO_EVENT_ID);
+      } catch (error) {
+        console.error("Failed to fetch event:", error);
+        // Return a default event if the fetch fails
+        return {
+          id: DEMO_EVENT_ID,
+          name: "Event Photos",
+          date: new Date().toISOString(),
+          description: "Mirë se vini në Galerinë tonë të Dasmës",
+          heroPhotoId: undefined,
+          photos: [],
+        } as Event;
+      }
+    },
+  });
+
+  // Fetch all media on component mount
   useEffect(() => {
-    console.log(`[AppContent] Initializing, path: ${location.pathname}`);
-    if (isPhotoViewPage) {
-      console.log(
-        `[AppContent] Starting in photo view mode: ${location.pathname}`
+    const fetchAllMedia = async () => {
+      setLoading(true);
+      try {
+        const [photos, videos] = await Promise.all([
+          photoService.getPhotos(DEMO_EVENT_ID),
+          videoService.getVideos(DEMO_EVENT_ID),
+        ]);
+
+        // Convert to common Media type
+        const photoMedia = photos.map(photoToMedia);
+        const videoMedia = videos.map(videoToMedia);
+
+        // Combine and sort by upload date (newest first)
+        const allMedia = [...photoMedia, ...videoMedia].sort(
+          (a, b) =>
+            new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+        );
+
+        setAllMediaItems(allMedia);
+
+        // If we have photos but no hero photo is set in the event, try to set one
+        if (photos.length > 0 && !eventData?.heroPhotoId) {
+          console.log("No hero photo set, attempting to find a good candidate");
+
+          // Try to find a photo with Paris/Eiffel in the description
+          const parisPhoto = photos.find(
+            (photo) =>
+              photo.description?.toLowerCase().includes("paris") ||
+              photo.description?.toLowerCase().includes("eiffel")
+          );
+
+          if (parisPhoto) {
+            console.log("Found Paris photo for hero:", parisPhoto);
+            try {
+              // Call the setHeroPhoto API to update the hero photo
+              await photoService.setHeroPhoto(
+                DEMO_EVENT_ID,
+                new File([], "placeholder.jpg"), // Dummy file, the API will use the photoId
+                parisPhoto.description
+              );
+
+              console.log("Successfully set hero photo to Paris image");
+            } catch (error) {
+              console.error("Failed to set Paris photo as hero:", error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load all media:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllMedia();
+  }, [eventData?.heroPhotoId]);
+
+  // Handle media selection - navigate to the proper URL
+  const handleMediaSelect = (media: Media) => {
+    navigate(`/${media.type}/${media.id}`);
+  };
+
+  // Handle gallery close - return to main view
+  const handleCloseViewer = () => {
+    navigate("/");
+  };
+
+  // Find the currently selected media item
+  const selectedMedia =
+    mediaType && mediaId
+      ? allMediaItems.find(
+          (item) => item.type === mediaType && item.id === Number(mediaId)
+        )
+      : undefined;
+
+  // Check if we're on the gallery view route
+  const isGalleryView = Boolean(mediaType && mediaId);
+
+  // Create a complete event object for the HeroSection component
+  const completeEvent: Event = eventData || {
+    id: DEMO_EVENT_ID,
+    name: "Event Photos",
+    date: new Date().toISOString(),
+    description: "Mirë se vini në Galerinë tonë të Dasmës",
+    heroPhotoId: undefined,
+    photos: [],
+  };
+
+  // If we have a hero photo from the event, make sure it's used
+  // Otherwise, look for a matching photo in the media items
+  if (!completeEvent.heroPhoto && allMediaItems.length > 0) {
+    // Try different strategies to find the best hero photo
+    let heroMediaItem: Media | undefined;
+
+    // Strategy 1: Use the photo specified by heroPhotoId
+    if (completeEvent.heroPhotoId) {
+      heroMediaItem = allMediaItems.find(
+        (item) => item.type === "photo" && item.id === completeEvent.heroPhotoId
       );
+      console.log("Found hero photo by ID:", heroMediaItem);
     }
-  }, []);
 
-  // Detect mobile on mount
-  useEffect(() => {
-    const isMobileDevice =
-      window.innerWidth < 768 ||
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
+    // Strategy 2: Look for a Paris/Eiffel Tower photo
+    if (!heroMediaItem) {
+      heroMediaItem = allMediaItems.find(
+        (item) =>
+          item.type === "photo" &&
+          (item.description?.toLowerCase().includes("paris") ||
+            item.description?.toLowerCase().includes("eiffel"))
       );
-    setIsMobile(isMobileDevice);
-    console.log(`[AppContent] Mobile device detected: ${isMobileDevice}`);
-  }, []);
+      console.log("Found Paris photo:", heroMediaItem);
+    }
 
-  // Listen for navigation events
-  useEffect(() => {
-    const handleNavigationStart = () => {
-      console.log("[AppContent] Navigation started");
-      setIsNavigating(true);
-    };
-    const handleNavigationEnd = () => {
-      console.log("[AppContent] Navigation ended");
-      setIsNavigating(false);
-    };
+    // Strategy 3: Look for any photo with wedding-related terms
+    if (!heroMediaItem) {
+      heroMediaItem = allMediaItems.find(
+        (item) =>
+          item.type === "photo" &&
+          (item.description?.toLowerCase().includes("wedding") ||
+            item.description?.toLowerCase().includes("couple") ||
+            item.description?.toLowerCase().includes("love"))
+      );
+      console.log("Found wedding photo:", heroMediaItem);
+    }
 
-    window.addEventListener("navigationStart", handleNavigationStart);
-    window.addEventListener("navigationEnd", handleNavigationEnd);
+    // Strategy 4: Just use the first photo
+    if (!heroMediaItem) {
+      heroMediaItem = allMediaItems.find((item) => item.type === "photo");
+      console.log("Using first available photo:", heroMediaItem);
+    }
 
-    return () => {
-      window.removeEventListener("navigationStart", handleNavigationStart);
-      window.removeEventListener("navigationEnd", handleNavigationEnd);
-    };
-  }, []);
-
-  // Watch for location changes
-  useEffect(() => {
-    console.log(`[AppContent] Location changed: ${location.pathname}`);
-  }, [location.pathname]);
-
-  // Memoize components to reduce re-renders
-  const renderPhotoView = useCallback(() => {
-    console.log("[AppContent] Rendering photo view component");
-    return <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />;
-  }, []);
-
-  const renderMainView = useCallback(() => {
-    console.log("[AppContent] Rendering main view component");
-    return (
-      <>
-        <PhotoUpload eventId={DEMO_EVENT_ID} />
-        <MediaGrid eventId={DEMO_EVENT_ID} />
-      </>
-    );
-  }, []);
+    // If we found a hero photo, use it
+    if (heroMediaItem && heroMediaItem.type === "photo") {
+      completeEvent.heroPhoto = {
+        id: heroMediaItem.id,
+        url: heroMediaItem.url,
+        description: heroMediaItem.description || "Hero Photo",
+        eventId: DEMO_EVENT_ID,
+        uploadDate: heroMediaItem.uploadDate,
+      };
+      console.log("Set hero photo to:", completeEvent.heroPhoto);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Only show hero section if not navigating */}
-      {!isNavigating &&
-        (!isMobile ? (
-          // Use AnimatePresence only on desktop
-          <AnimatePresence mode="wait">
-            {!isAdminPage && !isPhotoViewPage ? (
-              <HeroSection event={event} />
-            ) : (
-              <HeroSection
-                event={event}
-                isAdmin={isAdminPage}
-                isPhotoView={isPhotoViewPage}
-              />
-            )}
-          </AnimatePresence>
-        ) : (
-          // Simplified rendering for mobile
-          <HeroSection
-            event={event}
-            isAdmin={isAdminPage}
-            isPhotoView={isPhotoViewPage}
-          />
-        ))}
+    <div className="min-h-screen bg-neutral-50">
+      {!isGalleryView && (
+        <HeroSection event={completeEvent} isPhotoView={false} />
+      )}
 
-      <Layout isAdminPage={isAdminPage}>
-        <Suspense fallback={<LoadingSpinner />}>
-          {isMobile ? (
-            // Use simpler routing for mobile
-            <Routes>
-              <Route path="/admin" element={<AdminRoute />} />
-              <Route path="/" element={renderMainView()} />
-              <Route path="/photo/:photoId" element={renderPhotoView()} />
-            </Routes>
-          ) : (
-            // Use animations only on desktop
-            <AnimatePresence mode="wait" initial={false}>
-              <Routes>
-                <Route path="/admin" element={<AdminRoute />} />
-                <Route
-                  path="/"
-                  element={
-                    <motion.div
-                      key="home"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {renderMainView()}
-                    </motion.div>
-                  }
-                />
-                <Route
-                  path="/photo/:photoId"
-                  element={
-                    <motion.div
-                      key="photo-view"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {renderPhotoView()}
-                    </motion.div>
-                  }
-                />
-              </Routes>
-            </AnimatePresence>
+      {loading && !allMediaItems.length ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {!isGalleryView && (
+            <>
+              <div className="mb-12">
+                <PhotoUpload eventId={DEMO_EVENT_ID} />
+              </div>
+              <MediaGrid
+                mediaItems={allMediaItems}
+                onMediaSelect={handleMediaSelect}
+              />
+            </>
           )}
-        </Suspense>
-      </Layout>
+
+          {isGalleryView && selectedMedia && (
+            <MediaViewer
+              initialMedia={selectedMedia}
+              mediaItems={allMediaItems}
+              onClose={handleCloseViewer}
+            />
+          )}
+        </div>
+      )}
+
+      {loading && allMediaItems.length > 0 && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-white border-t-transparent"></div>
+            <div className="mt-3 text-white text-sm">Loading gallery...</div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default AppContent;

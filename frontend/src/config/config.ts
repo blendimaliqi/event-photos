@@ -33,13 +33,26 @@ export const config = {
 
   // Functions using the dynamic base URL
   getImageUrl: (path: string) => {
+    // Make sure we have a path
+    if (!path) return "";
+
+    // If the path already starts with http or https, it's already an absolute URL
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+
+    // Get the base URL
     const baseUrl =
       import.meta.env.VITE_API_URL ||
       (import.meta.env.PROD && typeof window !== "undefined"
         ? window.location.origin
         : "http://localhost:5035");
 
-    return `${baseUrl}${path}`;
+    // Make sure the path starts with a slash for proper URL construction
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+    console.log(`Constructed image URL: ${baseUrl}${normalizedPath}`);
+    return `${baseUrl}${normalizedPath}`;
   },
 
   getVideoThumbnailUrl: () => {

@@ -1,323 +1,354 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Media } from "../types/media";
-import { config } from "../config/config";
-
-// Add type declaration for our global function
-declare global {
-  interface Window {
-    toggleLgDescription?: () => void;
-    lgPreinitialized?: boolean;
-    lgInitTime?: number;
-    debugLG?: (msg: string) => void;
-  }
-}
-
-// Import lightgallery
-import LightGallery from "lightgallery/react";
-import "lightgallery/css/lightgallery.css";
-import "lightgallery/css/lg-zoom.css";
-import "lightgallery/css/lg-video.css";
-
-// Import lightgallery plugins
-import lgZoom from "lightgallery/plugins/zoom";
-import lgVideo from "lightgallery/plugins/video";
-
-// Optimize loading performance by using inline SVG for video thumbnails
-const VIDEO_THUMBNAIL = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/></svg>`;
-
-// Less verbose debug helper
-const initDebug = () => {
-  window.lgInitTime = Date.now();
-  window.debugLG = (msg) => {
-    const timeElapsed = Date.now() - (window.lgInitTime || 0);
-    if (import.meta.env.DEV) {
-      console.log(`[LG-DEBUG] ${timeElapsed}ms: ${msg}`);
-    }
-  };
-  window.debugLG("Debug initialized");
-};
-
-// Skip preloading entirely on mobile
-const preloadPlugins = () => {
-  // Already initialized
-  if (window.lgPreinitialized) return;
-
-  // Check if mobile and skip initialization if so
-  const isMobile =
-    window.innerWidth < 768 ||
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-
-  if (isMobile) {
-    window.lgPreinitialized = true;
-    return;
-  }
-
-  // Only preload for desktop
-  window.lgPreinitialized = true;
-};
-
-// Minimal CSS embedded to avoid dynamic CSS injection overhead
-const ESSENTIAL_CSS = `
-.lg-comment-button {position:fixed;bottom:25px;right:25px;z-index:1090;width:50px;height:50px;background-color:rgba(231,76,60,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.lg-description-hidden{display:none!important}
-.lg-sub-html{max-height:30vh!important;overflow-y:auto!important}
-.lg-video-cont{width:100%;height:100%;max-width:100vw;max-height:100vh;padding:0}
-video.lg-video-object{width:100%;height:100%;max-width:100vw;max-height:90vh;object-fit:contain;z-index:1000}
-.lg-video-play-button,.lg-poster{display:none!important;opacity:0!important;visibility:hidden!important}
-`;
 
 interface MediaViewerProps {
+  initialMedia: Media;
   mediaItems: Media[];
-  initialMediaIndex: number;
   onClose: () => void;
-  onNavigate?: (mediaId: number) => void;
 }
 
-export const MediaViewer = ({
+const MediaViewer = ({
+  initialMedia,
   mediaItems,
-  initialMediaIndex,
   onClose,
-  onNavigate,
 }: MediaViewerProps) => {
-  const [commentsVisible, setCommentsVisible] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(true);
 
-  // Move these expensive operations to a useEffect with empty dependency array
   useEffect(() => {
-    // Initialize debug only in development
-    if (!window.debugLG && import.meta.env.DEV) {
-      initDebug();
-    }
+    // Find the index of the initially selected media
+    const index = mediaItems.findIndex(
+      (item) => item.id === initialMedia.id && item.type === initialMedia.type
+    );
+    setCurrentIndex(index >= 0 ? index : 0);
+  }, [initialMedia, mediaItems]);
 
-    // Detect mobile once
-    const isMobileDevice =
-      window.innerWidth < 768 ||
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
-    setIsMobile(isMobileDevice);
+  const currentMedia = mediaItems[currentIndex];
 
-    // Only preload plugins on desktop
-    if (!isMobileDevice) {
-      preloadPlugins();
-    }
+  const handlePrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1));
+    setIsLoading(true);
+  }, [mediaItems.length]);
 
-    // Add essential styles only once and only if not already added
-    if (!document.getElementById("lg-essential-styles")) {
-      const styleEl = document.createElement("style");
-      styleEl.id = "lg-essential-styles";
-      styleEl.innerHTML = ESSENTIAL_CSS;
-      document.head.appendChild(styleEl);
-    }
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev < mediaItems.length - 1 ? prev + 1 : 0));
+    setIsLoading(true);
+  }, [mediaItems.length]);
 
-    // Clean up when component unmounts
-    return () => {
-      document.body.classList.remove("lg-open");
-      window.toggleLgDescription = undefined;
-    };
-  }, []);
-
-  // Combine slide handlers to reduce function creation
-  const handleSlide = useCallback(
-    (action: "before" | "after", detail?: { index: number }) => {
-      window.debugLG?.(`Slide ${action} handler called ${detail?.index}`);
-
-      // For 'before' action - pause videos
-      if (action === "before") {
-        const videos = document.querySelectorAll("video");
-        videos.forEach((v) => (v as HTMLVideoElement).pause());
-        return;
-      }
-
-      // For 'after' action with index
-      if (action === "after" && detail) {
-        const { index } = detail;
-
-        // Simple DOM operations for mobile
-        const currentSlide = document.querySelector(".lg-current");
-        if (currentSlide) {
-          window.debugLG?.("Setting up current slide");
-          const video = currentSlide.querySelector("video") as HTMLVideoElement;
-          if (video) {
-            window.debugLG?.("Setting up video controls");
-            video.controls = true;
-            video.style.visibility = "visible";
-            video.style.opacity = "1";
-          }
-        }
-
-        // Handle navigation
-        if (index >= 0 && index < mediaItems.length && onNavigate) {
-          window.debugLG?.(`Navigating to item ${index}`);
-          onNavigate(mediaItems[index].id);
-        }
-      }
-    },
-    [mediaItems, onNavigate]
-  );
-
-  // Handle close with cleanup
   const handleClose = useCallback(() => {
-    window.debugLG?.("Close handler called");
-    // Basic cleanup - avoid expensive operations
-    document.body.classList.remove("lg-open");
-    window.toggleLgDescription = undefined;
-
-    // Call the onClose handler
-    onClose();
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 200);
   }, [onClose]);
 
-  // Auto-open gallery when component mounts
+  const handleThumbnailClick = (index: number) => {
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+      setIsLoading(true);
+    }
+  };
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+  };
+
+  // Update browser URL with current media info for sharing/bookmarking
   useEffect(() => {
-    // Use a very short timeout for mobile
-    const timer = setTimeout(
-      () => {
-        const galleryItems = document.querySelectorAll(".lg-gallery-item");
+    if (currentMedia) {
+      // Update the URL without causing a page reload
+      window.history.replaceState(
+        null,
+        "",
+        `/${currentMedia.type}/${currentMedia.id}`
+      );
+    }
+  }, [currentMedia]);
 
-        if (galleryItems.length > initialMediaIndex) {
-          try {
-            (galleryItems[initialMediaIndex] as HTMLElement)?.click();
-          } catch (err) {
-            console.error("Gallery initialization error:", err);
-          }
-        }
-      },
-      isMobile ? 10 : 30
-    );
-
-    return () => clearTimeout(timer);
-  }, [initialMediaIndex, isMobile]);
-
-  // Setup toggle description function
+  // Handle keyboard navigation
   useEffect(() => {
-    window.debugLG?.("Setting up toggle description function");
-    // Function to toggle comment visibility
-    window.toggleLgDescription = () => {
-      window.debugLG?.("Toggle description called");
-      setCommentsVisible((prev) => !prev);
-      const subHtmlEl = document.querySelector(".lg-sub-html");
-      if (subHtmlEl) {
-        if (commentsVisible) {
-          subHtmlEl.classList.add("lg-description-hidden");
-        } else {
-          subHtmlEl.classList.remove("lg-description-hidden");
-        }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevious();
+      } else if (e.key === "ArrowRight") {
+        handleNext();
+      } else if (e.key === "Escape") {
+        handleClose();
+      } else if (e.key === "t" || e.key === "T") {
+        setShowThumbnails((prev) => !prev);
       }
     };
 
-    return () => {
-      window.toggleLgDescription = undefined;
-    };
-  }, [commentsVisible]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePrevious, handleNext, handleClose]);
 
-  window.debugLG?.("Rendering MediaViewer");
+  if (!currentMedia) return null;
 
-  // Optimize rendering for mobile
   return (
-    <div className="media-viewer">
-      <LightGallery
-        elementClassNames="hidden"
-        plugins={[lgZoom, lgVideo]}
-        closable={true}
-        escKey={true}
-        onAfterSlide={(detail) => handleSlide("after", detail)}
-        onBeforeSlide={() => handleSlide("before")}
-        onBeforeClose={handleClose}
-        controls={true}
-        counter={true}
-        download={false}
-        thumbnail={false}
-        preload={1}
-        videojsOptions={{
-          muted: false,
-          controls: true,
-          preload: "none", // Changed from metadata to none for faster loading
-          autoplay: false,
-        }}
-        videojs={false}
-        autoplayFirstVideo={false}
-        autoplayVideoOnSlide={false}
-        gotoNextSlideOnVideoEnd={false}
-        hideControlOnEnd={false}
-        addClass="lg-video-poster-fix lg-prevent-duplicate"
-        mobileSettings={{
-          controls: true,
-          showCloseIcon: true,
-          download: false,
-          rotate: false,
-        }}
-        speed={100} // Even faster transitions
-        licenseKey="non-commercial-version"
-        mode="lg-fade"
-      >
-        {mediaItems.map((item, index) => {
-          const mediaUrl = config.getImageUrl(item.url);
-          const thumbnailUrl = item.thumbnailUrl
-            ? config.getImageUrl(item.thumbnailUrl)
-            : item.type === "video"
-            ? VIDEO_THUMBNAIL
-            : mediaUrl;
-
-          if (item.type === "video") {
-            return (
-              <a
-                key={item.id}
-                className="lg-gallery-item lg-video-item"
-                data-lg-size="1280-720"
-                data-video={`{
-                  "source": [{"src": "${mediaUrl}", "type": "video/mp4"}],
-                  "attributes": {
-                    "preload": "none", 
-                    "controls": true,
-                    "playsinline": true,
-                    "autoplay": false,
-                    "muted": false
-                  }
-                }`}
-                data-sub-html={`<div>${new Date(
-                  item.uploadDate
-                ).toLocaleString()}</div>${
-                  item.description ? `<p>${item.description}</p>` : ""
-                }`}
-              >
-                <img
-                  src={VIDEO_THUMBNAIL}
-                  alt={item.description || `Video ${index + 1}`}
-                  loading="lazy"
-                />
-              </a>
-            );
-          }
-
-          return (
-            <a
-              key={item.id}
-              className="lg-gallery-item"
-              data-src={mediaUrl}
-              data-sub-html={`<div>${new Date(
-                item.uploadDate
-              ).toLocaleString()}</div>${
-                item.description ? `<p>${item.description}</p>` : ""
-              }`}
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${
+        isClosing ? "opacity-0" : "opacity-100"
+      }`}
+      onClick={(e) => {
+        // Close viewer when clicking on the background
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
+      {/* Top bar with controls */}
+      <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-4">
+        <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleClose}
+              className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              aria-label="Back to gallery"
             >
-              <img
-                src={thumbnailUrl}
-                alt={item.description || `Photo ${index + 1}`}
-                loading={index < 3 ? "eager" : "lazy"}
-                width="150"
-                height="150"
-              />
-            </a>
-          );
-        })}
-      </LightGallery>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+            </button>
+            <div className="text-white text-sm font-medium">
+              {currentIndex + 1} / {mediaItems.length}
+            </div>
+          </div>
 
-      {/* Simple loading indicator */}
-      <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowThumbnails((prev) => !prev)}
+              className={`text-white p-2 rounded-full transition-colors ${
+                showThumbnails ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
+              }`}
+              aria-label="Toggle thumbnails"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16m-7 6h7"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                // Create a temporary anchor to download the image/video
+                const link = document.createElement("a");
+                link.href = currentMedia.url;
+                link.download =
+                  currentMedia.url.split("/").pop() ||
+                  `${currentMedia.type}-${currentMedia.id}`;
+                link.click();
+              }}
+              className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              aria-label="Download media"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleClose}
+              className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              aria-label="Close gallery"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="relative w-full h-full flex items-center justify-center p-4 z-20">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center z-30">
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-white border-t-transparent"></div>
+          </div>
+        )}
+
+        <div
+          className={`transition-opacity duration-300 ${
+            isLoading ? "opacity-30" : "opacity-100"
+          } max-w-full max-h-[calc(100vh-180px)] relative`}
+        >
+          {currentMedia.type === "photo" ? (
+            <img
+              src={currentMedia.url}
+              alt={currentMedia.description || "Photo"}
+              className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+              onLoad={handleImageLoad}
+            />
+          ) : (
+            <video
+              src={currentMedia.url}
+              poster={currentMedia.thumbnailUrl}
+              className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
+              controls
+              autoPlay
+              onLoadedData={handleImageLoad}
+            >
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation controls */}
+      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none z-20">
+        <button
+          className="pointer-events-auto bg-black/50 hover:bg-black/70 text-white p-2 ml-4 rounded-full w-12 h-12 flex items-center justify-center transition-transform transform hover:scale-105 focus:outline-none shadow-lg"
+          onClick={handlePrevious}
+          aria-label="Previous"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-7 w-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+
+        <button
+          className="pointer-events-auto bg-black/50 hover:bg-black/70 text-white p-2 mr-4 rounded-full w-12 h-12 flex items-center justify-center transition-transform transform hover:scale-105 focus:outline-none shadow-lg"
+          onClick={handleNext}
+          aria-label="Next"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-7 w-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Description */}
+      {currentMedia.description && (
+        <div className="absolute bottom-[100px] left-0 right-0 bg-black/75 py-3 px-4 z-20">
+          <div className="text-white text-center max-w-3xl mx-auto">
+            {currentMedia.description}
+          </div>
+        </div>
+      )}
+
+      {/* Thumbnails gallery */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 bg-black/80 z-30 transition-transform duration-300 ${
+          showThumbnails ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <div className="max-w-screen-xl mx-auto p-3">
+          <div className="overflow-x-auto">
+            <div className="flex gap-2 pb-1">
+              {mediaItems.map((media, idx) => (
+                <div
+                  key={`thumb-${media.type}-${media.id}`}
+                  className={`flex-shrink-0 w-16 h-16 cursor-pointer transition-all rounded overflow-hidden ${
+                    idx === currentIndex
+                      ? "ring-2 ring-white scale-110"
+                      : "opacity-70 hover:opacity-100"
+                  }`}
+                  onClick={() => handleThumbnailClick(idx)}
+                >
+                  {media.type === "photo" ? (
+                    <img
+                      src={media.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={media.thumbnailUrl || ""}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute bottom-0.5 right-0.5 bg-black/70 rounded-full flex items-center justify-center w-4 h-4">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-2.5 w-2.5 text-white"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+export default MediaViewer;
