@@ -22,13 +22,6 @@ import "lightgallery/css/lg-video.css";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgVideo from "lightgallery/plugins/video";
 
-// Loading spinner component
-const LoadingSpinner = () => (
-  <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
-  </div>
-);
-
 // Optimize loading performance by using inline SVG for video thumbnails
 const VIDEO_THUMBNAIL = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23374151"/></svg>`;
 
