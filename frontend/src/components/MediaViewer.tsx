@@ -7,6 +7,8 @@ declare global {
   interface Window {
     toggleLgDescription?: () => void;
     lgPreinitialized?: boolean;
+    lgInitTime?: number;
+    debugLG?: (msg: string) => void;
   }
 }
 
@@ -27,10 +29,25 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Global debug helper
+const initDebug = () => {
+  window.lgInitTime = Date.now();
+  window.debugLG = (msg) => {
+    const timeElapsed = Date.now() - (window.lgInitTime || 0);
+    console.log(`[LG-DEBUG] ${timeElapsed}ms: ${msg}`);
+  };
+  window.debugLG("Debug initialized");
+};
+
 // Preload LightGallery plugins only once
 const preloadPlugins = () => {
-  if (window.lgPreinitialized) return;
+  window.debugLG?.("Preloading plugins");
+  if (window.lgPreinitialized) {
+    window.debugLG?.("Plugins already preloaded, skipping");
+    return;
+  }
   window.lgPreinitialized = true;
+  window.debugLG?.("Plugins preloaded");
 };
 
 // Minimal CSS embedded to avoid dynamic CSS injection overhead
@@ -61,8 +78,17 @@ export const MediaViewer = ({
   // Add state to track if we're on a mobile device
   const [isMobile, setIsMobile] = useState(false);
 
+  // Initialize debug on mount - only once for the entire app
+  useEffect(() => {
+    if (!window.debugLG) {
+      initDebug();
+    }
+    window.debugLG?.("MediaViewer mounted");
+  }, []);
+
   // Check for mobile device on component mount - only once
   useEffect(() => {
+    window.debugLG?.("Setting up MediaViewer");
     preloadPlugins(); // Call once
 
     const isMobileDevice =
@@ -71,20 +97,25 @@ export const MediaViewer = ({
         navigator.userAgent
       );
     setIsMobile(isMobileDevice);
+    window.debugLG?.(`Mobile device detected: ${isMobileDevice}`);
 
     // Add essential styles once
     if (!document.getElementById("lg-essential-styles")) {
+      window.debugLG?.("Adding essential styles");
       const styleEl = document.createElement("style");
       styleEl.id = "lg-essential-styles";
       styleEl.innerHTML = ESSENTIAL_CSS;
       document.head.appendChild(styleEl);
+      window.debugLG?.("Essential styles added");
     }
 
     // Allow interaction even while gallery is still initializing
     document.body.classList.add("lg-open");
+    window.debugLG?.("Added lg-open class to body");
 
     return () => {
       // Clean up when component unmounts
+      window.debugLG?.("Unmounting MediaViewer");
       document.body.classList.remove("lg-open");
       window.toggleLgDescription = undefined;
     };
@@ -93,6 +124,8 @@ export const MediaViewer = ({
   // Combine slide handlers to reduce function creation
   const handleSlide = useCallback(
     (action: "before" | "after", detail?: { index: number }) => {
+      window.debugLG?.(`Slide ${action} handler called ${detail?.index}`);
+
       // For 'before' action - pause videos
       if (action === "before") {
         const videos = document.querySelectorAll("video");
@@ -107,8 +140,10 @@ export const MediaViewer = ({
         // Simple DOM operations for mobile
         const currentSlide = document.querySelector(".lg-current");
         if (currentSlide) {
+          window.debugLG?.("Setting up current slide");
           const video = currentSlide.querySelector("video") as HTMLVideoElement;
           if (video) {
+            window.debugLG?.("Setting up video controls");
             video.controls = true;
             video.style.visibility = "visible";
             video.style.opacity = "1";
@@ -117,6 +152,7 @@ export const MediaViewer = ({
 
         // Handle navigation
         if (index >= 0 && index < mediaItems.length && onNavigate) {
+          window.debugLG?.(`Navigating to item ${index}`);
           onNavigate(mediaItems[index].id);
         }
       }
@@ -126,6 +162,7 @@ export const MediaViewer = ({
 
   // Handle close with cleanup
   const handleClose = useCallback(() => {
+    window.debugLG?.("Close handler called");
     // Basic cleanup - avoid expensive operations
     document.body.classList.remove("lg-open");
     window.toggleLgDescription = undefined;
@@ -136,24 +173,44 @@ export const MediaViewer = ({
 
   // Auto-open gallery when component mounts - use a shorter timeout
   useEffect(() => {
+    window.debugLG?.(
+      `Setting up gallery auto-open, initialMediaIndex: ${initialMediaIndex}`
+    );
+
     // Faster initialization for mobile
     const timer = setTimeout(
       () => {
+        window.debugLG?.("Auto-open timeout triggered");
         const galleryItems = document.querySelectorAll(".lg-gallery-item");
+        window.debugLG?.(`Found ${galleryItems.length} gallery items`);
+
         if (galleryItems.length > initialMediaIndex) {
-          (galleryItems[initialMediaIndex] as HTMLElement)?.click();
+          window.debugLG?.(`Clicking item ${initialMediaIndex}`);
+          try {
+            (galleryItems[initialMediaIndex] as HTMLElement)?.click();
+            window.debugLG?.("Click executed");
+          } catch (err) {
+            window.debugLG?.(`Error clicking: ${err}`);
+          }
+        } else {
+          window.debugLG?.("Initial media index out of bounds");
         }
       },
       isMobile ? 20 : 50
     );
 
-    return () => clearTimeout(timer);
+    return () => {
+      window.debugLG?.("Clearing auto-open timer");
+      clearTimeout(timer);
+    };
   }, [initialMediaIndex, isMobile]);
 
   // Setup toggle description function
   useEffect(() => {
+    window.debugLG?.("Setting up toggle description function");
     // Function to toggle comment visibility
     window.toggleLgDescription = () => {
+      window.debugLG?.("Toggle description called");
       setCommentsVisible((prev) => !prev);
       const subHtmlEl = document.querySelector(".lg-sub-html");
       if (subHtmlEl) {
@@ -169,6 +226,8 @@ export const MediaViewer = ({
       window.toggleLgDescription = undefined;
     };
   }, [commentsVisible]);
+
+  window.debugLG?.("Rendering MediaViewer");
 
   // Optimize for mobile by reducing props and simplifying gallery structure
   return (
@@ -207,6 +266,8 @@ export const MediaViewer = ({
           rotate: false,
         }}
         speed={150} // Even faster transitions to improve perceived performance
+        licenseKey="non-commercial-version" // Add license key to avoid any potential delays
+        mode="lg-fade" // Use simpler fade mode for better performance
       >
         {mediaItems.map((item, index) => {
           const mediaUrl = config.getImageUrl(item.url);
@@ -267,9 +328,18 @@ export const MediaViewer = ({
         })}
       </LightGallery>
 
-      {/* Simplified fallback loading indicator */}
-      <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+      {/* Simplified fallback loading indicator with debug info */}
+      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center">
         <LoadingSpinner />
+        <div
+          id="lg-debug-info"
+          className="text-white text-sm mt-4 font-mono"
+          onClick={() => {
+            window.debugLG?.("Loading indicator clicked");
+          }}
+        >
+          Loading gallery...
+        </div>
       </div>
     </div>
   );

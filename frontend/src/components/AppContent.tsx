@@ -31,6 +31,16 @@ function AppContent() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Add debug on mount
+  useEffect(() => {
+    console.log(`[AppContent] Initializing, path: ${location.pathname}`);
+    if (isPhotoViewPage) {
+      console.log(
+        `[AppContent] Starting in photo view mode: ${location.pathname}`
+      );
+    }
+  }, []);
+
   // Detect mobile on mount
   useEffect(() => {
     const isMobileDevice =
@@ -39,12 +49,19 @@ function AppContent() {
         navigator.userAgent
       );
     setIsMobile(isMobileDevice);
+    console.log(`[AppContent] Mobile device detected: ${isMobileDevice}`);
   }, []);
 
   // Listen for navigation events
   useEffect(() => {
-    const handleNavigationStart = () => setIsNavigating(true);
-    const handleNavigationEnd = () => setIsNavigating(false);
+    const handleNavigationStart = () => {
+      console.log("[AppContent] Navigation started");
+      setIsNavigating(true);
+    };
+    const handleNavigationEnd = () => {
+      console.log("[AppContent] Navigation ended");
+      setIsNavigating(false);
+    };
 
     window.addEventListener("navigationStart", handleNavigationStart);
     window.addEventListener("navigationEnd", handleNavigationEnd);
@@ -55,12 +72,19 @@ function AppContent() {
     };
   }, []);
 
+  // Watch for location changes
+  useEffect(() => {
+    console.log(`[AppContent] Location changed: ${location.pathname}`);
+  }, [location.pathname]);
+
   // Memoize components to reduce re-renders
   const renderPhotoView = useCallback(() => {
+    console.log("[AppContent] Rendering photo view component");
     return <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />;
   }, []);
 
   const renderMainView = useCallback(() => {
+    console.log("[AppContent] Rendering main view component");
     return (
       <>
         <PhotoUpload eventId={DEMO_EVENT_ID} />

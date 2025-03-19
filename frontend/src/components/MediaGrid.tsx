@@ -6,6 +6,13 @@ import { Media } from "../types/media";
 import { MediaViewer } from "./MediaViewer";
 import { config } from "../config/config";
 
+// Type declaration for global debug function
+declare global {
+  interface Window {
+    debugLG?: (msg: string) => void;
+  }
+}
+
 // Preload LightGallery resources
 import "lightgallery/css/lightgallery.css";
 import "lightgallery/css/lg-zoom.css";
@@ -42,6 +49,9 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
 
   // Detect mobile devices
   useEffect(() => {
+    // Use a ref to prevent duplicate logs in React strict mode
+    const isInitialMount = { current: true };
+
     const checkMobile = () => {
       const mobile =
         window.innerWidth < 768 ||
@@ -49,6 +59,15 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
           navigator.userAgent
         );
       setIsMobile(mobile);
+
+      if (isInitialMount.current) {
+        if (window.debugLG) {
+          window.debugLG(`MediaGrid: Mobile device detected: ${mobile}`);
+        } else {
+          console.log(`[MediaGrid] Mobile device: ${mobile}`);
+        }
+        isInitialMount.current = false;
+      }
     };
 
     checkMobile();
@@ -72,6 +91,11 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   // Handle media item selection - optimized for mobile
   const handleMediaSelect = useCallback(
     (media: Media) => {
+      console.log(`[MediaGrid] Media selected: ${media.id}`);
+      if (window.debugLG) {
+        window.debugLG(`MediaGrid: Media selected: ${media.id}`);
+      }
+
       // Save current scroll position
       const scrollY = window.scrollY;
       sessionStorage.setItem("originalScrollPosition", scrollY.toString());
@@ -81,21 +105,33 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
       const index = filteredMedia.findIndex((item) => item.id === media.id);
       if (index !== -1) {
         setSelectedMediaIndex(index);
+        console.log(
+          `[MediaGrid] Media index found: ${index}, navigation starting`
+        );
 
         // On mobile, navigate first and set ready state after to improve perceived performance
         if (isMobile) {
+          console.log(`[MediaGrid] Mobile path: navigating first`);
           navigate(`/photo/${media.id}`);
           // Short delay to prevent janky transition
           setTimeout(() => {
+            console.log(
+              `[MediaGrid] Mobile path: setting viewer ready after navigation`
+            );
             setIsViewerReady(true);
           }, 10);
         } else {
-          // On desktop, set ready state first then navigate
+          console.log(`[MediaGrid] Desktop path: setting viewer ready first`);
           setIsViewerReady(true);
           setTimeout(() => {
+            console.log(
+              `[MediaGrid] Desktop path: navigating after ready state`
+            );
             navigate(`/photo/${media.id}`);
           }, 0);
         }
+      } else {
+        console.error(`[MediaGrid] Media index not found for id: ${media.id}`);
       }
     },
     [filteredMedia, navigate, isMobile]
@@ -104,22 +140,30 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   // Find the media index whenever the photoId changes
   useEffect(() => {
     if (isMediaView && photoId && filteredMedia.length > 0) {
+      console.log(
+        `[MediaGrid] In media view mode, photoId: ${photoId}, media count: ${filteredMedia.length}`
+      );
+
       const filteredIndex = filteredMedia.findIndex(
         (media) => media.id === Number(photoId)
       );
 
       if (filteredIndex !== -1) {
+        console.log(`[MediaGrid] Found media at index: ${filteredIndex}`);
         setSelectedMediaIndex(filteredIndex);
         // Small delay to ensure routing is complete before showing viewer
         setTimeout(
           () => {
+            console.log(`[MediaGrid] Setting viewer ready after routing`);
             setIsViewerReady(true);
           },
           isMobile ? 50 : 0
         );
       } else {
         // If photo not found, navigate back to main view
-        console.log(`Photo ID ${photoId} not found in filtered media`);
+        console.error(
+          `[MediaGrid] Photo ID ${photoId} not found in filtered media`
+        );
         navigate("/");
       }
     }

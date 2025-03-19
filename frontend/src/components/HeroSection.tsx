@@ -6,7 +6,7 @@ import { EVENT_QUERY_KEY } from "../hooks/useEvent";
 import { useHeroImage } from "../hooks/useHeroImage";
 
 interface HeroSectionProps {
-  event?: Event;
+  event?: Event | null;
   isAdmin?: boolean;
   isPhotoView?: boolean;
 }
@@ -21,6 +21,13 @@ export const HeroSection = ({
     queryKey: EVENT_QUERY_KEY.event(event?.id || 0),
     enabled: !!event?.id,
     initialData: event,
+    queryFn: async () => {
+      if (!event?.id) return event || null;
+
+      // This is just a placeholder since we're relying on initialData
+      // and the actual fetching happens in useEvent hook
+      return event || null;
+    },
   });
 
   // Then preload the hero image

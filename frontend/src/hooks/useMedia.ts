@@ -6,15 +6,15 @@ import { Media, photoToMedia, videoToMedia } from "../types/media";
 export type SortOption = "newest" | "oldest" | "withDescription";
 
 export const QUERY_KEYS = {
-  photos: (eventId: number, sortBy?: SortOption) =>
-    ["photos", eventId, sortBy] as const,
-  videos: (eventId: number, sortBy?: SortOption) =>
-    ["videos", eventId, sortBy] as const,
-  media: (eventId: number, sortBy?: SortOption) =>
-    ["media", eventId, sortBy] as const,
-  allPhotos: (eventId: number) => ["photos", eventId] as const,
-  allVideos: (eventId: number) => ["videos", eventId] as const,
-  allMedia: (eventId: number) => ["media", eventId] as const,
+  photos: (eventId: number | undefined, sortBy?: SortOption) =>
+    ["photos", eventId || 0, sortBy] as const,
+  videos: (eventId: number | undefined, sortBy?: SortOption) =>
+    ["videos", eventId || 0, sortBy] as const,
+  media: (eventId: number | undefined, sortBy?: SortOption) =>
+    ["media", eventId || 0, sortBy] as const,
+  allPhotos: (eventId: number | undefined) => ["photos", eventId || 0] as const,
+  allVideos: (eventId: number | undefined) => ["videos", eventId || 0] as const,
+  allMedia: (eventId: number | undefined) => ["media", eventId || 0] as const,
 };
 
 const sortMedia = (media: Media[], sortBy: SortOption = "newest") => {
@@ -56,15 +56,17 @@ const sortMedia = (media: Media[], sortBy: SortOption = "newest") => {
 };
 
 export function useMedia(
-  eventId: number,
+  eventId: number | undefined,
   sortBy: SortOption = "newest",
   heroPhotoId?: number
 ) {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: QUERY_KEYS.media(eventId, sortBy),
+    queryKey: QUERY_KEYS.media(eventId || 0, sortBy),
     queryFn: async () => {
+      if (!eventId) return [];
+
       const [photos, videos] = await Promise.all([
         photoService.getPhotos(eventId),
         videoService.getVideos(eventId),
@@ -75,6 +77,7 @@ export function useMedia(
 
       return [...photoMedia, ...videoMedia];
     },
+    enabled: !!eventId,
     select: (data: Media[]) => {
       // Get the current event data from the cache if heroPhotoId wasn't provided
       const event = !heroPhotoId
@@ -97,7 +100,7 @@ interface UploadMediaParams {
   description: string;
 }
 
-export function useMediaUpload(eventId: number) {
+export function useMediaUpload(eventId: number | undefined) {
   const queryClient = useQueryClient();
 
   const uploadMutation = useMutation({
@@ -113,7 +116,11 @@ export function useMediaUpload(eventId: number) {
     },
     onSuccess: () => {
       // Invalidate and refetch media queries
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.allMedia(eventId) });
+      if (eventId) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.allMedia(eventId),
+        });
+      }
     },
   });
 
@@ -121,6 +128,10 @@ export function useMediaUpload(eventId: number) {
     files: File[],
     descriptions: string[]
   ): Promise<void> => {
+    if (!eventId) {
+      throw new Error("Cannot upload files without a valid eventId");
+    }
+
     const uploads = files.map((file, index) => {
       return uploadMutation.mutateAsync({
         file,
