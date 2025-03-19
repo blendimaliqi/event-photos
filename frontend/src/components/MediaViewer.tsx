@@ -16,6 +16,7 @@ const MediaViewer = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
   const [showThumbnails, setShowThumbnails] = useState(true);
+  const [showDescription, setShowDescription] = useState(true);
 
   useEffect(() => {
     // Find the index of the initially selected media
@@ -55,6 +56,10 @@ const MediaViewer = ({
     setIsLoading(false);
   };
 
+  const toggleDescription = () => {
+    setShowDescription((prev) => !prev);
+  };
+
   // Update browser URL with current media info for sharing/bookmarking
   useEffect(() => {
     if (currentMedia) {
@@ -78,6 +83,8 @@ const MediaViewer = ({
         handleClose();
       } else if (e.key === "t" || e.key === "T") {
         setShowThumbnails((prev) => !prev);
+      } else if (e.key === "d" || e.key === "D") {
+        setShowDescription((prev) => !prev);
       }
     };
 
@@ -86,6 +93,9 @@ const MediaViewer = ({
   }, [handlePrevious, handleNext, handleClose]);
 
   if (!currentMedia) return null;
+
+  // Determine if we should show the description
+  const hasDescription = !!currentMedia.description;
 
   return (
     <div
@@ -129,12 +139,40 @@ const MediaViewer = ({
           </div>
 
           <div className="flex items-center gap-3">
+            {hasDescription && (
+              <button
+                onClick={toggleDescription}
+                className={`text-white p-2 rounded-full transition-colors ${
+                  showDescription
+                    ? "bg-white/30"
+                    : "bg-black/50 hover:bg-black/70"
+                }`}
+                aria-label="Toggle description"
+                title="Toggle description (D)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h7"
+                  />
+                </svg>
+              </button>
+            )}
             <button
               onClick={() => setShowThumbnails((prev) => !prev)}
               className={`text-white p-2 rounded-full transition-colors ${
                 showThumbnails ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
               }`}
               aria-label="Toggle thumbnails"
+              title="Toggle thumbnails (T)"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -147,7 +185,7 @@ const MediaViewer = ({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
                 />
               </svg>
             </button>
@@ -164,6 +202,7 @@ const MediaViewer = ({
               }}
               className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
               aria-label="Download media"
+              title="Download media"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -284,11 +323,36 @@ const MediaViewer = ({
         </button>
       </div>
 
-      {/* Description */}
-      {currentMedia.description && (
-        <div className="absolute bottom-[100px] left-0 right-0 bg-black/75 py-3 px-4 z-20">
-          <div className="text-white text-center max-w-3xl mx-auto">
-            {currentMedia.description}
+      {/* Description panel - improved with toggle and better styling */}
+      {currentMedia.description && showDescription && (
+        <div className="absolute bottom-[100px] left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 ease-in-out">
+          <div className="bg-black/75 rounded-lg shadow-lg overflow-hidden max-w-3xl w-[95vw] backdrop-blur-sm">
+            <div className="flex items-center justify-between px-4 py-2 bg-black/50">
+              <h3 className="text-white text-sm font-medium">Description</h3>
+              <button
+                onClick={toggleDescription}
+                className="text-white/80 hover:text-white p-1 rounded-full"
+                aria-label="Close description"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 text-white max-h-[25vh] overflow-y-auto">
+              {currentMedia.description}
+            </div>
           </div>
         </div>
       )}
@@ -347,6 +411,31 @@ const MediaViewer = ({
           </div>
         </div>
       </div>
+
+      {/* Floating description toggle button when description is hidden */}
+      {currentMedia.description && !showDescription && (
+        <button
+          onClick={toggleDescription}
+          className="absolute bottom-[120px] right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full shadow-lg z-30"
+          aria-label="Show description"
+          title="Show description (D)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
