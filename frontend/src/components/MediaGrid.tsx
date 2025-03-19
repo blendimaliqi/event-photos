@@ -92,9 +92,6 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   const handleMediaSelect = useCallback(
     (media: Media) => {
       console.log(`[MediaGrid] Media selected: ${media.id}`);
-      if (window.debugLG) {
-        window.debugLG(`MediaGrid: Media selected: ${media.id}`);
-      }
 
       // Save current scroll position
       const scrollY = window.scrollY;
@@ -105,28 +102,16 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
       const index = filteredMedia.findIndex((item) => item.id === media.id);
       if (index !== -1) {
         setSelectedMediaIndex(index);
-        console.log(
-          `[MediaGrid] Media index found: ${index}, navigation starting`
-        );
 
-        // On mobile, navigate first and set ready state after to improve perceived performance
+        // For mobile, show viewer immediately then navigate
         if (isMobile) {
-          console.log(`[MediaGrid] Mobile path: navigating first`);
-          navigate(`/photo/${media.id}`);
-          // Short delay to prevent janky transition
-          setTimeout(() => {
-            console.log(
-              `[MediaGrid] Mobile path: setting viewer ready after navigation`
-            );
-            setIsViewerReady(true);
-          }, 10);
+          setIsViewerReady(true);
+          // Use history.pushState directly instead of navigate for better performance
+          window.history.pushState(null, "", `/photo/${media.id}`);
         } else {
-          console.log(`[MediaGrid] Desktop path: setting viewer ready first`);
+          // Desktop path remains the same
           setIsViewerReady(true);
           setTimeout(() => {
-            console.log(
-              `[MediaGrid] Desktop path: navigating after ready state`
-            );
             navigate(`/photo/${media.id}`);
           }, 0);
         }
@@ -140,41 +125,27 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   // Find the media index whenever the photoId changes
   useEffect(() => {
     if (isMediaView && photoId && filteredMedia.length > 0) {
-      console.log(
-        `[MediaGrid] In media view mode, photoId: ${photoId}, media count: ${filteredMedia.length}`
-      );
-
       const filteredIndex = filteredMedia.findIndex(
         (media) => media.id === Number(photoId)
       );
 
       if (filteredIndex !== -1) {
-        console.log(`[MediaGrid] Found media at index: ${filteredIndex}`);
         setSelectedMediaIndex(filteredIndex);
-        // Small delay to ensure routing is complete before showing viewer
-        setTimeout(
-          () => {
-            console.log(`[MediaGrid] Setting viewer ready after routing`);
-            setIsViewerReady(true);
-          },
-          isMobile ? 50 : 0
-        );
+        // Set viewer ready immediately for faster loading
+        setIsViewerReady(true);
       } else {
         // If photo not found, navigate back to main view
-        console.error(
-          `[MediaGrid] Photo ID ${photoId} not found in filtered media`
-        );
         navigate("/");
       }
     }
-  }, [isMediaView, photoId, filteredMedia, navigate, isMobile]);
+  }, [isMediaView, photoId, filteredMedia, navigate]);
 
-  // Preload next items to improve perceived performance
+  // Preload first few images for better performance
   useEffect(() => {
     if (filteredMedia.length === 0) return;
 
-    // Preload first few images
-    const preloadCount = Math.min(5, filteredMedia.length);
+    // Only preload the first few images
+    const preloadCount = Math.min(3, filteredMedia.length);
     for (let i = 0; i < preloadCount; i++) {
       const media = filteredMedia[i];
       if (media.type === "photo") {
