@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, useEffect, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy, useCallback } from "react";
 import { useLocation, Routes, Route } from "react-router-dom";
 import { useEvent } from "../hooks/useEvent";
 import { HeroSection } from "./HeroSection";
@@ -11,6 +11,11 @@ import AdminRoute from "./AdminRoute";
 
 // Pre-load MediaGrid to avoid lazy-loading delay on photo view
 import { MediaGrid } from "./MediaGrid";
+
+// Import LightGallery styles at the app root level for faster page transitions
+import "lightgallery/css/lightgallery.css";
+import "lightgallery/css/lg-zoom.css";
+import "lightgallery/css/lg-video.css";
 
 const PhotoUpload = lazy(() =>
   import("./PhotoUpload").then((module) => ({
@@ -24,6 +29,17 @@ function AppContent() {
   const isPhotoViewPage = location.pathname.startsWith("/photo/");
   const { data: event } = useEvent(DEMO_EVENT_ID);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    const isMobileDevice =
+      window.innerWidth < 768 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+    setIsMobile(isMobileDevice);
+  }, []);
 
   // Listen for navigation events
   useEffect(() => {
@@ -39,59 +55,91 @@ function AppContent() {
     };
   }, []);
 
+  // Memoize components to reduce re-renders
+  const renderPhotoView = useCallback(() => {
+    return <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />;
+  }, []);
+
+  const renderMainView = useCallback(() => {
+    return (
+      <>
+        <PhotoUpload eventId={DEMO_EVENT_ID} />
+        <MediaGrid eventId={DEMO_EVENT_ID} />
+      </>
+    );
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Only show hero section if not navigating */}
-      {!isNavigating && (
-        <AnimatePresence mode="wait">
-          {!isAdminPage && !isPhotoViewPage ? (
-            <HeroSection event={event} />
-          ) : (
-            <HeroSection
-              event={event}
-              isAdmin={isAdminPage}
-              isPhotoView={isPhotoViewPage}
-            />
-          )}
-        </AnimatePresence>
-      )}
+      {!isNavigating &&
+        (!isMobile ? (
+          // Use AnimatePresence only on desktop
+          <AnimatePresence mode="wait">
+            {!isAdminPage && !isPhotoViewPage ? (
+              <HeroSection event={event} />
+            ) : (
+              <HeroSection
+                event={event}
+                isAdmin={isAdminPage}
+                isPhotoView={isPhotoViewPage}
+              />
+            )}
+          </AnimatePresence>
+        ) : (
+          // Simplified rendering for mobile
+          <HeroSection
+            event={event}
+            isAdmin={isAdminPage}
+            isPhotoView={isPhotoViewPage}
+          />
+        ))}
 
       <Layout isAdminPage={isAdminPage}>
         <Suspense fallback={<LoadingSpinner />}>
-          <AnimatePresence mode="wait" initial={false}>
+          {isMobile ? (
+            // Use simpler routing for mobile
             <Routes>
               <Route path="/admin" element={<AdminRoute />} />
-              <Route
-                path="/"
-                element={
-                  <motion.div
-                    key="home"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <PhotoUpload eventId={DEMO_EVENT_ID} />
-                    <MediaGrid eventId={DEMO_EVENT_ID} />
-                  </motion.div>
-                }
-              />
-              <Route
-                path="/photo/:photoId"
-                element={
-                  <motion.div
-                    key="photo-view"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <MediaGrid eventId={DEMO_EVENT_ID} isMediaView />
-                  </motion.div>
-                }
-              />
+              <Route path="/" element={renderMainView()} />
+              <Route path="/photo/:photoId" element={renderPhotoView()} />
             </Routes>
-          </AnimatePresence>
+          ) : (
+            // Use animations only on desktop
+            <AnimatePresence mode="wait" initial={false}>
+              <Routes>
+                <Route path="/admin" element={<AdminRoute />} />
+                <Route
+                  path="/"
+                  element={
+                    <motion.div
+                      key="home"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderMainView()}
+                    </motion.div>
+                  }
+                />
+                <Route
+                  path="/photo/:photoId"
+                  element={
+                    <motion.div
+                      key="photo-view"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {renderPhotoView()}
+                    </motion.div>
+                  }
+                />
+              </Routes>
+            </AnimatePresence>
+          )}
         </Suspense>
       </Layout>
     </div>

@@ -6,6 +6,11 @@ import { Media } from "../types/media";
 import { MediaViewer } from "./MediaViewer";
 import { config } from "../config/config";
 
+// Preload LightGallery resources
+import "lightgallery/css/lightgallery.css";
+import "lightgallery/css/lg-zoom.css";
+import "lightgallery/css/lg-video.css";
+
 interface MediaGridProps {
   eventId: number;
   isMediaView?: boolean;
@@ -33,6 +38,23 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
   // Add state for selected media index
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number>(-1);
   const [isViewerReady, setIsViewerReady] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile =
+        window.innerWidth < 768 ||
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+      setIsMobile(mobile);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Update session storage when sort changes
   useEffect(() => {
@@ -47,7 +69,7 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
     return true; // If no hero photo, include all media
   });
 
-  // Handle media item selection
+  // Handle media item selection - optimized for mobile
   const handleMediaSelect = useCallback(
     (media: Media) => {
       // Save current scroll position
@@ -59,36 +81,64 @@ export function MediaGrid({ eventId, isMediaView = false }: MediaGridProps) {
       const index = filteredMedia.findIndex((item) => item.id === media.id);
       if (index !== -1) {
         setSelectedMediaIndex(index);
-        // Pre-initialize the viewer before navigation
-        setIsViewerReady(true);
-        // Short timeout to allow state to update before navigation
-        setTimeout(() => {
+
+        // On mobile, navigate first and set ready state after to improve perceived performance
+        if (isMobile) {
           navigate(`/photo/${media.id}`);
-        }, 0);
+          // Short delay to prevent janky transition
+          setTimeout(() => {
+            setIsViewerReady(true);
+          }, 10);
+        } else {
+          // On desktop, set ready state first then navigate
+          setIsViewerReady(true);
+          setTimeout(() => {
+            navigate(`/photo/${media.id}`);
+          }, 0);
+        }
       }
     },
-    [filteredMedia, navigate]
+    [filteredMedia, navigate, isMobile]
   );
 
   // Find the media index whenever the photoId changes
   useEffect(() => {
     if (isMediaView && photoId && filteredMedia.length > 0) {
-      // Set viewer ready immediately to prevent loading delay
-      setIsViewerReady(true);
-
       const filteredIndex = filteredMedia.findIndex(
         (media) => media.id === Number(photoId)
       );
 
       if (filteredIndex !== -1) {
         setSelectedMediaIndex(filteredIndex);
+        // Small delay to ensure routing is complete before showing viewer
+        setTimeout(
+          () => {
+            setIsViewerReady(true);
+          },
+          isMobile ? 50 : 0
+        );
       } else {
         // If photo not found, navigate back to main view
         console.log(`Photo ID ${photoId} not found in filtered media`);
         navigate("/");
       }
     }
-  }, [isMediaView, photoId, filteredMedia, navigate]);
+  }, [isMediaView, photoId, filteredMedia, navigate, isMobile]);
+
+  // Preload next items to improve perceived performance
+  useEffect(() => {
+    if (filteredMedia.length === 0) return;
+
+    // Preload first few images
+    const preloadCount = Math.min(5, filteredMedia.length);
+    for (let i = 0; i < preloadCount; i++) {
+      const media = filteredMedia[i];
+      if (media.type === "photo") {
+        const img = new Image();
+        img.src = config.getImageUrl(media.url);
+      }
+    }
+  }, [filteredMedia]);
 
   // Handle close of media view
   const handleCloseMediaView = useCallback(() => {
