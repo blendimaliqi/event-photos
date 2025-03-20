@@ -18,6 +18,8 @@ const MediaViewer = ({
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [showDescription, setShowDescription] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFullscreenIndicator, setShowFullscreenIndicator] = useState(false);
 
   // Touch swiping state
   const [touchStartX, setTouchStartX] = useState(0);
@@ -80,6 +82,21 @@ const MediaViewer = ({
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+    setShowFullscreenIndicator(true);
+  };
+
+  // Effect to handle fullscreen indicator timeout
+  useEffect(() => {
+    if (showFullscreenIndicator) {
+      const timer = setTimeout(() => {
+        setShowFullscreenIndicator(false);
+      }, 3000); // Hide after 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [showFullscreenIndicator]);
 
   // Swipe handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -193,19 +210,25 @@ const MediaViewer = ({
       } else if (e.key === "ArrowRight") {
         handleNext();
       } else if (e.key === "Escape") {
-        handleClose();
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else {
+          handleClose();
+        }
       } else if (e.key === "t" || e.key === "T") {
         setShowThumbnails((prev) => !prev);
       } else if (e.key === "d" || e.key === "D") {
         setShowDescription((prev) => !prev);
       } else if (e.key === "m" || e.key === "M") {
         toggleMute();
+      } else if (e.key === "f" || e.key === "F") {
+        toggleFullscreen();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePrevious, handleNext, handleClose]);
+  }, [handlePrevious, handleNext, handleClose, isFullscreen]);
 
   if (!currentMedia) return null;
 
@@ -232,7 +255,11 @@ const MediaViewer = ({
       }}
     >
       {/* Top bar with controls */}
-      <div className="absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-4">
+      <div
+        className={`absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent py-4 transition-opacity duration-300 ${
+          isFullscreen ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      >
         <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -441,14 +468,20 @@ const MediaViewer = ({
                 <img
                   src={prevMedia.url}
                   alt=""
-                  className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                  className={`max-w-full object-contain rounded shadow-lg ${
+                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"
+                  }`}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <img
                     src={prevMedia.thumbnailUrl || ""}
                     alt=""
-                    className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                    className={`max-w-full object-contain rounded shadow-lg ${
+                      isFullscreen
+                        ? "max-h-screen"
+                        : "max-h-[calc(100vh-180px)]"
+                    }`}
                   />
                 </div>
               )}
@@ -459,25 +492,44 @@ const MediaViewer = ({
           <div
             className={`transition-opacity duration-300 ${
               isLoading ? "opacity-30" : "opacity-100"
-            } max-w-full max-h-[calc(100vh-180px)] relative`}
+            } flex items-center justify-center relative cursor-pointer`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFullscreen();
+            }}
           >
             {currentMedia.type === "photo" ? (
               <img
                 src={currentMedia.url}
                 alt={currentMedia.description || "Photo"}
-                className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                className={`
+                  max-w-full object-contain rounded shadow-lg transition-all duration-300
+                  ${isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"}
+                `}
+                style={{ objectFit: "scale-down" }}
                 onLoad={handleImageLoad}
               />
             ) : (
               <video
                 src={currentMedia.url}
                 poster={currentMedia.thumbnailUrl}
-                className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
-                controls
+                className={`
+                  max-w-full rounded shadow-lg transition-all duration-300
+                  ${isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"}
+                `}
+                style={{ objectFit: "scale-down" }}
+                controls={!isFullscreen}
                 loop={false}
                 muted={isMuted}
                 onLoadedMetadata={handleImageLoad}
                 preload="metadata"
+                onClick={(e) => {
+                  // For videos, prevent fullscreen toggle when clicking on video controls
+                  if (isFullscreen) {
+                    e.stopPropagation();
+                    toggleFullscreen();
+                  }
+                }}
               >
                 Your browser does not support the video tag.
               </video>
@@ -491,14 +543,20 @@ const MediaViewer = ({
                 <img
                   src={nextMedia.url}
                   alt=""
-                  className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                  className={`max-w-full object-contain rounded shadow-lg ${
+                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"
+                  }`}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <img
                     src={nextMedia.thumbnailUrl || ""}
                     alt=""
-                    className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                    className={`max-w-full object-contain rounded shadow-lg ${
+                      isFullscreen
+                        ? "max-h-screen"
+                        : "max-h-[calc(100vh-180px)]"
+                    }`}
                   />
                 </div>
               )}
@@ -548,10 +606,21 @@ const MediaViewer = ({
             )}
           </div>
         )}
+
+        {/* Fullscreen indicator - briefly shown when entering fullscreen */}
+        {isFullscreen && showFullscreenIndicator && (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black/40 text-white text-sm py-2 px-4 rounded-full backdrop-blur-sm transition-opacity duration-300 pointer-events-none">
+            Click image or press Esc to exit fullscreen
+          </div>
+        )}
       </div>
 
       {/* Navigation controls */}
-      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none z-20">
+      <div
+        className={`absolute inset-y-0 left-0 right-0 flex items-center justify-between pointer-events-none z-20 transition-opacity duration-300 ${
+          isFullscreen ? "opacity-0" : "opacity-100"
+        }`}
+      >
         <button
           className="pointer-events-auto bg-black/50 hover:bg-black/70 text-white p-2 ml-4 rounded-full w-12 h-12 flex items-center justify-center transition-transform transform hover:scale-105 focus:outline-none shadow-lg"
           onClick={handlePrevious}
@@ -596,7 +665,7 @@ const MediaViewer = ({
       </div>
 
       {/* Description panel - improved with toggle and better styling */}
-      {currentMedia.description && showDescription && (
+      {currentMedia.description && showDescription && !isFullscreen && (
         <div className="absolute bottom-[100px] left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 ease-in-out">
           <div className="bg-black/75 rounded-lg shadow-lg overflow-hidden max-w-3xl w-[95vw] backdrop-blur-sm">
             <div className="flex items-center justify-between px-4 py-2 bg-black/50">
@@ -632,7 +701,7 @@ const MediaViewer = ({
       {/* Thumbnails gallery */}
       <div
         className={`absolute bottom-0 left-0 right-0 bg-black/80 z-30 transition-transform duration-300 ${
-          showThumbnails ? "translate-y-0" : "translate-y-full"
+          showThumbnails && !isFullscreen ? "translate-y-0" : "translate-y-full"
         }`}
       >
         <div className="max-w-screen-xl mx-auto p-3">
@@ -685,7 +754,7 @@ const MediaViewer = ({
       </div>
 
       {/* Floating description toggle button when description is hidden */}
-      {currentMedia.description && !showDescription && (
+      {currentMedia.description && !showDescription && !isFullscreen && (
         <button
           onClick={toggleDescription}
           className="absolute bottom-[120px] right-4 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full shadow-lg z-30"
