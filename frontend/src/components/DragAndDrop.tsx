@@ -1,10 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { FILE_SIZE_LIMITS, formatFileSize } from "../config/constants";
 
-interface FileWithError extends File {
-  error?: string;
-}
-
 interface DragAndDropProps {
   onFilesDrop: (files: FileList) => void;
   isUploading: boolean;

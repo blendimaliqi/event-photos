@@ -18,6 +18,7 @@ const MediaViewer = ({
   const [showThumbnails, setShowThumbnails] = useState(
     () => initialMedia.type === "photo"
   );
+  const [thumbnailUserPreference, setThumbnailUserPreference] = useState(true);
   const [showDescription, setShowDescription] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -33,6 +34,17 @@ const MediaViewer = ({
   const swipeThreshold = 100; // Minimum px to swipe to trigger next/previous
   const mainContentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const thumbnailsContainerRef = useRef<HTMLDivElement>(null);
+  const thumbnailRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Handle thumbnail visibility and toggling
+  const toggleThumbnails = useCallback((e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+
+    // Update both the visibility state and user preference
+    setShowThumbnails((prev) => !prev);
+    setThumbnailUserPreference((prev) => !prev);
+  }, []);
 
   // Effect to prevent body scrolling when viewer is open
   useEffect(() => {
@@ -240,7 +252,8 @@ const MediaViewer = ({
           handleClose();
         }
       } else if (e.key === "t" || e.key === "T") {
-        setShowThumbnails((prev) => !prev);
+        // Use the toggleThumbnails function
+        toggleThumbnails();
       } else if (e.key === "d" || e.key === "D") {
         setShowDescription((prev) => !prev);
       } else if (e.key === "m" || e.key === "M") {
@@ -253,22 +266,69 @@ const MediaViewer = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePrevious, handleNext, handleClose, isFullscreen, currentMedia]);
+  }, [
+    handlePrevious,
+    handleNext,
+    handleClose,
+    isFullscreen,
+    currentMedia,
+    toggleThumbnails,
+  ]);
 
   // Effect to handle video-specific UI adjustments
   useEffect(() => {
     const isCurrentVideo = currentMedia?.type === "video";
+    const isCurrentPhoto = currentMedia?.type === "photo";
 
-    // Hide thumbnails when switching to video content
     if (isCurrentVideo) {
+      // Always hide thumbnails for videos
       setShowThumbnails(false);
+    } else if (isCurrentPhoto && thumbnailUserPreference) {
+      // Show thumbnails for photos only if user hasn't manually turned them off
+      setShowThumbnails(true);
     }
 
     // Exit fullscreen when navigating to a video
     if (isCurrentVideo && isFullscreen) {
       setIsFullscreen(false);
     }
-  }, [currentIndex, currentMedia, isFullscreen]);
+  }, [currentIndex, currentMedia, isFullscreen, thumbnailUserPreference]);
+
+  // Effect to scroll the selected thumbnail into view when current index changes
+  useEffect(() => {
+    if (
+      thumbnailsContainerRef.current &&
+      thumbnailRefs.current[currentIndex] &&
+      showThumbnails
+    ) {
+      const container = thumbnailsContainerRef.current;
+      const thumbnail = thumbnailRefs.current[currentIndex];
+
+      // Get positions
+      const containerRect = container.getBoundingClientRect();
+      const thumbnailRect = thumbnail.getBoundingClientRect();
+
+      // Check if thumbnail is not fully visible
+      const isNotFullyVisible =
+        thumbnailRect.left < containerRect.left ||
+        thumbnailRect.right > containerRect.right;
+
+      if (isNotFullyVisible) {
+        // Scroll the thumbnail into view with smooth animation
+        thumbnail.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }
+  }, [currentIndex, showThumbnails]);
+
+  // Effect to initialize thumbnail refs
+  useEffect(() => {
+    // Create refs for each thumbnail
+    thumbnailRefs.current = Array(mediaItems.length).fill(null);
+  }, [mediaItems.length]);
 
   if (!currentMedia) return null;
 
@@ -474,7 +534,7 @@ const MediaViewer = ({
             )}
 
             <button
-              onClick={() => setShowThumbnails((prev) => !prev)}
+              onClick={toggleThumbnails}
               className={`text-white p-2 rounded-full transition-colors ${
                 showThumbnails ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
               }`}
@@ -825,11 +885,12 @@ const MediaViewer = ({
         }`}
       >
         <div className="max-w-screen-xl mx-auto p-3">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" ref={thumbnailsContainerRef}>
             <div className="flex gap-2 pb-1">
               {mediaItems.map((media, idx) => (
                 <div
                   key={`thumb-${media.type}-${media.id}`}
+                  ref={(el) => (thumbnailRefs.current[idx] = el)}
                   className={`flex-shrink-0 w-16 h-16 cursor-pointer transition-all rounded overflow-hidden ${
                     idx === currentIndex
                       ? "ring-2 ring-white scale-110"
