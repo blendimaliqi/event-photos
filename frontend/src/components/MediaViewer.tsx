@@ -17,6 +17,7 @@ const MediaViewer = ({
   const [isClosing, setIsClosing] = useState(false);
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [showDescription, setShowDescription] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     // Find the index of the initially selected media
@@ -60,6 +61,10 @@ const MediaViewer = ({
     setShowDescription((prev) => !prev);
   };
 
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
+
   // Update browser URL with current media info for sharing/bookmarking
   useEffect(() => {
     if (currentMedia) {
@@ -85,6 +90,8 @@ const MediaViewer = ({
         setShowThumbnails((prev) => !prev);
       } else if (e.key === "d" || e.key === "D") {
         setShowDescription((prev) => !prev);
+      } else if (e.key === "m" || e.key === "M") {
+        toggleMute();
       }
     };
 
@@ -96,6 +103,7 @@ const MediaViewer = ({
 
   // Determine if we should show the description
   const hasDescription = !!currentMedia.description;
+  const isVideo = currentMedia.type === "video";
 
   return (
     <div
@@ -139,6 +147,54 @@ const MediaViewer = ({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Sound mute/unmute button for videos */}
+            {isVideo && (
+              <button
+                onClick={toggleMute}
+                className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                aria-label={isMuted ? "Unmute" : "Mute"}
+                title={`${isMuted ? "Unmute" : "Mute"} (M)`}
+              >
+                {isMuted ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                      clipRule="evenodd"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
             {hasDescription && (
               <button
                 onClick={toggleDescription}
@@ -270,6 +326,7 @@ const MediaViewer = ({
               className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
               controls
               autoPlay
+              muted={isMuted}
               onLoadedData={handleImageLoad}
             >
               Your browser does not support the video tag.
