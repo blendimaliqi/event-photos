@@ -1,4 +1,9 @@
 import React, { useState, useCallback } from "react";
+import { FILE_SIZE_LIMITS, formatFileSize } from "../config/constants";
+
+interface FileWithError extends File {
+  error?: string;
+}
 
 interface DragAndDropProps {
   onFilesDrop: (files: FileList) => void;
@@ -7,6 +12,30 @@ interface DragAndDropProps {
 
 export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [fileErrors, setFileErrors] = useState<string[]>([]);
+
+  const validateFiles = (files: FileList): boolean => {
+    const newErrors: string[] = [];
+    let valid = true;
+
+    Array.from(files).forEach((file) => {
+      // Check if it's a video file
+      if (file.type.startsWith("video/")) {
+        // Check if file exceeds maximum size
+        if (file.size > FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_BYTES) {
+          newErrors.push(
+            `Video "${file.name}" exceeds maximum size of ${
+              FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB
+            }MB (${formatFileSize(file.size)})`
+          );
+          valid = false;
+        }
+      }
+    });
+
+    setFileErrors(newErrors);
+    return valid;
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -25,7 +54,9 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
 
       const files = e.dataTransfer.files;
       if (files.length > 0) {
-        onFilesDrop(files);
+        if (validateFiles(files)) {
+          onFilesDrop(files);
+        }
       }
     },
     [onFilesDrop]
@@ -34,14 +65,27 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      onFilesDrop(files);
+      if (validateFiles(files)) {
+        onFilesDrop(files);
+      }
     }
   };
 
   return (
     <div className="relative px-6 sm:px-0">
+      {fileErrors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
+          <p className="font-medium mb-1">File size errors:</p>
+          <ul className="text-sm list-disc pl-5">
+            {fileErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div
-        className={`border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center transition-colors min-h-[200px] sm:min-h-[240px] flex items-center justify-center backdrop-blur-sm focus:outline-none select-none cursor-default ${
+        className={`border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center transition-colors min-h-[200px] sm:min-h-[240px] flex flex-col items-center justify-center backdrop-blur-sm focus:outline-none select-none cursor-default ${
           isDragging
             ? "border-rose-400 bg-rose-50/80"
             : "border-rose-200 hover:border-rose-300 bg-white/40"
@@ -89,6 +133,10 @@ export function DragAndDrop({ onFilesDrop, isUploading }: DragAndDropProps) {
               >
                 Zgjidhni Foto/Video
               </label>
+              <div className="text-xs text-gray-500 mt-2">
+                Videot duhet të jenë më të vogla se{" "}
+                {FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB
+              </div>
             </>
           )}
         </div>

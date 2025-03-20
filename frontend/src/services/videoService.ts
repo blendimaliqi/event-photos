@@ -1,5 +1,6 @@
 import { Video } from "../types/video";
 import { config } from "../config/config";
+import { FILE_SIZE_LIMITS } from "../config/constants";
 
 const API_URL = config.API_ENDPOINT;
 
@@ -9,6 +10,13 @@ export const videoService = {
     eventId: string,
     description: string
   ): Promise<Video> {
+    // Validate file size before attempting upload
+    if (file.size > FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_BYTES) {
+      throw new Error(
+        `Video exceeds maximum size of ${FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB. Please upload a smaller file.`
+      );
+    }
+
     // Extract video thumbnail
     const thumbnailBlob = await extractVideoThumbnail(file);
 
@@ -34,7 +42,37 @@ export const videoService = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to upload video");
+      // Handle specific error messages from the API
+      const responseText = await response.text();
+
+      // Try to parse as JSON
+      try {
+        const errorData = JSON.parse(responseText);
+
+        // Check if it's a file size error response
+        if (
+          responseText.toLowerCase().includes("size") &&
+          responseText.toLowerCase().includes("exceed")
+        ) {
+          throw new Error(
+            errorData ||
+              `Video size exceeds the maximum allowed size of ${FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB.`
+          );
+        }
+      } catch (parseError) {
+        // If not JSON or doesn't have expected structure, check for size-related text
+        if (
+          responseText.toLowerCase().includes("size") &&
+          responseText.toLowerCase().includes("exceed")
+        ) {
+          throw new Error(
+            `Video exceeds maximum size limit of ${FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB`
+          );
+        }
+      }
+
+      // Default error message
+      throw new Error("Failed to upload video. The file may be too large.");
     }
 
     return response.json();

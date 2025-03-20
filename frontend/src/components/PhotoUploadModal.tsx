@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FILE_SIZE_LIMITS, formatFileSize } from "../config/constants";
 
 interface MediaUploadModalProps {
   files: File[];
@@ -11,6 +12,7 @@ interface PreviewItem {
   url: string;
   error: boolean;
   isVideo: boolean;
+  fileSize?: number;
 }
 
 export function PhotoUploadModal({
@@ -30,7 +32,8 @@ export function PhotoUploadModal({
     const newPreviews = files.map((file) => ({
       url: URL.createObjectURL(file),
       error: false,
-      isVideo: file.type.startsWith('video/')
+      isVideo: file.type.startsWith("video/"),
+      fileSize: file.size,
     }));
     setPreviews(newPreviews);
 
@@ -70,17 +73,32 @@ export function PhotoUploadModal({
     }
 
     if (preview.isVideo) {
+      const isVideoTooLarge =
+        preview.fileSize &&
+        preview.fileSize > FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_BYTES;
+
       return (
         <div className="relative w-full h-full">
-          <video 
-            src={preview.url} 
-            className="w-full h-full object-contain" 
+          <video
+            src={preview.url}
+            className="w-full h-full object-contain"
             controls
             preload="metadata"
           />
           <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs">
             Video
           </div>
+          {preview.fileSize && (
+            <div
+              className={`absolute bottom-2 right-2 ${
+                isVideoTooLarge ? "bg-red-500" : "bg-black/60"
+              } text-white px-2 py-1 rounded-md text-xs`}
+            >
+              {formatFileSize(preview.fileSize)}
+              {isVideoTooLarge &&
+                ` - Shumë e madhe! (Max: ${FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB)`}
+            </div>
+          )}
         </div>
       );
     }
@@ -103,41 +121,64 @@ export function PhotoUploadModal({
         </h3>
 
         <div className="grid grid-cols-1 gap-8">
-          {files.map((_file, index) => (
-            <div key={index} className="space-y-4">
-              <div className="relative rounded-lg overflow-hidden bg-gray-50 h-64 shadow-sm border">
-                {previews[index] && renderPreview(previews[index], index)}
-              </div>
+          {files.map((file, index) => {
+            const isVideoTooLarge =
+              file.type.startsWith("video/") &&
+              file.size > FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_BYTES;
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label
-                    htmlFor={`description-${index}`}
-                    className="block text-sm font-medium text-gray-700"
-                  >
-                    Përshkrimi për {previews[index]?.isVideo ? 'videon' : 'foton'} {index + 1}
-                  </label>
-                  <span
-                    className={`text-xs ${
-                      maxChars - descriptions[index].length < 150
-                        ? "text-rose-500"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {maxChars - descriptions[index].length} karaktere të mbetura
-                  </span>
+            return (
+              <div key={index} className="space-y-4">
+                <div className="relative rounded-lg overflow-hidden bg-gray-50 h-64 shadow-sm border">
+                  {previews[index] && renderPreview(previews[index], index)}
                 </div>
-                <textarea
-                  id={`description-${index}`}
-                  rows={3}
-                  className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-rose-500 focus:border-rose-500"
-                  placeholder={`Shkruaj një përshkrim për ${previews[index]?.isVideo ? 'videon' : 'foton'}...`}
-                  value={descriptions[index]}
-                  onChange={(e) => handleDescriptionChange(index, e.target.value)}
-                />
+
+                {isVideoTooLarge && (
+                  <div className="rounded-md bg-red-50 p-2 text-red-600 text-sm">
+                    Kujdes: Ky video është {formatFileSize(file.size)} dhe
+                    tejkalon kufirin e madhësisë prej{" "}
+                    {FILE_SIZE_LIMITS.MAX_VIDEO_SIZE_MB}MB. Ngarkimi mund të
+                    dështojë.
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label
+                      htmlFor={`description-${index}`}
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Përshkrimi për{" "}
+                      {previews[index]?.isVideo ? "videon" : "foton"}{" "}
+                      {index + 1}
+                    </label>
+                    <span
+                      className={`text-xs ${
+                        maxChars - descriptions[index].length < 150
+                          ? "text-rose-500"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {maxChars - descriptions[index].length} karaktere të
+                      mbetura
+                    </span>
+                  </div>
+
+                  <textarea
+                    id={`description-${index}`}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-rose-500 focus:border-rose-500"
+                    placeholder={`Shkruaj një përshkrim për ${
+                      previews[index]?.isVideo ? "videon" : "foton"
+                    }...`}
+                    value={descriptions[index]}
+                    onChange={(e) =>
+                      handleDescriptionChange(index, e.target.value)
+                    }
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t">
