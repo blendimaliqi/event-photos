@@ -262,7 +262,15 @@ const MediaViewer = ({
 
       refreshControls();
     }
-  }, [currentIndex, isVideo]);
+  }, [currentIndex]);
+
+  // Exit fullscreen when navigating to a video
+  useEffect(() => {
+    const isCurrentVideo = currentMedia?.type === "video";
+    if (isCurrentVideo && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [currentIndex, currentMedia, isFullscreen]);
 
   // Calculate swipe effect styles - smooth transitions
   const swipeTransform =
@@ -695,7 +703,7 @@ const MediaViewer = ({
         {/* Fullscreen indicator - briefly shown when entering fullscreen */}
         {isFullscreen && showFullscreenIndicator && (
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black/40 text-white text-sm py-2 px-4 rounded-full backdrop-blur-sm transition-opacity duration-300 pointer-events-none">
-            Click image or press Esc to exit fullscreen
+            Kliko për të dalë nga ekrani i plotë
           </div>
         )}
       </div>
