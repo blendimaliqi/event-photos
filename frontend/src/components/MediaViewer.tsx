@@ -206,6 +206,9 @@ const MediaViewer = ({
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Get current media type for key shortcuts that depend on media type
+      const isCurrentVideo = currentMedia?.type === "video";
+
       if (e.key === "ArrowLeft") {
         handlePrevious();
       } else if (e.key === "ArrowRight") {
@@ -222,14 +225,15 @@ const MediaViewer = ({
         setShowDescription((prev) => !prev);
       } else if (e.key === "m" || e.key === "M") {
         toggleMute();
-      } else if (e.key === "f" || e.key === "F") {
+      } else if ((e.key === "f" || e.key === "F") && !isCurrentVideo) {
+        // Only toggle fullscreen for photos, not videos
         toggleFullscreen();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePrevious, handleNext, handleClose, isFullscreen]);
+  }, [handlePrevious, handleNext, handleClose, isFullscreen, currentMedia]);
 
   if (!currentMedia) return null;
 
@@ -387,6 +391,53 @@ const MediaViewer = ({
                 </svg>
               </button>
             )}
+
+            {/* Fullscreen toggle button */}
+            {!isVideo && (
+              <button
+                onClick={toggleFullscreen}
+                className={`text-white p-2 rounded-full transition-colors ${
+                  isFullscreen ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
+                }`}
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
+                title={`${isFullscreen ? "Exit" : "Enter"} fullscreen (F)`}
+              >
+                {isFullscreen ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5M15 15l5.25 5.25"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => setShowThumbnails((prev) => !prev)}
               className={`text-white p-2 rounded-full transition-colors ${
@@ -410,6 +461,7 @@ const MediaViewer = ({
                 />
               </svg>
             </button>
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -518,12 +570,12 @@ const MediaViewer = ({
               isLoading ? "opacity-30" : "opacity-100"
             } flex items-center justify-center relative cursor-pointer`}
             onClick={(e) => {
-              // Handle fullscreen toggle
+              // Handle fullscreen toggle only for photos, not videos
               if (
-                // Only toggle if we're directly clicking on this div or on an image
-                e.target === e.currentTarget ||
-                (currentMedia.type === "photo" &&
-                  e.target instanceof HTMLImageElement)
+                !isVideo && // Only for photos
+                (e.target === e.currentTarget ||
+                  (currentMedia.type === "photo" &&
+                    e.target instanceof HTMLImageElement))
               ) {
                 e.stopPropagation();
                 toggleFullscreen();
