@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  Routes,
-  Route,
-  useNavigate,
-  useParams,
-  useLocation,
-} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Media } from "../types/media";
 import MediaGrid from "./MediaGrid";
 import MediaViewer from "./MediaViewer";
@@ -27,7 +21,6 @@ const AppContent = () => {
   const previousHeroPhotoId = useRef<number | undefined>(undefined);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const location = useLocation();
   const { mediaType, mediaId } = useParams<{
     mediaType?: string;
     mediaId?: string;
