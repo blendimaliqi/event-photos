@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Media } from "../types/media";
 
 interface MediaViewerProps {
@@ -19,6 +19,16 @@ const MediaViewer = ({
   const [showDescription, setShowDescription] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
 
+  // Touch swiping state
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchEndX, setTouchEndX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isAnimatingSwipe, setIsAnimatingSwipe] = useState(false);
+  const [touchCount, setTouchCount] = useState(0);
+  const swipeThreshold = 100; // Minimum px to swipe to trigger next/previous
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // Find the index of the initially selected media
     const index = mediaItems.findIndex(
@@ -28,6 +38,12 @@ const MediaViewer = ({
   }, [initialMedia, mediaItems]);
 
   const currentMedia = mediaItems[currentIndex];
+
+  // Calculate what the next and previous media items will be
+  const nextIndex = currentIndex < mediaItems.length - 1 ? currentIndex + 1 : 0;
+  const prevIndex = currentIndex > 0 ? currentIndex - 1 : mediaItems.length - 1;
+  const nextMedia = mediaItems[nextIndex];
+  const prevMedia = mediaItems[prevIndex];
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : mediaItems.length - 1));
@@ -63,6 +79,98 @@ const MediaViewer = ({
 
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
+  };
+
+  // Swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't start swiping if we have multiple fingers (zooming)
+    const touches = e.touches.length;
+    setTouchCount(touches);
+
+    if (touches > 1) return;
+
+    setTouchStartX(e.touches[0].clientX);
+    setTouchEndX(e.touches[0].clientX);
+    setSwiping(true);
+    setSwipeOffset(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Don't handle swipe if not swiping or if multiple fingers are used
+    if (!swiping || e.touches.length > 1) {
+      setTouchCount(e.touches.length);
+      return;
+    }
+
+    // If we're in the middle of a swipe animation, don't allow more swiping
+    if (isAnimatingSwipe) return;
+
+    setTouchEndX(e.touches[0].clientX);
+    const newOffset = touchEndX - touchStartX;
+
+    // Apply resistance at the edges for better feel
+    const maxOffset = window.innerWidth * 0.5;
+    const dampedOffset =
+      Math.sign(newOffset) * Math.min(Math.abs(newOffset), maxOffset);
+
+    setSwipeOffset(dampedOffset);
+
+    // Prevent scrolling the page while swiping
+    if (Math.abs(dampedOffset) > 10) {
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Skip if not swiping or using multiple fingers
+    if (!swiping || touchCount > 1) {
+      setTouchCount(0);
+      return;
+    }
+
+    // If we're in the middle of a swipe animation, don't allow more swiping
+    if (isAnimatingSwipe) return;
+
+    const distance = touchEndX - touchStartX;
+
+    // If swipe distance exceeds threshold, navigate with animation
+    if (Math.abs(distance) > swipeThreshold) {
+      // Start animation
+      setIsAnimatingSwipe(true);
+
+      // Set full screen width offset in direction of swipe for smooth animation
+      const targetOffset = Math.sign(distance) * window.innerWidth;
+      setSwipeOffset(targetOffset);
+
+      // Wait for animation to complete, then navigate and reset
+      setTimeout(() => {
+        // Immediately disable all animations before changing the index
+        setIsAnimatingSwipe(false);
+
+        // Change the image index
+        if (distance > 0) {
+          handlePrevious();
+        } else {
+          handleNext();
+        }
+
+        // Reset the swipe state without any animation
+        setSwiping(false);
+        setSwipeOffset(0);
+        setTouchCount(0);
+      }, 300);
+    } else {
+      // If not exceeding threshold, animate back to original position
+      setIsAnimatingSwipe(true);
+      setSwipeOffset(0);
+
+      // Reset after spring-back animation
+      setTimeout(() => {
+        setSwiping(false);
+        setIsAnimatingSwipe(false);
+        setTouchCount(0);
+      }, 300);
+    }
   };
 
   // Update browser URL with current media info for sharing/bookmarking
@@ -104,6 +212,19 @@ const MediaViewer = ({
   // Determine if we should show the description
   const hasDescription = !!currentMedia.description;
   const isVideo = currentMedia.type === "video";
+
+  // Calculate swipe effect styles - smooth transitions
+  const swipeTransform =
+    swiping || isAnimatingSwipe
+      ? `translateX(${swipeOffset}px)`
+      : "translateX(0)";
+
+  // Use a smoother transition when animating the swipe finish
+  const swipeTransition = isAnimatingSwipe
+    ? "transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)"
+    : swiping
+    ? "none"
+    : "transform 0.3s ease-out";
 
   return (
     <div
@@ -299,39 +420,141 @@ const MediaViewer = ({
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="relative w-full h-full flex items-center justify-center p-4 z-20">
+      {/* Main content with swipe support */}
+      <div
+        ref={mainContentRef}
+        className="relative w-full h-full flex items-center justify-center p-4 z-20 overflow-hidden touch-manipulation"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center z-30">
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-white border-t-transparent"></div>
           </div>
         )}
 
+        {/* Swipeable content container */}
         <div
-          className={`transition-opacity duration-300 ${
-            isLoading ? "opacity-30" : "opacity-100"
-          } max-w-full max-h-[calc(100vh-180px)] relative`}
+          className={`absolute inset-0 flex items-center justify-center ${
+            isAnimatingSwipe ? "transition-transform duration-300 ease-out" : ""
+          }`}
+          style={{ transform: swipeTransform }}
         >
-          {currentMedia.type === "photo" ? (
-            <img
-              src={currentMedia.url}
-              alt={currentMedia.description || "Photo"}
-              className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
-              onLoad={handleImageLoad}
-            />
-          ) : (
-            <video
-              src={currentMedia.url}
-              poster={currentMedia.thumbnailUrl}
-              className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
-              controls
-              muted={isMuted}
-              onLoadedMetadata={handleImageLoad}
-            >
-              Your browser does not support the video tag.
-            </video>
+          {/* Previous media (only visible during swipe) */}
+          {swiping && swipeOffset > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-70 -translate-x-full">
+              {prevMedia.type === "photo" ? (
+                <img
+                  src={prevMedia.url}
+                  alt=""
+                  className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <img
+                    src={prevMedia.thumbnailUrl || ""}
+                    alt=""
+                    className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Current media */}
+          <div
+            className={`transition-opacity duration-300 ${
+              isLoading ? "opacity-30" : "opacity-100"
+            } max-w-full max-h-[calc(100vh-180px)] relative`}
+          >
+            {currentMedia.type === "photo" ? (
+              <img
+                src={currentMedia.url}
+                alt={currentMedia.description || "Photo"}
+                className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                onLoad={handleImageLoad}
+              />
+            ) : (
+              <video
+                src={currentMedia.url}
+                poster={currentMedia.thumbnailUrl}
+                className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
+                controls
+                loop={false}
+                muted={isMuted}
+                onLoadedMetadata={handleImageLoad}
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
+          </div>
+
+          {/* Next media (only visible during swipe) */}
+          {swiping && swipeOffset < 0 && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-70 translate-x-full">
+              {nextMedia.type === "photo" ? (
+                <img
+                  src={nextMedia.url}
+                  alt=""
+                  className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <img
+                    src={nextMedia.thumbnailUrl || ""}
+                    alt=""
+                    className="max-h-[calc(100vh-180px)] max-w-full object-contain rounded shadow-lg"
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
+
+        {/* Swipe indicators */}
+        {swiping && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-30">
+            {swipeOffset > 20 && (
+              <div className="bg-white/20 rounded-full p-3 ml-6 backdrop-blur-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </div>
+            )}
+
+            {swipeOffset < -20 && (
+              <div className="bg-white/20 rounded-full p-3 mr-6 ml-auto backdrop-blur-sm">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Navigation controls */}
