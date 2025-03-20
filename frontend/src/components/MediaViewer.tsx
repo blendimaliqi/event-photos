@@ -385,7 +385,7 @@ const MediaViewer = ({
         <div className="absolute bottom-[100px] left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-300 ease-in-out">
           <div className="bg-black/75 rounded-lg shadow-lg overflow-hidden max-w-3xl w-[95vw] backdrop-blur-sm">
             <div className="flex items-center justify-between px-4 py-2 bg-black/50">
-              <h3 className="text-white text-sm font-medium">Description</h3>
+              <h3 className="text-white text-sm font-medium">Mesazh</h3>
               <button
                 onClick={toggleDescription}
                 className="text-white/80 hover:text-white p-1 rounded-full"
