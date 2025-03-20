@@ -17,6 +17,7 @@ namespace EventPhotos.API.Mappers
                 Name = eventModel.Name,
                 Date = eventModel.Date,
                 Description = eventModel.Description,
+                HeroPhotoId = eventModel.HeroPhotoId,
                 HeroPhoto = eventModel.HeroPhoto?.ToPhotoDto(),
                 Photos = eventModel.Photos.Select(p => p.ToPhotoDto()).ToList()
             };

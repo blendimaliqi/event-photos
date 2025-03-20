@@ -50,36 +50,18 @@ const sortPhotos = (photos: Photo[], sortBy: SortOption = "newest") => {
   }
 };
 
-export function usePhotos(
-  eventId: number,
-  sortBy: SortOption = "newest",
-  heroPhotoId?: number
-) {
+export function usePhotos(eventId: number, sortBy: SortOption = "newest") {
   const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: QUERY_KEYS.photos(eventId, sortBy),
     queryFn: () => photoService.getPhotos(eventId),
     select: (data: Photo[]) => {
-      // Get the current event data from the cache if heroPhotoId wasn't provided
-      const event = !heroPhotoId
-        ? queryClient.getQueryData<{ heroPhotoId?: number }>(["event", eventId])
-        : { heroPhotoId };
-
-      // Filter out hero photo and then sort
-      const filteredPhotos = data.filter(
-        (photo) => photo.id !== event?.heroPhotoId
-      );
-      return sortPhotos(filteredPhotos, sortBy);
+      // Backend now handles filtering out the hero photo
+      return sortPhotos(data, sortBy);
     },
-    staleTime: 1000 * 60 * 3, // 3 minutes
+    staleTime: 0, // Changed to match global config
     placeholderData: () => {
-      // Get the current event data from the cache
-      const event = queryClient.getQueryData<{ heroPhotoId?: number }>([
-        "event",
-        eventId,
-      ]);
-
       // Use data from other sort queries as placeholder
       const otherSortQueries = queryClient
         .getQueriesData<Photo[]>({ queryKey: ["photos", eventId] })
@@ -87,11 +69,7 @@ export function usePhotos(
         .filter(Boolean)[0];
 
       if (otherSortQueries) {
-        // Filter out hero photo and then sort
-        const filteredPhotos = otherSortQueries.filter(
-          (photo) => photo.id !== event?.heroPhotoId
-        );
-        return sortPhotos(filteredPhotos, sortBy);
+        return sortPhotos(otherSortQueries, sortBy);
       }
       return undefined;
     },

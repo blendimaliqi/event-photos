@@ -43,8 +43,18 @@ namespace EventPhotos.API.Controllers
                 return NotFound("Event not found");
             }
 
+            // Get the event to check the hero photo ID
+            var eventDetails = await _eventRepository.GetByIdAsync(eventId);
+            
+            // Get all photos for the event
             var photos = await _photoRepository.GetPhotosByEventIdAsync(eventId);
-            return Ok(photos.Select(p => p.ToPhotoDto()));
+            
+            // Filter out the hero photo if it exists
+            var filteredPhotos = eventDetails?.HeroPhotoId != null 
+                ? photos.Where(p => p.Id != eventDetails.HeroPhotoId).ToList() 
+                : photos;
+            
+            return Ok(filteredPhotos.Select(p => p.ToPhotoDto()));
         }
 
         [HttpGet("{id}")]

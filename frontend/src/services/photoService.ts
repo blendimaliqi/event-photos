@@ -33,22 +33,12 @@ export const photoService = {
   },
 
   async getPhotos(eventId: number): Promise<Photo[]> {
-    // First get the event to know which photo is the hero
-    const eventResponse = await fetch(`${API_URL}/events/${eventId}`);
-    if (!eventResponse.ok) {
-      throw new Error("Failed to fetch event");
-    }
-    const event: Event = await eventResponse.json();
-
-    // Then get all photos
+    // Get photos directly from the backend which now handles filtering out the hero photo
     const photosResponse = await fetch(`${API_URL}/photos/event/${eventId}`);
     if (!photosResponse.ok) {
       throw new Error("Failed to fetch photos");
     }
-    const photos: Photo[] = await photosResponse.json();
-
-    // Filter out the hero photo
-    return photos.filter((photo) => photo.id !== event.heroPhotoId);
+    return photosResponse.json();
   },
 
   async deletePhoto(photoId: number): Promise<void> {

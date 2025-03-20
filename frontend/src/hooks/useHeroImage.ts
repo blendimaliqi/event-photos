@@ -8,7 +8,7 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
   return useQuery({
     queryKey: ["heroImage", heroPhotoUrl],
     enabled: true, // Always run the query to at least get the fallback image
-    staleTime: Infinity, // Image preload result doesn't need to be refetched
+    staleTime: 0, // Changed from Infinity to 0 to always refetch when URL changes
     queryFn: async () => {
       if (!heroPhotoUrl) {
         console.log("No hero photo URL provided, using fallback");

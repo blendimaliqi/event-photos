@@ -7,9 +7,14 @@ export type ViewMode = "masonry" | "grid" | "compact";
 interface MediaGridProps {
   mediaItems: Media[];
   onMediaSelect: (media: Media) => void;
+  isLoading?: boolean; // Add loading prop
 }
 
-const MediaGrid = ({ mediaItems, onMediaSelect }: MediaGridProps) => {
+const MediaGrid = ({
+  mediaItems,
+  onMediaSelect,
+  isLoading = false,
+}: MediaGridProps) => {
   const [gridReady, setGridReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid"); // Default to grid view
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,8 +50,19 @@ const MediaGrid = ({ mediaItems, onMediaSelect }: MediaGridProps) => {
     };
   }, []);
 
-  if (mediaItems.length === 0)
+  if (mediaItems.length === 0 && !isLoading)
     return <div className="p-3">No media items found</div>;
+
+  if (isLoading && mediaItems.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-10 h-10 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500">Duke ngarkuar mediat...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Get the appropriate grid classes based on view mode
   const getGridClasses = () => {
@@ -201,7 +217,19 @@ const MediaGrid = ({ mediaItems, onMediaSelect }: MediaGridProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
+      {/* Show loading overlay if loading new items to an existing collection */}
+      {isLoading && mediaItems.length > 0 && (
+        <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex justify-center items-start z-50 pt-24">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="w-8 h-8 border-3 border-rose-200 border-t-rose-500 rounded-full animate-spin mb-3"></div>
+            <p className="text-gray-500 text-sm font-medium">
+              Duke përditësuar...
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* View mode selector - styled like the image */}
       <div className="flex justify-start px-4 pb-2 relative" ref={menuRef}>
         <button

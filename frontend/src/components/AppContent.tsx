@@ -263,6 +263,7 @@ const AppContent = () => {
               <MediaGrid
                 mediaItems={filteredMediaItems}
                 onMediaSelect={handleMediaSelect}
+                isLoading={loading}
               />
             </>
           )}

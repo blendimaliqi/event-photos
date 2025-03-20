@@ -9,6 +9,7 @@ using EventPhotos.API.Models;
 using EventPhotos.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EventPhotos.API.Controllers
 {
@@ -52,7 +53,24 @@ namespace EventPhotos.API.Controllers
                 return NotFound();
             }
 
-            return Ok(eventModel.ToEventDto());
+            // Create the DTO with hero photo info
+            var eventDto = eventModel.ToEventDto();
+
+            // If hero photo exists, include additional details
+            if (eventModel.HeroPhotoId.HasValue)
+            {
+                // Get the hero photo from the photo repository
+                var photoRepository = HttpContext.RequestServices.GetRequiredService<IPhotoRepository>();
+                var heroPhoto = await photoRepository.GetPhotoByIdAsync(eventModel.HeroPhotoId.Value);
+                
+                if (heroPhoto != null)
+                {
+                    // Add the hero photo URL to the response
+                    eventDto.HeroPhotoUrl = heroPhoto.Url;
+                }
+            }
+
+            return Ok(eventDto);
         }
 
         [HttpPost]
@@ -140,6 +158,33 @@ namespace EventPhotos.API.Controllers
             {
                 return StatusCode(500, $"An error occurred while uploading the hero photo: {ex.Message}");
             }
+        }
+
+        [HttpGet("{id}/hero-photo")]
+        public async Task<IActionResult> GetHeroPhoto([FromRoute] int id)
+        {
+            var eventModel = await _eventRepository.GetByIdAsync(id);
+
+            if (eventModel == null)
+            {
+                return NotFound("Event not found");
+            }
+
+            if (eventModel.HeroPhotoId == null)
+            {
+                return NotFound("Event has no hero photo");
+            }
+
+            // Get the hero photo from the photo repository
+            var photoRepository = HttpContext.RequestServices.GetRequiredService<IPhotoRepository>();
+            var heroPhoto = await photoRepository.GetPhotoByIdAsync(eventModel.HeroPhotoId.Value);
+
+            if (heroPhoto == null)
+            {
+                return NotFound("Hero photo not found");
+            }
+
+            return Ok(heroPhoto);
         }
     }
 }

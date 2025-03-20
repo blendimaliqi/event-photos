@@ -57,8 +57,7 @@ const sortMedia = (media: Media[], sortBy: SortOption = "newest") => {
 
 export function useMedia(
   eventId: number | undefined,
-  sortBy: SortOption = "newest",
-  heroPhotoId?: number
+  sortBy: SortOption = "newest"
 ) {
   const queryClient = useQueryClient();
 
@@ -67,9 +66,14 @@ export function useMedia(
     queryFn: async () => {
       if (!eventId) return [];
 
+      // Add a small artificial delay to ensure loading state is visible
+      // even for fast network connections
+      const loadPromise = new Promise((resolve) => setTimeout(resolve, 300));
+
       const [photos, videos] = await Promise.all([
         photoService.getPhotos(eventId),
         videoService.getVideos(eventId),
+        loadPromise, // Include the delay in the Promise.all
       ]);
 
       const photoMedia = photos.map(photoToMedia);
@@ -79,18 +83,12 @@ export function useMedia(
     },
     enabled: !!eventId,
     select: (data: Media[]) => {
-      // Get the current event data from the cache if heroPhotoId wasn't provided
-      const event = !heroPhotoId
-        ? queryClient.getQueryData<{ heroPhotoId?: number }>(["event", eventId])
-        : { heroPhotoId };
-
-      // Filter out hero photo (only for photos, not videos) and then sort
-      const filteredMedia = data.filter(
-        (media) => !(media.type === "photo" && media.id === event?.heroPhotoId)
-      );
-      return sortMedia(filteredMedia, sortBy);
+      // No need to filter out hero photo anymore, backend handles it
+      return sortMedia(data, sortBy);
     },
-    staleTime: 1000 * 60 * 3, // 3 minutes
+    staleTime: 0, // Changed from 3 minutes to 0 to always refetch
+    networkMode: "always", // Always attempt network requests, even if offline
+    refetchOnMount: true,
   });
 }
 
@@ -114,12 +112,77 @@ export function useMediaUpload(eventId: number | undefined) {
         return photoService.uploadPhoto(file, eventId, description);
       }
     },
-    onSuccess: () => {
-      // Invalidate and refetch media queries
+    onMutate: async ({ file, description }: UploadMediaParams) => {
+      // Cancel any outgoing refetches to avoid overwriting our optimistic update
+      await queryClient.cancelQueries({
+        queryKey: QUERY_KEYS.allMedia(eventId || 0),
+      });
+
+      // Create optimistic media item
+      const isVideo = file.type.startsWith("video/");
+      const optimisticMedia: Media = {
+        id: Math.random() * -1000, // Temporary negative ID to avoid conflicts
+        type: isVideo ? "video" : "photo",
+        url: URL.createObjectURL(file),
+        thumbnailUrl: isVideo ? URL.createObjectURL(file) : undefined,
+        description: description || "",
+        uploadDate: new Date().toISOString(),
+        eventId: eventId || 0,
+      };
+
+      // Add optimistic update to the media cache
+      queryClient.setQueryData<Media[]>(
+        QUERY_KEYS.media(eventId || 0, "newest"),
+        (old = []) => [optimisticMedia, ...old]
+      );
+
+      return { optimisticMedia };
+    },
+    onError: (error, _, context) => {
+      console.error("Error uploading media:", error);
+
+      // Remove the optimistic update on error
+      if (context?.optimisticMedia && eventId) {
+        queryClient.setQueryData<Media[]>(
+          QUERY_KEYS.media(eventId, "newest"),
+          (old = []) =>
+            old.filter((item) => item.id !== context.optimisticMedia.id)
+        );
+      }
+    },
+    onSettled: (_, error) => {
       if (eventId) {
+        // Force immediate refetch of all related queries
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.allMedia(eventId),
+          refetchType: "all",
         });
+
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.allPhotos(eventId),
+          refetchType: "all",
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.allVideos(eventId),
+          refetchType: "all",
+        });
+
+        // Invalidate event data which might contain heroPhotoId
+        queryClient.invalidateQueries({
+          queryKey: ["event", eventId],
+          refetchType: "all",
+        });
+
+        // If there was no error, add a delay and refetch again to ensure we have the latest data
+        if (!error) {
+          setTimeout(() => {
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.allMedia(eventId),
+              refetchType: "all",
+            });
+          }, 500);
+        }
       }
     },
   });

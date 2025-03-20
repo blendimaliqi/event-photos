@@ -6,6 +6,7 @@ export interface Event {
   date: string;
   description: string;
   heroPhotoId?: number;
+  heroPhotoUrl?: string;
   heroPhoto?: Photo;
   photos: Photo[];
 }

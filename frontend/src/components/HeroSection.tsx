@@ -4,6 +4,7 @@ import { Event } from "../types/event";
 import { useQuery } from "@tanstack/react-query";
 import { EVENT_QUERY_KEY } from "../hooks/useEvent";
 import { useHeroImage } from "../hooks/useHeroImage";
+import { useHeroPhoto } from "../hooks/useHeroPhoto";
 
 interface HeroSectionProps {
   event?: Event | null;
@@ -30,9 +31,13 @@ export const HeroSection = ({
     },
   });
 
+  // Get the hero photo directly from the dedicated endpoint
+  const { data: heroPhoto } = useHeroPhoto(latestEvent?.id);
+
   // Then preload the hero image
   const { data: currentImageUrl, isLoading } = useHeroImage(
-    latestEvent?.heroPhoto?.url
+    // Try multiple sources for the hero photo URL
+    latestEvent?.heroPhotoUrl || heroPhoto?.url || latestEvent?.heroPhoto?.url
   );
 
   return (
