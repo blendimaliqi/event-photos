@@ -325,9 +325,8 @@ const MediaViewer = ({
               poster={currentMedia.thumbnailUrl}
               className="max-h-[calc(100vh-180px)] max-w-full rounded shadow-lg"
               controls
-              autoPlay
               muted={isMuted}
-              onLoadedData={handleImageLoad}
+              onLoadedMetadata={handleImageLoad}
             >
               Your browser does not support the video tag.
             </video>
