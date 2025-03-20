@@ -15,7 +15,9 @@ const MediaViewer = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
-  const [showThumbnails, setShowThumbnails] = useState(true);
+  const [showThumbnails, setShowThumbnails] = useState(
+    () => initialMedia.type === "photo"
+  );
   const [showDescription, setShowDescription] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -31,6 +33,26 @@ const MediaViewer = ({
   const swipeThreshold = 100; // Minimum px to swipe to trigger next/previous
   const mainContentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Effect to prevent body scrolling when viewer is open
+  useEffect(() => {
+    // Save the original overflow style
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+
+    // Prevent scrolling on body when the viewer is open
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
+    // Restore original style when component unmounts
+    return () => {
+      document.body.style.overflow = originalStyle;
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
+    };
+  }, []);
 
   useEffect(() => {
     // Find the index of the initially selected media
@@ -134,9 +156,7 @@ const MediaViewer = ({
     setSwipeOffset(dampedOffset);
 
     // Prevent scrolling the page while swiping
-    if (Math.abs(dampedOffset) > 10) {
-      e.preventDefault();
-    }
+    e.preventDefault();
   };
 
   const handleTouchEnd = () => {
@@ -235,6 +255,21 @@ const MediaViewer = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handlePrevious, handleNext, handleClose, isFullscreen, currentMedia]);
 
+  // Effect to handle video-specific UI adjustments
+  useEffect(() => {
+    const isCurrentVideo = currentMedia?.type === "video";
+
+    // Hide thumbnails when switching to video content
+    if (isCurrentVideo) {
+      setShowThumbnails(false);
+    }
+
+    // Exit fullscreen when navigating to a video
+    if (isCurrentVideo && isFullscreen) {
+      setIsFullscreen(false);
+    }
+  }, [currentIndex, currentMedia, isFullscreen]);
+
   if (!currentMedia) return null;
 
   // Determine if we should show the description
@@ -264,14 +299,6 @@ const MediaViewer = ({
     }
   }, [currentIndex]);
 
-  // Exit fullscreen when navigating to a video
-  useEffect(() => {
-    const isCurrentVideo = currentMedia?.type === "video";
-    if (isCurrentVideo && isFullscreen) {
-      setIsFullscreen(false);
-    }
-  }, [currentIndex, currentMedia, isFullscreen]);
-
   // Calculate swipe effect styles - smooth transitions
   const swipeTransform =
     swiping || isAnimatingSwipe
@@ -280,7 +307,7 @@ const MediaViewer = ({
 
   return (
     <div
-      className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${
+      className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center transition-opacity duration-200 overflow-hidden ${
         isClosing ? "opacity-0" : "opacity-100"
       }`}
       onClick={(e) => {
