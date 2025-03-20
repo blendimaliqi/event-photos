@@ -66,15 +66,10 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(builder =>
     {
         builder
-            .WithOrigins(
-                "https://c0k84wcg480o0scckc88kggs.blendimaliqi.com",
-                "http://localhost:5173",
-                "http://localhost:5174"
-            )
+            .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .WithExposedHeaders("Content-Disposition", "Content-Length")
-            .SetIsOriginAllowed(_ => true);
+            .WithExposedHeaders("Content-Disposition", "Content-Length");
     });
 });
 
@@ -113,13 +108,33 @@ if (!Directory.Exists(videoUploadsPath))
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(photoUploadsPath),
-    RequestPath = "/uploads/photos"
+    RequestPath = "/uploads/photos",
+    OnPrepareResponse = ctx =>
+    {
+        // Add CORS headers to static files
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        
+        // Add cache control headers
+        ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=3600");
+    }
 });
 
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(videoUploadsPath),
-    RequestPath = "/uploads/videos"
+    RequestPath = "/uploads/videos",
+    OnPrepareResponse = ctx =>
+    {
+        // Add CORS headers to static files
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+        
+        // Add cache control headers
+        ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=3600");
+    }
 });
 
 app.UseHttpsRedirection();

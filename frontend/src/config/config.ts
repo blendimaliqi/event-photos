@@ -49,20 +49,26 @@ export const config = {
         return path;
       }
 
-      // Get the base URL for all API and media requests
+      // Always use the API URL for uploads to avoid CORS issues
+      // This ensures all media requests go to the same origin as the API
       const baseUrl =
         import.meta.env.VITE_API_URL ||
-        (import.meta.env.PROD && typeof window !== "undefined"
+        (import.meta.env.PROD
           ? window.location.origin
           : "http://localhost:5035");
 
       // Make sure the path starts with a slash for proper URL construction
       const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
-      // For uploads, construct a URL directly to the backend server
-      // This is needed since uploads are stored in the backend
+      // Use the full backend URL for all media paths
       const fullUrl = `${baseUrl}${normalizedPath}`;
       console.log(`IMAGE: Constructed image URL: ${fullUrl}`);
+
+      // For debugging, add timestamp to bust cache during development
+      if (!import.meta.env.PROD) {
+        return `${fullUrl}?t=${Date.now()}`;
+      }
+
       return fullUrl;
     } catch (error) {
       console.error("Error constructing image URL:", error);
