@@ -1,7 +1,8 @@
 import { AuthProvider } from "./contexts/AuthContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AppContent from "./components/AppContent";
+
 import AdminRoute from "./components/AdminRoute";
+import AppContent from "./components/AppContent";
 
 // Temporary event ID for demo purposes
 export const DEMO_EVENT_ID = 1;
