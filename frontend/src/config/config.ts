@@ -3,6 +3,9 @@ export const config = {
   API_BASE_URL: (() => {
     // Use environment variable if available
     if (import.meta.env.VITE_API_URL) {
+      console.log(
+        `Using VITE_API_URL from env: ${import.meta.env.VITE_API_URL}`
+      );
       return import.meta.env.VITE_API_URL;
     }
 
@@ -10,12 +13,14 @@ export const config = {
     if (import.meta.env.PROD) {
       // If we're in a browser environment
       if (typeof window !== "undefined") {
+        console.log(`Using window.location.origin: ${window.location.origin}`);
         return window.location.origin; // Use same origin as frontend
       }
       return ""; // Fallback to relative URLs
     }
 
     // Development fallback
+    console.log("Using development fallback URL: http://localhost:5035");
     return "http://localhost:5035";
   })(),
 
@@ -28,6 +33,7 @@ export const config = {
         ? window.location.origin
         : "http://localhost:5035");
 
+    console.log(`API_ENDPOINT set to: ${baseUrl}/api`);
     return `${baseUrl}/api`;
   })(),
 
@@ -36,23 +42,33 @@ export const config = {
     // Make sure we have a path
     if (!path) return "";
 
-    // If the path already starts with http or https, it's already an absolute URL
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
+    try {
+      // If the path already starts with http or https, it's already an absolute URL
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        console.log(`IMAGE: Using absolute URL: ${path}`);
+        return path;
+      }
+
+      // Get the base URL for all API and media requests
+      const baseUrl =
+        import.meta.env.VITE_API_URL ||
+        (import.meta.env.PROD && typeof window !== "undefined"
+          ? window.location.origin
+          : "http://localhost:5035");
+
+      // Make sure the path starts with a slash for proper URL construction
+      const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+      // For uploads, construct a URL directly to the backend server
+      // This is needed since uploads are stored in the backend
+      const fullUrl = `${baseUrl}${normalizedPath}`;
+      console.log(`IMAGE: Constructed image URL: ${fullUrl}`);
+      return fullUrl;
+    } catch (error) {
+      console.error("Error constructing image URL:", error);
+      // Return a placeholder image if there's an error
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" font-family="Arial" font-size="14" fill="%239ca3af" text-anchor="middle" dominant-baseline="middle">Image Error</text></svg>`;
     }
-
-    // Get the base URL
-    const baseUrl =
-      import.meta.env.VITE_API_URL ||
-      (import.meta.env.PROD && typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:5035");
-
-    // Make sure the path starts with a slash for proper URL construction
-    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-
-    console.log(`Constructed image URL: ${baseUrl}${normalizedPath}`);
-    return `${baseUrl}${normalizedPath}`;
   },
 
   getVideoThumbnailUrl: () => {

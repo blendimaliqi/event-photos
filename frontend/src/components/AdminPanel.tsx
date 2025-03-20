@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { videoService } from "../services/videoService";
 import { useMedia, QUERY_KEYS } from "../hooks/useMedia";
 import { useState } from "react";
+import { ImageWithFallback } from "./ImageWithFallback";
 
 export function AdminPanel({ eventId }: { eventId: number }) {
   const queryClient = useQueryClient();
@@ -121,7 +122,7 @@ export function AdminPanel({ eventId }: { eventId: number }) {
             <p className="text-sm font-medium text-gray-700 mb-2">
               Current Hero Photo:
             </p>
-            <img
+            <ImageWithFallback
               src={config.getImageUrl(event.heroPhoto.url)}
               alt="Current hero photo"
               className="w-full max-w-md h-48 object-cover rounded"

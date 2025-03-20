@@ -1,5 +1,6 @@
 import { Media } from "../types/media";
 import { useEffect, useRef, useState } from "react";
+import { ImageWithFallback } from "./ImageWithFallback";
 
 // Define view mode types
 export type ViewMode = "masonry" | "grid" | "compact";
@@ -119,7 +120,7 @@ const MediaGrid = ({
         >
           <div className="group">
             {media.type === "photo" ? (
-              <img
+              <ImageWithFallback
                 src={media.url}
                 alt={media.description || "Photo"}
                 loading="lazy"
@@ -128,7 +129,7 @@ const MediaGrid = ({
             ) : (
               <div className="relative">
                 {media.thumbnailUrl ? (
-                  <img
+                  <ImageWithFallback
                     src={media.thumbnailUrl}
                     alt={media.description || "Video thumbnail"}
                     loading="lazy"
@@ -174,7 +175,7 @@ const MediaGrid = ({
         >
           <div className="absolute inset-0 group">
             {media.type === "photo" ? (
-              <img
+              <ImageWithFallback
                 src={media.url}
                 alt={media.description || "Photo"}
                 loading="lazy"
@@ -183,7 +184,7 @@ const MediaGrid = ({
             ) : (
               <div className="relative w-full h-full">
                 {media.thumbnailUrl ? (
-                  <img
+                  <ImageWithFallback
                     src={media.thumbnailUrl}
                     alt={media.description || "Video thumbnail"}
                     loading="lazy"

@@ -9,6 +9,7 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
     queryKey: ["heroImage", heroPhotoUrl],
     enabled: true, // Always run the query to at least get the fallback image
     staleTime: 0, // Changed from Infinity to 0 to always refetch when URL changes
+    retry: 1, // Only retry once to avoid too many failed requests
     queryFn: async () => {
       if (!heroPhotoUrl) {
         console.log("No hero photo URL provided, using fallback");
@@ -18,7 +19,17 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
       try {
         console.log("Loading hero image from URL:", heroPhotoUrl);
         const url = config.getImageUrl(heroPhotoUrl);
-        console.log("Full image URL:", url);
+        console.log("Final hero image URL:", url);
+
+        // Check if the image exists before trying to load it
+        const response = await fetch(url, { method: "HEAD" }).catch(() => ({
+          ok: false,
+        }));
+
+        if (!response.ok) {
+          console.error(`Hero image not found at URL: ${url}`);
+          return fallbackImageUrl;
+        }
 
         // Preload the image
         await new Promise((resolve, reject) => {
@@ -29,6 +40,9 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
             console.error("Image load error:", err);
             reject(err);
           };
+
+          // Set a timeout to avoid hanging preloads
+          setTimeout(() => resolve(null), 5000);
         });
 
         return url;
