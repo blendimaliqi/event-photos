@@ -13,6 +13,7 @@ import { Event } from "../types/event";
 import { eventService } from "../services/eventService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EVENT_QUERY_KEY } from "../hooks/useEvent";
+import Footer from "./Footer";
 
 const AppContent = () => {
   const [allMediaItems, setAllMediaItems] = useState<Media[]>([]);
@@ -244,48 +245,39 @@ const AppContent = () => {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 flex flex-col">
       {!isGalleryView && (
         <HeroSection event={displayEvent} isPhotoView={false} />
       )}
-
-      {(loading || eventLoading) && !allMediaItems.length ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          {!isGalleryView && (
-            <>
-              <div className="mb-12">
-                <PhotoUpload eventId={DEMO_EVENT_ID} />
+      <div className="flex-grow">
+        {isGalleryView ? (
+          <MediaViewer
+            initialMedia={selectedMedia!}
+            mediaItems={allMediaItems}
+            onClose={handleCloseViewer}
+          />
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            {(loading || eventLoading) && !allMediaItems.length ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
               </div>
-              <MediaGrid
-                mediaItems={filteredMediaItems}
-                onMediaSelect={handleMediaSelect}
-                isLoading={loading}
-              />
-            </>
-          )}
-
-          {isGalleryView && selectedMedia && (
-            <MediaViewer
-              initialMedia={selectedMedia}
-              mediaItems={allMediaItems} // Keep all items in the gallery view for navigation
-              onClose={handleCloseViewer}
-            />
-          )}
-        </div>
-      )}
-
-      {loading && allMediaItems.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-white border-t-transparent"></div>
-            <div className="mt-3 text-white text-sm">Loading gallery...</div>
+            ) : (
+              <>
+                <div className="mb-12">
+                  <PhotoUpload eventId={DEMO_EVENT_ID} />
+                </div>
+                <MediaGrid
+                  mediaItems={filteredMediaItems}
+                  onMediaSelect={handleMediaSelect}
+                  isLoading={loading}
+                />
+              </>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <Footer />
     </div>
   );
 };
