@@ -219,13 +219,6 @@ const MediaViewer = ({
       ? `translateX(${swipeOffset}px)`
       : "translateX(0)";
 
-  // Use a smoother transition when animating the swipe finish
-  const swipeTransition = isAnimatingSwipe
-    ? "transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)"
-    : swiping
-    ? "none"
-    : "transform 0.3s ease-out";
-
   return (
     <div
       className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center transition-opacity duration-200 ${
