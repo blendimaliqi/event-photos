@@ -69,13 +69,13 @@ const MediaGrid = ({
   const getGridClasses = () => {
     switch (viewMode) {
       case "masonry":
-        return "columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 md:gap-5 space-y-3 sm:space-y-4 md:space-y-5";
+        return "columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 sm:gap-5 md:gap-6 space-y-4 sm:space-y-5 md:space-y-6";
       case "grid":
-        return "grid grid-cols-2 gap-3 sm:gap-4 md:gap-5";
+        return "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 md:gap-6";
       case "compact":
-        return "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4";
+        return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 md:gap-5";
       default:
-        return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3 md:gap-4";
+        return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4 md:gap-5";
     }
   };
 
@@ -115,7 +115,7 @@ const MediaGrid = ({
       return (
         <div
           key={`${media.type}-${media.id}`}
-          className="break-inside-avoid mb-3 sm:mb-4 md:mb-5 relative overflow-hidden rounded-md hover:shadow-lg cursor-pointer transition-all duration-300"
+          className="break-inside-avoid mb-4 sm:mb-5 md:mb-6 relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300"
           onClick={() => onMediaSelect(media)}
         >
           <div className="group">
@@ -136,14 +136,30 @@ const MediaGrid = ({
                     className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full aspect-video bg-gray-100 flex items-center justify-center">
-                    <span className="text-sm text-gray-500">Video</span>
+                  <div className="w-full aspect-video bg-gradient-to-br from-rose-100 via-pink-200 to-rose-300 flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center p-3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-8 w-8 text-rose-700 mb-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-rose-700">
+                        Video
+                      </span>
+                    </div>
                   </div>
                 )}
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center">
+                <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 w-7 h-7 flex items-center justify-center backdrop-blur-sm">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-3.5 w-3.5"
+                    className="h-4 w-4"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -156,6 +172,7 @@ const MediaGrid = ({
                 </div>
               </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         </div>
       );
@@ -164,7 +181,7 @@ const MediaGrid = ({
       return (
         <div
           key={`${media.type}-${media.id}`}
-          className="relative overflow-hidden rounded-md hover:shadow-lg cursor-pointer transition-all duration-300"
+          className="relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300"
           style={{
             aspectRatio: getAspectRatio(viewMode),
             height: "0",
@@ -191,14 +208,30 @@ const MediaGrid = ({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="text-sm text-gray-500">Video</span>
+                  <div className="w-full h-full bg-gradient-to-br from-rose-100 via-pink-200 to-rose-300 flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-8 w-8 text-rose-700 mb-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium text-rose-700">
+                        Video
+                      </span>
+                    </div>
                   </div>
                 )}
-                <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center">
+                <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white rounded-full p-1.5 w-7 h-7 flex items-center justify-center backdrop-blur-sm">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-3.5 w-3.5"
+                    className="h-4 w-4"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -211,6 +244,7 @@ const MediaGrid = ({
                 </div>
               </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         </div>
       );
@@ -235,7 +269,7 @@ const MediaGrid = ({
       <div className="flex justify-start px-4 pb-2 relative" ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-lg shadow-sm hover:bg-rose-100 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -345,7 +379,7 @@ const MediaGrid = ({
       {/* Media grid */}
       <div
         ref={gridRef}
-        className={`${getGridClasses()} p-1 sm:p-2 ${
+        className={`${getGridClasses()} p-2 sm:p-3 ${
           gridReady ? "opacity-100" : "opacity-0"
         } transition-opacity duration-200`}
         style={
