@@ -49,8 +49,8 @@ export const config = {
         return path;
       }
 
-      // Always use the API URL for uploads to avoid CORS issues
-      // This ensures all media requests go to the same origin as the API
+      // FIXED: Always use the VITE_API_URL for uploads, regardless of the current origin
+      // This ensures all media requests go to the backend server where files are actually stored
       const baseUrl =
         import.meta.env.VITE_API_URL ||
         (import.meta.env.PROD
