@@ -12,7 +12,7 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
     retry: 1, // Only retry once to avoid too many failed requests
     queryFn: async () => {
       if (!heroPhotoUrl) {
-        console.log("No hero photo URL provided, using fallback");
+        console.log("No hero photo URL provided, using fallback image");
         return fallbackImageUrl;
       }
 
