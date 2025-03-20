@@ -16,12 +16,11 @@ export function AdminPanel({ eventId }: { eventId: number }) {
     data: photos,
     isLoading: photosLoading,
     error: photosError,
-  } = usePhotos(eventId, "newest", event?.heroPhotoId || undefined);
+  } = usePhotos(eventId, "newest");
 
   const { data: mediaItems, isLoading: mediaLoading } = useMedia(
     eventId,
-    "newest",
-    event?.heroPhotoId || undefined
+    "newest"
   );
 
   // Filter videos from mediaItems

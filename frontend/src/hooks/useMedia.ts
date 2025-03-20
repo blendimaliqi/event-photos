@@ -59,8 +59,6 @@ export function useMedia(
   eventId: number | undefined,
   sortBy: SortOption = "newest"
 ) {
-  const queryClient = useQueryClient();
-
   return useQuery({
     queryKey: QUERY_KEYS.media(eventId || 0, sortBy),
     queryFn: async () => {
