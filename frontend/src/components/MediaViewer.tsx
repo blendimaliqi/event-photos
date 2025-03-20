@@ -30,6 +30,7 @@ const MediaViewer = ({
   const [touchCount, setTouchCount] = useState(0);
   const swipeThreshold = 100; // Minimum px to swipe to trigger next/previous
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // Find the index of the initially selected media
@@ -235,6 +236,29 @@ const MediaViewer = ({
   // Determine if we should show the description
   const hasDescription = !!currentMedia.description;
   const isVideo = currentMedia.type === "video";
+
+  // Effect to ensure videos are properly paused when changing media
+  useEffect(() => {
+    // Reset video state when navigating to ensure controls show correctly
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0; // Reset to beginning
+
+      // Force browser to reset control UI
+      const refreshControls = () => {
+        if (videoRef.current) {
+          // Small timeout to ensure browser updates UI
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.load();
+            }
+          }, 10);
+        }
+      };
+
+      refreshControls();
+    }
+  }, [currentIndex, isVideo]);
 
   // Calculate swipe effect styles - smooth transitions
   const swipeTransform =
@@ -494,8 +518,16 @@ const MediaViewer = ({
               isLoading ? "opacity-30" : "opacity-100"
             } flex items-center justify-center relative cursor-pointer`}
             onClick={(e) => {
-              e.stopPropagation();
-              toggleFullscreen();
+              // Handle fullscreen toggle
+              if (
+                // Only toggle if we're directly clicking on this div or on an image
+                e.target === e.currentTarget ||
+                (currentMedia.type === "photo" &&
+                  e.target instanceof HTMLImageElement)
+              ) {
+                e.stopPropagation();
+                toggleFullscreen();
+              }
             }}
           >
             {currentMedia.type === "photo" ? (
@@ -511,6 +543,7 @@ const MediaViewer = ({
               />
             ) : (
               <video
+                ref={videoRef}
                 src={currentMedia.url}
                 poster={currentMedia.thumbnailUrl}
                 className={`
@@ -518,17 +551,17 @@ const MediaViewer = ({
                   ${isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"}
                 `}
                 style={{ objectFit: "scale-down" }}
-                controls={!isFullscreen}
+                controls
                 loop={false}
                 muted={isMuted}
-                onLoadedMetadata={handleImageLoad}
+                playsInline
                 preload="metadata"
-                onClick={(e) => {
-                  // For videos, prevent fullscreen toggle when clicking on video controls
-                  if (isFullscreen) {
-                    e.stopPropagation();
-                    toggleFullscreen();
+                onCanPlay={() => {
+                  // Make sure video is definitely paused when ready
+                  if (videoRef.current) {
+                    videoRef.current.pause();
                   }
+                  handleImageLoad();
                 }}
               >
                 Your browser does not support the video tag.
