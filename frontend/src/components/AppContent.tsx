@@ -161,12 +161,27 @@ const AppContent = () => {
     photos: [],
   };
 
+  // Debug logging for hero photo information
+  if (eventData) {
+    console.log("Current event data hero information:", {
+      heroPhotoId: eventData.heroPhotoId,
+      heroPhotoUrl: eventData.heroPhotoUrl,
+      heroPhoto: eventData.heroPhoto,
+    });
+  }
+
   // In display mode only - if there's no hero photo from the event data but we have media items,
   // temporarily use one just for display purposes but don't save it
   let tempHeroForDisplay = completeEvent.heroPhoto;
+
+  // Only set a temporary hero if we don't have any hero photo information at all
+  // Check all possible sources of hero photo data before trying to find a temporary one
   if (
     !wasHeroDeleted &&
     !tempHeroForDisplay &&
+    !completeEvent.heroPhotoId &&
+    !completeEvent.heroPhotoUrl &&
+    !completeEvent.heroPhoto?.url &&
     allMediaItems.length > 0 &&
     !isGalleryView
   ) {
@@ -234,13 +249,22 @@ const AppContent = () => {
     // When hero was deleted, don't filter any photos - show all in grid
     if (wasHeroDeleted) return true;
 
-    // Otherwise, don't display the hero photo in the regular grid if:
+    // Add debug logging
+    if (
+      item.type === "photo" &&
+      completeEvent.heroPhotoId &&
+      item.id === completeEvent.heroPhotoId
+    ) {
+      console.log("Filtering out hero photo from grid:", item);
+    }
+
+    // Only filter out the official hero photo, never the temporary one
     // 1. It's a photo AND
-    // 2. Either its ID matches the event's heroPhotoId OR it matches the heroPhoto object's ID
+    // 2. Its ID matches the event's heroPhotoId (official)
     return !(
       item.type === "photo" &&
-      ((completeEvent.heroPhotoId && item.id === completeEvent.heroPhotoId) ||
-        (tempHeroForDisplay && item.id === tempHeroForDisplay.id))
+      completeEvent.heroPhotoId &&
+      item.id === completeEvent.heroPhotoId
     );
   });
 

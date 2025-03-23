@@ -41,9 +41,20 @@ export const HeroSection = ({
   const { data: heroPhoto } = useHeroPhoto(latestEvent?.id);
 
   // Then preload the hero image
+  const heroPhotoUrl =
+    latestEvent?.heroPhotoUrl || heroPhoto?.url || latestEvent?.heroPhoto?.url;
+
+  // Debug logging to see which source is being used
+  console.log("Hero image sources:", {
+    eventHeroPhotoUrl: latestEvent?.heroPhotoUrl,
+    heroPhotoEndpoint: heroPhoto?.url,
+    eventHeroPhotoObj: latestEvent?.heroPhoto?.url,
+    finalUsed: heroPhotoUrl,
+  });
+
   const { data: currentImageUrl, isLoading } = useHeroImage(
     // Try multiple sources for the hero photo URL
-    latestEvent?.heroPhotoUrl || heroPhoto?.url || latestEvent?.heroPhoto?.url
+    heroPhotoUrl
   );
 
   // Handle image load error
