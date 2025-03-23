@@ -21,6 +21,7 @@ const AppContent = () => {
   const [wasHeroDeleted, setWasHeroDeleted] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // Add a refresh key to trigger re-renders
   const previousHeroPhotoId = useRef<number | undefined>(undefined);
+  const scrollPositionRef = useRef<number>(0); // Store scroll position
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { mediaType, mediaId } = useParams<{
@@ -130,12 +131,21 @@ const AppContent = () => {
 
   // Handle media selection - navigate to the proper URL
   const handleMediaSelect = (media: Media) => {
+    // Save current scroll position before navigating
+    scrollPositionRef.current = window.scrollY;
     navigate(`/${media.type}/${media.id}`);
   };
 
   // Handle gallery close - return to main view
   const handleCloseViewer = () => {
     navigate("/");
+    // Restore scroll position after navigation completes
+    setTimeout(() => {
+      window.scrollTo({
+        top: scrollPositionRef.current,
+        behavior: "auto", // Use "auto" for immediate scrolling
+      });
+    }, 100);
   };
 
   // Callback to refresh media after successful upload
