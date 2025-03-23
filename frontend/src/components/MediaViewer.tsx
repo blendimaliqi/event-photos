@@ -135,6 +135,31 @@ const MediaViewer = ({
 
   // Swipe handlers
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't start swiping if interacting with video or video controls
+    const target = e.target as HTMLElement;
+
+    // Get the video element if touch is on video or a child of video
+    const videoElement =
+      target.tagName === "VIDEO"
+        ? target
+        : (target.closest("video") as HTMLElement);
+
+    if (videoElement) {
+      // Check if touch is in the bottom portion of the video (likely controls area)
+      const videoRect = videoElement.getBoundingClientRect();
+      const touchY = e.touches[0].clientY;
+
+      // Controls are typically in the bottom ~15% of the video
+      const controlsAreaThreshold = videoRect.height * 0.85;
+      const isTouchingControls = touchY > videoRect.top + controlsAreaThreshold;
+
+      // Skip swiping only if touching the controls area
+      if (isTouchingControls) {
+        return;
+      }
+    }
+
+    // Continue with normal swiping logic for center of video or non-video elements
     // Don't start swiping if we have multiple fingers (zooming)
     const touches = e.touches.length;
     setTouchCount(touches);
@@ -148,6 +173,32 @@ const MediaViewer = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    // Check if touch is happening on video controls
+    const target = e.target as HTMLElement;
+
+    // Only check for video controls if we're not already swiping
+    if (!swiping) {
+      const videoElement =
+        target.tagName === "VIDEO"
+          ? target
+          : (target.closest("video") as HTMLElement);
+
+      if (videoElement) {
+        // Check if touch is in the bottom controls area
+        const videoRect = videoElement.getBoundingClientRect();
+        const touchY = e.touches[0].clientY;
+
+        // Controls are typically in bottom 15% of video
+        const controlsAreaThreshold = videoRect.height * 0.85;
+        const isTouchingControls =
+          touchY > videoRect.top + controlsAreaThreshold;
+
+        if (isTouchingControls) {
+          return;
+        }
+      }
+    }
+
     // Don't handle swipe if not swiping or if multiple fingers are used
     if (!swiping || e.touches.length > 1) {
       setTouchCount(e.touches.length);
@@ -172,6 +223,9 @@ const MediaViewer = ({
   };
 
   const handleTouchEnd = () => {
+    // Only check for controls if not already swiping
+    if (!swiping) return;
+
     // Skip if not swiping or using multiple fingers
     if (!swiping || touchCount > 1) {
       setTouchCount(0);
@@ -667,30 +721,36 @@ const MediaViewer = ({
                 onLoad={handleImageLoad}
               />
             ) : (
-              <video
-                ref={videoRef}
-                src={currentMedia.url}
-                poster={currentMedia.thumbnailUrl}
-                className={`
-                  max-w-full rounded shadow-lg transition-all duration-300
-                  ${isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-180px)]"}
-                `}
-                style={{ objectFit: "scale-down" }}
-                controls
-                loop={false}
-                muted={isMuted}
-                playsInline
-                preload="metadata"
-                onCanPlay={() => {
-                  // Make sure video is definitely paused when ready
-                  if (videoRef.current) {
-                    videoRef.current.pause();
-                  }
-                  handleImageLoad();
-                }}
-              >
-                Your browser does not support the video tag.
-              </video>
+              <div className="video-controls">
+                <video
+                  ref={videoRef}
+                  src={currentMedia.url}
+                  poster={currentMedia.thumbnailUrl}
+                  className={`
+                    max-w-full rounded shadow-lg transition-all duration-300
+                    ${
+                      isFullscreen
+                        ? "max-h-screen"
+                        : "max-h-[calc(100vh-180px)]"
+                    }
+                  `}
+                  style={{ objectFit: "scale-down" }}
+                  controls
+                  loop={false}
+                  muted={isMuted}
+                  playsInline
+                  preload="metadata"
+                  onCanPlay={() => {
+                    // Make sure video is definitely paused when ready
+                    if (videoRef.current) {
+                      videoRef.current.pause();
+                    }
+                    handleImageLoad();
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
             )}
           </div>
 
