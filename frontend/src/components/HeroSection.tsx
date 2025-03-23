@@ -44,14 +44,6 @@ export const HeroSection = ({
   const heroPhotoUrl =
     latestEvent?.heroPhotoUrl || heroPhoto?.url || latestEvent?.heroPhoto?.url;
 
-  // Debug logging to see which source is being used
-  console.log("Hero image sources:", {
-    eventHeroPhotoUrl: latestEvent?.heroPhotoUrl,
-    heroPhotoEndpoint: heroPhoto?.url,
-    eventHeroPhotoObj: latestEvent?.heroPhoto?.url,
-    finalUsed: heroPhotoUrl,
-  });
-
   const { data: currentImageUrl, isLoading } = useHeroImage(
     // Try multiple sources for the hero photo URL
     heroPhotoUrl

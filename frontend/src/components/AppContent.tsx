@@ -161,15 +161,6 @@ const AppContent = () => {
     photos: [],
   };
 
-  // Debug logging for hero photo information
-  if (eventData) {
-    console.log("Current event data hero information:", {
-      heroPhotoId: eventData.heroPhotoId,
-      heroPhotoUrl: eventData.heroPhotoUrl,
-      heroPhoto: eventData.heroPhoto,
-    });
-  }
-
   // In display mode only - if there's no hero photo from the event data but we have media items,
   // temporarily use one just for display purposes but don't save it
   let tempHeroForDisplay = completeEvent.heroPhoto;
@@ -248,15 +239,6 @@ const AppContent = () => {
   const filteredMediaItems = allMediaItems.filter((item) => {
     // When hero was deleted, don't filter any photos - show all in grid
     if (wasHeroDeleted) return true;
-
-    // Add debug logging
-    if (
-      item.type === "photo" &&
-      completeEvent.heroPhotoId &&
-      item.id === completeEvent.heroPhotoId
-    ) {
-      console.log("Filtering out hero photo from grid:", item);
-    }
 
     // Only filter out the official hero photo, never the temporary one
     // 1. It's a photo AND

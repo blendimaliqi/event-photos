@@ -36,15 +36,11 @@ export function PhotoUpload({ eventId }: PhotoUploadProps) {
       // First cancel any in-flight queries to make sure they don't interfere
       await queryClient.cancelQueries();
 
-      // Log the upload success and initiate cache invalidation
-      console.log("Media upload successful, invalidating caches...");
-
       // Manually invalidate all media-related caches to ensure fresh data
       invalidateMediaCaches(eventId);
 
       // Force a refetch of all media after a short delay
       setTimeout(() => {
-        console.log("Performing delayed cache invalidation...");
         // Explicitly invalidate hero photo caches
         queryClient.invalidateQueries({
           queryKey: ["heroPhoto"],
