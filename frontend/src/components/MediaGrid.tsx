@@ -83,13 +83,13 @@ const MediaGrid = ({
   const getViewModeName = () => {
     switch (viewMode) {
       case "masonry":
-        return "Pamja Fascia";
+        return "Pamja Masonry";
       case "grid":
-        return "Pamja Rrjetë";
+        return "Pamja Grid";
       case "compact":
         return "Pamja Kompakte";
       default:
-        return "Pamja Rrjetë";
+        return "Pamja Grid";
     }
   };
 
@@ -320,7 +320,7 @@ const MediaGrid = ({
                   d="M4 6h16M4 10h16M4 14h16M4 18h16"
                 />
               </svg>
-              Pamja Fascia
+              Pamja Masonry
             </button>
             <button
               onClick={() => {
@@ -347,7 +347,7 @@ const MediaGrid = ({
                   d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493m0 0l1.45 4.349M12.568 3.314l-1.45 4.349M18 3h-3.28a1 1 0 00-.948.684L12.568 9M3 13h8m-8 4h8m9-4h-8m6 4h-4"
                 />
               </svg>
-              Pamja Rrjetë
+              Pamja Grid
             </button>
             <button
               onClick={() => {
