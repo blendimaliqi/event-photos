@@ -255,7 +255,7 @@ const MediaGrid = ({
             )}
             {/* Message indicator */}
             {hasDescription && (
-              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-10">
+              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-5">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 text-rose-600"
@@ -353,7 +353,7 @@ const MediaGrid = ({
             )}
             {/* Message indicator */}
             {hasDescription && (
-              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-10">
+              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-5">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 text-rose-600"
@@ -423,7 +423,7 @@ const MediaGrid = ({
 
           {/* Dropdown menu */}
           {isMenuOpen && (
-            <div className="absolute top-full left-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-10">
+            <div className="absolute top-full left-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-20">
               <button
                 onClick={() => {
                   setViewMode("masonry");
@@ -534,7 +534,7 @@ const MediaGrid = ({
 
           {/* Sort dropdown menu */}
           {isSortMenuOpen && (
-            <div className="absolute top-full right-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-10">
+            <div className="absolute top-full right-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-20">
               <button
                 onClick={() => {
                   setSortOption("latest");
