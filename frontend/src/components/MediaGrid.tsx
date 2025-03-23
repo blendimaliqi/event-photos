@@ -4,6 +4,8 @@ import { ImageWithFallback } from "./ImageWithFallback";
 
 // Define view mode types
 export type ViewMode = "masonry" | "grid" | "compact";
+// Define sort options
+export type SortOption = "latest" | "oldest" | "withMessages";
 
 interface MediaGridProps {
   mediaItems: Media[];
@@ -19,8 +21,11 @@ const MediaGrid = ({
   const [gridReady, setGridReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid"); // Default to grid view
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>("latest"); // Default to latest
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // Effect to ensure all grid items are loaded before displaying
   useEffect(() => {
@@ -37,11 +42,17 @@ const MediaGrid = ({
     return () => clearTimeout(timer);
   }, [mediaItems]);
 
-  // Close menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
+      }
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsSortMenuOpen(false);
       }
     };
 
@@ -64,6 +75,57 @@ const MediaGrid = ({
       </div>
     );
   }
+
+  // Get the sorted media items based on current sort option
+  const getSortedMediaItems = () => {
+    const items = [...mediaItems]; // Create a copy to avoid mutating props
+
+    switch (sortOption) {
+      case "latest":
+        return items.sort(
+          (a, b) =>
+            new Date(b.uploadDate || 0).getTime() -
+            new Date(a.uploadDate || 0).getTime()
+        );
+      case "oldest":
+        return items.sort(
+          (a, b) =>
+            new Date(a.uploadDate || 0).getTime() -
+            new Date(b.uploadDate || 0).getTime()
+        );
+      case "withMessages":
+        return items.sort((a, b) => {
+          // Sort items with messages first
+          const aHasMessage = a.description && a.description.trim().length > 0;
+          const bHasMessage = b.description && b.description.trim().length > 0;
+
+          if (aHasMessage && !bHasMessage) return -1;
+          if (!aHasMessage && bHasMessage) return 1;
+
+          // If both have or don't have messages, sort by date (latest first)
+          return (
+            new Date(b.uploadDate || 0).getTime() -
+            new Date(a.uploadDate || 0).getTime()
+          );
+        });
+      default:
+        return items;
+    }
+  };
+
+  // Get the display name for the sort option
+  const getSortOptionName = () => {
+    switch (sortOption) {
+      case "latest":
+        return "Më të fundit";
+      case "oldest":
+        return "Më të vjetra";
+      case "withMessages":
+        return "Mesazhet fillimisht";
+      default:
+        return "Më të fundit";
+    }
+  };
 
   // Get the appropriate grid classes based on view mode
   const getGridClasses = () => {
@@ -269,115 +331,229 @@ const MediaGrid = ({
         </div>
       )}
 
-      {/* View mode selector - styled like the image */}
-      <div className="flex justify-start px-4 pb-2 relative" ref={menuRef}>
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      {/* View and sort options */}
+      <div className="flex justify-between px-4 pb-2 relative">
+        {/* View mode selector */}
+        <div ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h7"
-            />
-          </svg>
-          <span>{getViewModeName()}</span>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h7"
+              />
+            </svg>
+            <span>{getViewModeName()}</span>
+          </button>
 
-        {/* Dropdown menu */}
-        {isMenuOpen && (
-          <div className="absolute top-full left-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-10">
-            <button
-              onClick={() => {
-                setViewMode("masonry");
-                setIsMenuOpen(false);
-              }}
-              className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
-                viewMode === "masonry"
-                  ? "bg-rose-50 text-rose-800"
-                  : "text-gray-700 hover:bg-rose-50"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          {/* Dropdown menu */}
+          {isMenuOpen && (
+            <div className="absolute top-full left-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-10">
+              <button
+                onClick={() => {
+                  setViewMode("masonry");
+                  setIsMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  viewMode === "masonry"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                />
-              </svg>
-              Pamja Masonry
-            </button>
-            <button
-              onClick={() => {
-                setViewMode("grid");
-                setIsMenuOpen(false);
-              }}
-              className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
-                viewMode === "grid"
-                  ? "bg-rose-50 text-rose-800"
-                  : "text-gray-700 hover:bg-rose-50"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                  />
+                </svg>
+                Pamja Masonry
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("grid");
+                  setIsMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  viewMode === "grid"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493m0 0l1.45 4.349M12.568 3.314l-1.45 4.349M18 3h-3.28a1 1 0 00-.948.684L12.568 9M3 13h8m-8 4h8m9-4h-8m6 4h-4"
-                />
-              </svg>
-              Pamja Grid
-            </button>
-            <button
-              onClick={() => {
-                setViewMode("compact");
-                setIsMenuOpen(false);
-              }}
-              className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
-                viewMode === "compact"
-                  ? "bg-rose-50 text-rose-800"
-                  : "text-gray-700 hover:bg-rose-50"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493m0 0l1.45 4.349M12.568 3.314l-1.45 4.349M18 3h-3.28a1 1 0 00-.948.684L12.568 9M3 13h8m-8 4h8m9-4h-8m6 4h-4"
+                  />
+                </svg>
+                Pamja Grid
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode("compact");
+                  setIsMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  viewMode === "compact"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                />
-              </svg>
-              Pamja Kompakte
-            </button>
-          </div>
-        )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                  />
+                </svg>
+                Pamja Kompakte
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Sort selector */}
+        <div ref={sortMenuRef}>
+          <button
+            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+              />
+            </svg>
+            <span>{getSortOptionName()}</span>
+          </button>
+
+          {/* Sort dropdown menu */}
+          {isSortMenuOpen && (
+            <div className="absolute top-full right-4 mt-1 bg-white rounded-lg shadow-lg border border-rose-100 p-1 z-10">
+              <button
+                onClick={() => {
+                  setSortOption("latest");
+                  setIsSortMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  sortOption === "latest"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Më të fundit
+              </button>
+              <button
+                onClick={() => {
+                  setSortOption("oldest");
+                  setIsSortMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  sortOption === "oldest"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Më të vjetra
+              </button>
+              <button
+                onClick={() => {
+                  setSortOption("withMessages");
+                  setIsSortMenuOpen(false);
+                }}
+                className={`flex items-center w-full text-left px-4 py-2 text-sm font-serif rounded-md ${
+                  sortOption === "withMessages"
+                    ? "bg-rose-50 text-rose-800"
+                    : "text-gray-700 hover:bg-rose-50"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+                Mesazhet fillimisht
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Media grid */}
@@ -395,7 +571,7 @@ const MediaGrid = ({
             : undefined
         }
       >
-        {mediaItems.map((media) => renderMediaItem(media))}
+        {getSortedMediaItems().map((media) => renderMediaItem(media))}
       </div>
     </div>
   );
