@@ -173,11 +173,28 @@ const MediaGrid = ({
 
   // Render different item layout based on view mode
   const renderMediaItem = (media: Media) => {
+    // Check if media has a description
+    const hasDescription =
+      media.description && media.description.trim().length > 0;
+
+    // Format the date
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat("sq-AL", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(date);
+    };
+
     if (viewMode === "masonry") {
       return (
         <div
           key={`${media.type}-${media.id}`}
-          className="break-inside-avoid mb-4 sm:mb-5 md:mb-6 relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300"
+          className="break-inside-avoid mb-4 sm:mb-5 md:mb-6 relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300 group"
           onClick={() => onMediaSelect(media)}
         >
           <div className="group">
@@ -236,7 +253,31 @@ const MediaGrid = ({
                 </div>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Message indicator */}
+            {hasDescription && (
+              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-rose-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+              </div>
+            )}
+            {/* Date overlay (only visible on hover) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+              <div className="w-full p-3 text-white text-sm font-medium">
+                {formatDate(media.uploadDate)}
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -245,7 +286,7 @@ const MediaGrid = ({
       return (
         <div
           key={`${media.type}-${media.id}`}
-          className="relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300"
+          className="relative overflow-hidden rounded-2xl hover:shadow-xl cursor-pointer transition-all duration-300 group"
           style={{
             aspectRatio: getAspectRatio(viewMode),
             height: "0",
@@ -310,7 +351,31 @@ const MediaGrid = ({
                 </div>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {/* Message indicator */}
+            {hasDescription && (
+              <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-md z-10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-rose-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+              </div>
+            )}
+            {/* Date overlay (only visible on hover) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+              <div className="w-full p-3 text-white text-sm font-medium">
+                {formatDate(media.uploadDate)}
+              </div>
+            </div>
           </div>
         </div>
       );
