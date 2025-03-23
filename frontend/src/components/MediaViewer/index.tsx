@@ -419,6 +419,18 @@ const MediaViewer = ({
           setTimeout(() => {
             if (videoRef.current) {
               videoRef.current.load();
+
+              // Force browser to update pause/play button state
+              const videoElement = videoRef.current;
+
+              // Create and dispatch a pause event to ensure UI reflects paused state
+              const pauseEvent = new Event("pause", { bubbles: true });
+              videoElement.dispatchEvent(pauseEvent);
+
+              // For some browsers that might not properly update with just the event
+              if (videoElement.paused === false) {
+                videoElement.pause();
+              }
             }
           }, 10);
         }
