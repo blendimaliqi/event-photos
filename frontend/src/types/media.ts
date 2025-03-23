@@ -21,8 +21,14 @@ export function photoToMedia(photo: Photo): Media {
 }
 
 export function videoToMedia(video: Video): Media {
+  console.log(
+    `Processing video to media conversion. ThumbnailUrl: ${
+      video.thumbnailUrl || "none"
+    }`
+  );
   return {
     ...video,
     type: "video",
+    thumbnailUrl: video.thumbnailUrl,
   };
 }

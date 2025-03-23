@@ -123,18 +123,30 @@ namespace EventPhotos.API.Controllers
             {
                 // Save the video file and get its URL, size, and content type
                 var (fileUrl, fileSize, contentType) = await _fileStorageService.SaveVideoAsync(file);
+                Console.WriteLine($"Video saved: {fileUrl}, size: {fileSize}, contentType: {contentType}");
                 
-                // Save thumbnail if provided, but don't set ThumbnailUrl for now
-                // since it might not exist in the database
+                // Save thumbnail if provided
                 string? thumbnailUrl = null;
                 if (thumbnail != null && thumbnail.Length > 0)
                 {
-                    // Store the thumbnail file but don't use it in the database record
-                    await _fileStorageService.SavePhotoAsync(thumbnail);
-                    // We won't set thumbnailUrl here as it might cause issues
+                    try
+                    {
+                        // Save the thumbnail as a photo
+                        thumbnailUrl = await _fileStorageService.SavePhotoAsync(thumbnail);
+                        Console.WriteLine($"Thumbnail saved successfully: {thumbnailUrl}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but continue - we can still save the video without a thumbnail
+                        Console.WriteLine($"Error saving thumbnail: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No thumbnail provided");
                 }
 
-                // Create the video record without ThumbnailUrl to avoid database issues
+                // Create the video record
                 var videoDto = new CreateVideoDto
                 {
                     Url = fileUrl,
@@ -142,11 +154,14 @@ namespace EventPhotos.API.Controllers
                     Description = description,
                     FileSize = fileSize,
                     ContentType = contentType,
-                    // Intentionally not setting ThumbnailUrl to avoid database column issue
-                    ThumbnailUrl = null
+                    ThumbnailUrl = thumbnailUrl
                 };
 
+                Console.WriteLine($"Creating video with URL: {fileUrl}, ThumbnailURL: {thumbnailUrl}");
+
                 var video = await _videoRepository.AddVideoAsync(videoDto);
+                Console.WriteLine($"Video created with ID: {video.Id}, ThumbnailURL: {video.ThumbnailUrl}");
+                
                 return CreatedAtAction(nameof(GetById), new { id = video.Id }, video.ToVideoDto());
             }
             catch (ArgumentException ex)
@@ -155,15 +170,9 @@ namespace EventPhotos.API.Controllers
             }
             catch (Exception ex)
             {
-                // If we got this far and there's still an error, attempt direct SQL insertion
-                try 
-                {
-                    return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
-                }
-                catch
-                {
-                    return StatusCode(500, "Multiple errors occurred during video upload.");
-                }
+                Console.WriteLine($"Error uploading video: {ex.Message}");
+                Console.WriteLine($"Exception details: {ex}");
+                return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
             }
         }
     }

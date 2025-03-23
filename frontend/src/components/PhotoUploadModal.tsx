@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FILE_SIZE_LIMITS, formatFileSize } from "../config/constants";
+import { generateVideoThumbnail } from "../utils/videoUtils";
 
 interface MediaUploadModalProps {
   files: File[];
@@ -13,6 +14,7 @@ interface PreviewItem {
   error: boolean;
   isVideo: boolean;
   fileSize?: number;
+  thumbnailUrl?: string;
 }
 
 export function PhotoUploadModal({
@@ -34,13 +36,38 @@ export function PhotoUploadModal({
       error: false,
       isVideo: file.type.startsWith("video/"),
       fileSize: file.size,
+      thumbnailUrl: undefined,
     }));
     setPreviews(newPreviews);
+
+    // Generate thumbnails for videos
+    const generateThumbnails = async () => {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith("video/")) {
+          try {
+            const thumbnailBlob = await generateVideoThumbnail(file, 0.5);
+            const thumbnailUrl = URL.createObjectURL(thumbnailBlob);
+
+            setPreviews((prev) =>
+              prev.map((p, idx) => (idx === i ? { ...p, thumbnailUrl } : p))
+            );
+          } catch (error) {
+            console.error("Failed to generate thumbnail for video:", error);
+          }
+        }
+      }
+    };
+
+    generateThumbnails();
 
     // Cleanup function to revoke object URLs
     return () => {
       newPreviews.forEach((preview) => {
         URL.revokeObjectURL(preview.url);
+        if (preview.thumbnailUrl) {
+          URL.revokeObjectURL(preview.thumbnailUrl);
+        }
       });
     };
   }, [files]);
@@ -85,6 +112,16 @@ export function PhotoUploadModal({
             controls
             preload="metadata"
           />
+          {preview.thumbnailUrl && (
+            <div className="absolute bottom-10 left-2 bg-black/80 text-white p-1 rounded-md text-xs max-w-[100px]">
+              <div className="text-xs mb-1">Thumbnail:</div>
+              <img
+                src={preview.thumbnailUrl}
+                alt="Video thumbnail"
+                className="w-full object-contain border border-white/30"
+              />
+            </div>
+          )}
           <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs">
             Video
           </div>

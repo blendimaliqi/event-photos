@@ -1,6 +1,7 @@
 import { Video } from "../types/video";
 import { config } from "../config/config";
 import { FILE_SIZE_LIMITS } from "../config/constants";
+import { generateVideoThumbnail } from "../utils/videoUtils";
 
 const API_URL = config.API_ENDPOINT;
 
@@ -17,8 +18,14 @@ export const videoService = {
       );
     }
 
+    console.log(`Starting video upload process for ${file.name}`);
+
     // Extract video thumbnail
     const thumbnailBlob = await extractVideoThumbnail(file);
+    console.log(
+      `Thumbnail extracted:`,
+      thumbnailBlob ? `Success (${thumbnailBlob.size} bytes)` : "Failed"
+    );
 
     const formData = new FormData();
     formData.append("file", file);
@@ -33,9 +40,13 @@ export const videoService = {
         `thumbnail-${file.name.replace(/\.[^/.]+$/, "")}.jpg`,
         { type: "image/jpeg" }
       );
+      console.log(
+        `Thumbnail file created: ${thumbnailFile.name}, size: ${thumbnailFile.size}`
+      );
       formData.append("thumbnail", thumbnailFile);
     }
 
+    console.log(`Sending video upload request to ${API_URL}/videos`);
     const response = await fetch(`${API_URL}/videos`, {
       method: "POST",
       body: formData,
@@ -85,7 +96,12 @@ export const videoService = {
       throw new Error("Failed to fetch videos");
     }
 
-    return response.json();
+    const videos = await response.json();
+
+    // Debug log to see what's coming from the backend
+    console.log("Videos from backend:", videos);
+
+    return videos;
   },
 
   async deleteVideo(videoId: number): Promise<void> {
@@ -105,60 +121,8 @@ export const videoService = {
  */
 async function extractVideoThumbnail(videoFile: File): Promise<Blob | null> {
   try {
-    // Create a video element to load the video
-    const video = document.createElement("video");
-    video.preload = "metadata";
-
-    // Create a URL for the video file
-    const videoUrl = URL.createObjectURL(videoFile);
-    video.src = videoUrl;
-
-    // Wait for the video metadata to load
-    await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
-      video.onerror = () => reject(new Error("Failed to load video metadata"));
-      // Set timeout in case video loading hangs
-      setTimeout(
-        () => reject(new Error("Timeout loading video metadata")),
-        5000
-      );
-    });
-
-    // Seek to the first frame or a specific time (e.g., 0.5 seconds in)
-    video.currentTime = 0.5;
-
-    // Wait for the seek to complete
-    await new Promise<void>((resolve, reject) => {
-      video.onseeked = () => resolve();
-      video.onerror = () => reject(new Error("Failed to seek video"));
-      // Set timeout in case seeking hangs
-      setTimeout(() => reject(new Error("Timeout seeking video")), 5000);
-    });
-
-    // Create a canvas to draw the video frame
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw the video frame on the canvas
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Failed to get canvas context");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // Clean up
-    URL.revokeObjectURL(videoUrl);
-
-    // Convert canvas to a blob (JPEG format)
-    return new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Failed to create thumbnail blob"));
-        },
-        "image/jpeg",
-        0.8 // Quality parameter
-      );
-    });
+    // Use the improved thumbnail generator from videoUtils
+    return await generateVideoThumbnail(videoFile, 0.5);
   } catch (error) {
     console.error("Error extracting video thumbnail:", error);
     return null; // Return null if we can't extract the thumbnail
