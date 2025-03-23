@@ -397,16 +397,16 @@ const MediaGrid = ({
       )}
 
       {/* View and sort options */}
-      <div className="flex justify-between px-4 pb-2 relative">
+      <div className="flex justify-between items-center px-4 pb-2 relative">
         {/* View mode selector */}
-        <div ref={menuRef}>
+        <div ref={menuRef} className="max-w-[45%] sm:max-w-fit">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
+            className="flex items-center gap-1 w-full justify-start px-2 sm:px-3 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -418,7 +418,9 @@ const MediaGrid = ({
                 d="M4 6h16M4 12h16M4 18h7"
               />
             </svg>
-            <span>{getViewModeName()}</span>
+            <span className="truncate text-sm sm:text-base sm:whitespace-nowrap">
+              {getViewModeName()}
+            </span>
           </button>
 
           {/* Dropdown menu */}
@@ -510,14 +512,14 @@ const MediaGrid = ({
         </div>
 
         {/* Sort selector */}
-        <div ref={sortMenuRef}>
+        <div ref={sortMenuRef} className="max-w-[45%] sm:max-w-fit">
           <button
             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
+            className="flex items-center gap-1 w-full justify-start px-2 sm:px-3 py-2 bg-rose-50 text-rose-800 font-serif rounded-xl shadow-sm hover:bg-rose-100 transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -529,7 +531,9 @@ const MediaGrid = ({
                 d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
               />
             </svg>
-            <span>{getSortOptionName()}</span>
+            <span className="truncate text-sm sm:text-base sm:whitespace-nowrap">
+              {getSortOptionName()}
+            </span>
           </button>
 
           {/* Sort dropdown menu */}
