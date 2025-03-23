@@ -108,20 +108,11 @@ export function PhotoUploadModal({
         <div className="relative w-full h-full">
           <video
             src={preview.url}
+            poster={preview.thumbnailUrl}
             className="w-full h-full object-contain"
             controls
             preload="metadata"
           />
-          {preview.thumbnailUrl && (
-            <div className="absolute bottom-10 left-2 bg-black/80 text-white p-1 rounded-md text-xs max-w-[100px]">
-              <div className="text-xs mb-1">Thumbnail:</div>
-              <img
-                src={preview.thumbnailUrl}
-                alt="Video thumbnail"
-                className="w-full object-contain border border-white/30"
-              />
-            </div>
-          )}
           <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs">
             Video
           </div>
