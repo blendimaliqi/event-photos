@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Media } from "../types/media";
 import MediaGrid from "./MediaGrid";
@@ -19,6 +19,7 @@ const AppContent = () => {
   const [allMediaItems, setAllMediaItems] = useState<Media[]>([]);
   const [loading, setLoading] = useState(false);
   const [wasHeroDeleted, setWasHeroDeleted] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Add a refresh key to trigger re-renders
   const previousHeroPhotoId = useRef<number | undefined>(undefined);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -59,76 +60,73 @@ const AppContent = () => {
     },
   });
 
-  // Fetch all media on component mount
-  useEffect(() => {
-    const fetchAllMedia = async () => {
-      setLoading(true);
-      try {
-        const [photos, videos] = await Promise.all([
-          photoService.getPhotos(DEMO_EVENT_ID),
-          videoService.getVideos(DEMO_EVENT_ID),
-        ]);
+  // Use a callback function for fetching media that can be reused
+  const fetchAllMedia = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [photos, videos] = await Promise.all([
+        photoService.getPhotos(DEMO_EVENT_ID),
+        videoService.getVideos(DEMO_EVENT_ID),
+      ]);
 
-        // Convert to common Media type
-        const photoMedia = photos.map(photoToMedia);
-        const videoMedia = videos.map(videoToMedia);
+      // Convert to common Media type
+      const photoMedia = photos.map(photoToMedia);
+      const videoMedia = videos.map(videoToMedia);
 
-        // Combine and sort by upload date (newest first)
-        const allMedia = [...photoMedia, ...videoMedia].sort(
-          (a, b) =>
-            new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+      // Combine and sort by upload date (newest first)
+      const allMedia = [...photoMedia, ...videoMedia].sort(
+        (a, b) =>
+          new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+      );
+
+      setAllMediaItems(allMedia);
+
+      if (
+        photos.length > 0 &&
+        eventData &&
+        !eventData.heroPhotoId &&
+        !wasHeroDeleted
+      ) {
+        console.log("No hero photo set, attempting to find a good candidate");
+
+        // Try to find a photo with Paris/Eiffel in the description
+        const parisPhoto = photos.find(
+          (photo) =>
+            photo.description?.toLowerCase().includes("paris") ||
+            photo.description?.toLowerCase().includes("eiffel")
         );
 
-        setAllMediaItems(allMedia);
+        if (parisPhoto) {
+          console.log("Found Paris photo for hero:", parisPhoto);
+          try {
+            // Call the setHeroPhoto API to update the hero photo
+            await photoService.setHeroPhoto(
+              DEMO_EVENT_ID,
+              new File([], "placeholder.jpg"), // Dummy file, the API will use the photoId
+              parisPhoto.description
+            );
 
-        // Only try to set a hero photo automatically if:
-        // 1. We have photos
-        // 2. There's no hero photo ID set in the event data
-        // 3. The hero wasn't deliberately deleted from admin
-        if (
-          photos.length > 0 &&
-          eventData &&
-          !eventData.heroPhotoId &&
-          !wasHeroDeleted
-        ) {
-          console.log("No hero photo set, attempting to find a good candidate");
-
-          // Try to find a photo with Paris/Eiffel in the description
-          const parisPhoto = photos.find(
-            (photo) =>
-              photo.description?.toLowerCase().includes("paris") ||
-              photo.description?.toLowerCase().includes("eiffel")
-          );
-
-          if (parisPhoto) {
-            console.log("Found Paris photo for hero:", parisPhoto);
-            try {
-              // Call the setHeroPhoto API to update the hero photo
-              await photoService.setHeroPhoto(
-                DEMO_EVENT_ID,
-                new File([], "placeholder.jpg"), // Dummy file, the API will use the photoId
-                parisPhoto.description
-              );
-
-              console.log("Successfully set hero photo to Paris image");
-              // Refetch event data to get the updated heroPhotoId
-              queryClient.invalidateQueries({
-                queryKey: EVENT_QUERY_KEY.event(DEMO_EVENT_ID),
-              });
-            } catch (error) {
-              console.error("Failed to set Paris photo as hero:", error);
-            }
+            console.log("Successfully set hero photo to Paris image");
+            // Refetch event data to get the updated heroPhotoId
+            queryClient.invalidateQueries({
+              queryKey: EVENT_QUERY_KEY.event(DEMO_EVENT_ID),
+            });
+          } catch (error) {
+            console.error("Failed to set Paris photo as hero:", error);
           }
         }
-      } catch (error) {
-        console.error("Failed to load all media:", error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchAllMedia();
+    } catch (error) {
+      console.error("Failed to load all media:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [eventData, wasHeroDeleted, queryClient]);
+
+  // Fetch all media on component mount and when refreshKey changes
+  useEffect(() => {
+    fetchAllMedia();
+  }, [fetchAllMedia, refreshKey]);
 
   // Handle media selection - navigate to the proper URL
   const handleMediaSelect = (media: Media) => {
@@ -139,6 +137,12 @@ const AppContent = () => {
   const handleCloseViewer = () => {
     navigate("/");
   };
+
+  // Callback to refresh media after successful upload
+  const handleMediaUploadSuccess = useCallback(() => {
+    // This will trigger a re-render and re-fetch of media
+    setRefreshKey((prev) => prev + 1);
+  }, []);
 
   // Find the currently selected media item
   const selectedMedia =
@@ -271,7 +275,10 @@ const AppContent = () => {
             ) : (
               <>
                 <div className="mb-12">
-                  <PhotoUpload eventId={DEMO_EVENT_ID} />
+                  <PhotoUpload
+                    eventId={DEMO_EVENT_ID}
+                    onUploadSuccess={handleMediaUploadSuccess}
+                  />
                 </div>
                 <MediaGrid
                   mediaItems={filteredMediaItems}

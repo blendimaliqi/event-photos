@@ -7,9 +7,10 @@ import { queryClient } from "../providers/QueryProvider";
 
 interface PhotoUploadProps {
   eventId: number;
+  onUploadSuccess?: () => void; // Optional callback for parent components
 }
 
-export function PhotoUpload({ eventId }: PhotoUploadProps) {
+export function PhotoUpload({ eventId, onUploadSuccess }: PhotoUploadProps) {
   const { uploadFiles, isUploading, error } = useMediaUpload(eventId);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -55,6 +56,11 @@ export function PhotoUpload({ eventId }: PhotoUploadProps) {
 
         // Then invalidate all other caches
         invalidateMediaCaches(eventId);
+
+        // Call the onUploadSuccess callback if provided
+        if (onUploadSuccess) {
+          onUploadSuccess();
+        }
       }, 500);
 
       // Show success message and clear selected files
