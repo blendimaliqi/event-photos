@@ -9,7 +9,7 @@ import SwipeHandler from "./SwipeHandler";
 
 import FloatingDescriptionButton from "./FloatingDescriptionButton";
 import LoadingIndicator from "./LoadingIndicator";
-import FullScreenIndicator from "./FullscreenIndicator";
+import FullScreenIndicator from "./FullScreenIndicator";
 
 interface MediaViewerProps {
   initialMedia: Media;
