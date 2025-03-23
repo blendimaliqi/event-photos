@@ -123,7 +123,6 @@ namespace EventPhotos.API.Controllers
             {
                 // Save the video file and get its URL, size, and content type
                 var (fileUrl, fileSize, contentType) = await _fileStorageService.SaveVideoAsync(file);
-                Console.WriteLine($"Video saved: {fileUrl}, size: {fileSize}, contentType: {contentType}");
                 
                 // Save thumbnail if provided
                 string? thumbnailUrl = null;
@@ -133,17 +132,12 @@ namespace EventPhotos.API.Controllers
                     {
                         // Save the thumbnail as a photo
                         thumbnailUrl = await _fileStorageService.SavePhotoAsync(thumbnail);
-                        Console.WriteLine($"Thumbnail saved successfully: {thumbnailUrl}");
                     }
                     catch (Exception ex)
                     {
                         // Log but continue - we can still save the video without a thumbnail
                         Console.WriteLine($"Error saving thumbnail: {ex.Message}");
                     }
-                }
-                else
-                {
-                    Console.WriteLine("No thumbnail provided");
                 }
 
                 // Create the video record
@@ -157,11 +151,7 @@ namespace EventPhotos.API.Controllers
                     ThumbnailUrl = thumbnailUrl
                 };
 
-                Console.WriteLine($"Creating video with URL: {fileUrl}, ThumbnailURL: {thumbnailUrl}");
-
                 var video = await _videoRepository.AddVideoAsync(videoDto);
-                Console.WriteLine($"Video created with ID: {video.Id}, ThumbnailURL: {video.ThumbnailUrl}");
-                
                 return CreatedAtAction(nameof(GetById), new { id = video.Id }, video.ToVideoDto());
             }
             catch (ArgumentException ex)
@@ -171,7 +161,6 @@ namespace EventPhotos.API.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error uploading video: {ex.Message}");
-                Console.WriteLine($"Exception details: {ex}");
                 return StatusCode(500, $"An error occurred while uploading the video: {ex.Message}");
             }
         }

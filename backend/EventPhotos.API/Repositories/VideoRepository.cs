@@ -102,9 +102,6 @@ namespace EventPhotos.API.Repositories
                     cmd.Parameters.AddWithValue("@uploadDate", DateTime.UtcNow);
                     cmd.Parameters.AddWithValue("@thumbnailUrl", videoDto.ThumbnailUrl ?? (object)DBNull.Value);
                     
-                    // Log the SQL parameters for debugging
-                    Console.WriteLine($"Inserting video with SQL: Url={videoDto.Url}, ThumbnailUrl={videoDto.ThumbnailUrl ?? "null"}");
-                    
                     var result = await cmd.ExecuteScalarAsync();
                     return result != null ? Convert.ToInt32(result) : 0;
                 }

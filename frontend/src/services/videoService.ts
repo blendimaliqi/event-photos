@@ -18,14 +18,8 @@ export const videoService = {
       );
     }
 
-    console.log(`Starting video upload process for ${file.name}`);
-
     // Extract video thumbnail
     const thumbnailBlob = await extractVideoThumbnail(file);
-    console.log(
-      `Thumbnail extracted:`,
-      thumbnailBlob ? `Success (${thumbnailBlob.size} bytes)` : "Failed"
-    );
 
     const formData = new FormData();
     formData.append("file", file);
@@ -40,13 +34,9 @@ export const videoService = {
         `thumbnail-${file.name.replace(/\.[^/.]+$/, "")}.jpg`,
         { type: "image/jpeg" }
       );
-      console.log(
-        `Thumbnail file created: ${thumbnailFile.name}, size: ${thumbnailFile.size}`
-      );
       formData.append("thumbnail", thumbnailFile);
     }
 
-    console.log(`Sending video upload request to ${API_URL}/videos`);
     const response = await fetch(`${API_URL}/videos`, {
       method: "POST",
       body: formData,
@@ -97,10 +87,6 @@ export const videoService = {
     }
 
     const videos = await response.json();
-
-    // Debug log to see what's coming from the backend
-    console.log("Videos from backend:", videos);
-
     return videos;
   },
 

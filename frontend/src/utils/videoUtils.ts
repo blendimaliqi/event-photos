@@ -12,10 +12,6 @@ export const generateVideoThumbnail = async (
   videoFile: File,
   seekTime: number = 0.1
 ): Promise<Blob> => {
-  console.log(
-    `Generating thumbnail for video: ${videoFile.name}, type: ${videoFile.type}, size: ${videoFile.size}`
-  );
-
   return new Promise((resolve, reject) => {
     // Create a video element
     const video = document.createElement("video");
@@ -31,9 +27,6 @@ export const generateVideoThumbnail = async (
 
     // This triggers when video metadata is loaded
     video.onloadedmetadata = () => {
-      console.log(
-        `Video metadata loaded. Duration: ${video.duration}, dimensions: ${video.videoWidth}x${video.videoHeight}`
-      );
       // Seek to the specified time
       video.currentTime = Math.min(seekTime, video.duration / 2);
     };

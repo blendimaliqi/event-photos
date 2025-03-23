@@ -74,18 +74,10 @@ export function useMedia(
         loadPromise, // Include the delay in the Promise.all
       ]);
 
-      console.log("Raw videos data:", videos);
-
       const photoMedia = photos.map(photoToMedia);
-      const videoMedia = videos.map((video) => {
-        const media = videoToMedia(video);
-        console.log("Video conversion:", { original: video, converted: media });
-        return media;
-      });
+      const videoMedia = videos.map(videoToMedia);
 
       const allMedia = [...photoMedia, ...videoMedia];
-      console.log("All media:", allMedia);
-
       return allMedia;
     },
     enabled: !!eventId,
