@@ -19,13 +19,31 @@ const MediaGrid = ({
   isLoading = false,
 }: MediaGridProps) => {
   const [gridReady, setGridReady] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid"); // Default to grid view
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Try to load from localStorage, if not present use default "grid"
+    const savedViewMode = localStorage.getItem("eventPhotos_viewMode");
+    return (savedViewMode as ViewMode) || "grid";
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [sortOption, setSortOption] = useState<SortOption>("latest"); // Default to latest
+  const [sortOption, setSortOption] = useState<SortOption>(() => {
+    // Try to load from localStorage, if not present use default "latest"
+    const savedSortOption = localStorage.getItem("eventPhotos_sortOption");
+    return (savedSortOption as SortOption) || "latest";
+  });
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  // Save to localStorage whenever view mode changes
+  useEffect(() => {
+    localStorage.setItem("eventPhotos_viewMode", viewMode);
+  }, [viewMode]);
+
+  // Save to localStorage whenever sort option changes
+  useEffect(() => {
+    localStorage.setItem("eventPhotos_sortOption", sortOption);
+  }, [sortOption]);
 
   // Effect to ensure all grid items are loaded before displaying
   useEffect(() => {
