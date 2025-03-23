@@ -165,29 +165,32 @@ const TopBar: React.FC<TopBarProps> = ({
             </button>
           )}
 
-          <button
-            onClick={toggleThumbnails}
-            className={`text-white p-2 rounded-full transition-colors ${
-              showThumbnails ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
-            }`}
-            aria-label="Toggle thumbnails"
-            title="Toggle thumbnails (T)"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {/* Thumbnails toggle button - only show for photos */}
+          {!isVideo && (
+            <button
+              onClick={toggleThumbnails}
+              className={`text-white p-2 rounded-full transition-colors ${
+                showThumbnails ? "bg-white/30" : "bg-black/50 hover:bg-black/70"
+              }`}
+              aria-label="Toggle thumbnails"
+              title="Toggle thumbnails (T)"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 10h16M4 14h16M4 18h16"
-              />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                />
+              </svg>
+            </button>
+          )}
 
           <button
             onClick={handleDownload}
