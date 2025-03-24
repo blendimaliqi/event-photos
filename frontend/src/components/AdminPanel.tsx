@@ -13,6 +13,8 @@ export function AdminPanel({ eventId }: { eventId: number }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"photos" | "videos">("photos");
   const [selectedFileName, setSelectedFileName] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"normal" | "compact">("normal");
+  const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);
   const { data: event, isLoading: eventLoading } = useEvent(eventId);
   const {
     data: photos,
@@ -206,11 +208,63 @@ export function AdminPanel({ eventId }: { eventId: number }) {
         </ul>
       </div>
 
+      {/* View Mode Selector */}
+      <div className="mb-4 flex justify-end">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsViewDropdownOpen(!isViewDropdownOpen)}
+            className="inline-flex items-center justify-between bg-white border border-gray-200 hover:border-rose-200 text-gray-700 py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 cursor-pointer text-sm font-medium min-w-[140px]"
+          >
+            {viewMode === "normal" ? "Normal View" : "Compact View"}
+          </button>
+
+          {isViewDropdownOpen && (
+            <div className="absolute right-0 mt-1 w-full bg-white rounded-md shadow-lg z-10 border border-gray-100">
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setViewMode("normal");
+                    setIsViewDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm ${
+                    viewMode === "normal"
+                      ? "bg-rose-50 text-rose-700"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Normal View
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode("compact");
+                    setIsViewDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm ${
+                    viewMode === "compact"
+                      ? "bg-rose-50 text-rose-700"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Compact View
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Photos Tab Content */}
       {activeTab === "photos" && (
         <>
           <h3 className="text-xl font-semibold mb-4">Event Photos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            className={`grid ${
+              viewMode === "compact"
+                ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6"
+                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            } gap-4`}
+          >
             {photos
               ?.filter((photo) => {
                 if (event.heroPhoto) {
@@ -225,17 +279,31 @@ export function AdminPanel({ eventId }: { eventId: number }) {
                     alt="Wedding photo"
                     className="w-full h-48 object-cover rounded"
                   />
-                  <div className="flex justify-between items-center">
+                  <div
+                    className={`${
+                      viewMode === "compact"
+                        ? "flex-col space-y-2"
+                        : "flex justify-between items-center"
+                    }`}
+                  >
                     <div>
-                      <p className="text-sm text-gray-600">ID: {photo.id}</p>
-                      <p className="text-sm text-gray-600">
-                        Uploaded:{" "}
-                        {new Date(photo.uploadDate).toLocaleDateString()}
-                      </p>
+                      {viewMode === "normal" && (
+                        <>
+                          <p className="text-sm text-gray-600">
+                            ID: {photo.id}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Uploaded:{" "}
+                            {new Date(photo.uploadDate).toLocaleDateString()}
+                          </p>
+                        </>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDeletePhoto(photo.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                      className={`bg-red-500 text-white ${
+                        viewMode === "compact" ? "w-full" : "px-4"
+                      } py-2 rounded hover:bg-red-600 transition-colors`}
                     >
                       Delete
                     </button>
@@ -255,7 +323,13 @@ export function AdminPanel({ eventId }: { eventId: number }) {
               No videos have been uploaded yet.
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              className={`grid ${
+                viewMode === "compact"
+                  ? "grid-cols-2 md:grid-cols-4 lg:grid-cols-6"
+                  : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              } gap-4`}
+            >
               {videos.map((video) => (
                 <div key={video.id} className="border rounded-lg p-4 space-y-2">
                   <div className="relative">
@@ -282,22 +356,36 @@ export function AdminPanel({ eventId }: { eventId: number }) {
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div
+                    className={`${
+                      viewMode === "compact"
+                        ? "flex-col space-y-2"
+                        : "flex justify-between items-center"
+                    }`}
+                  >
                     <div>
-                      <p className="text-sm text-gray-600">ID: {video.id}</p>
-                      <p className="text-sm text-gray-600">
-                        Uploaded:{" "}
-                        {new Date(video.uploadDate).toLocaleDateString()}
-                      </p>
-                      {video.description && (
-                        <p className="text-sm text-gray-600 truncate">
-                          {video.description}
-                        </p>
+                      {viewMode === "normal" && (
+                        <>
+                          <p className="text-sm text-gray-600">
+                            ID: {video.id}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Uploaded:{" "}
+                            {new Date(video.uploadDate).toLocaleDateString()}
+                          </p>
+                          {video.description && (
+                            <p className="text-sm text-gray-600 truncate">
+                              {video.description}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                     <button
                       onClick={() => handleDeleteVideo(video.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                      className={`bg-red-500 text-white ${
+                        viewMode === "compact" ? "w-full" : "px-4"
+                      } py-2 rounded hover:bg-red-600 transition-colors`}
                     >
                       Delete
                     </button>
