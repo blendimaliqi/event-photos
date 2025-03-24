@@ -12,6 +12,7 @@ import { ImageWithFallback } from "./ImageWithFallback";
 export function AdminPanel({ eventId }: { eventId: number }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"photos" | "videos">("photos");
+  const [selectedFileName, setSelectedFileName] = useState<string>("");
   const { data: event, isLoading: eventLoading } = useEvent(eventId);
   const {
     data: photos,
@@ -61,6 +62,8 @@ export function AdminPanel({ eventId }: { eventId: number }) {
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setSelectedFileName(file.name);
 
     try {
       await photoService.setHeroPhoto(eventId, file);
@@ -153,17 +156,24 @@ export function AdminPanel({ eventId }: { eventId: number }) {
         )}
 
         {/* Hero photo upload input */}
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleHeroPhotoUpload}
-          className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-rose-50 file:text-rose-700
-            hover:file:bg-rose-100"
-        />
+        <div className="mt-4">
+          <label
+            htmlFor="hero-photo-upload"
+            className="cursor-pointer inline-flex items-center px-4 py-2 bg-rose-50 text-rose-700 rounded-md hover:bg-rose-100 font-semibold text-sm"
+          >
+            Choose file
+          </label>
+          <span className="ml-3 text-sm text-gray-500">
+            {selectedFileName || "No file selected"}
+          </span>
+          <input
+            id="hero-photo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleHeroPhotoUpload}
+            className="hidden"
+          />
+        </div>
       </div>
 
       {/* Tabs for Photos and Videos */}
