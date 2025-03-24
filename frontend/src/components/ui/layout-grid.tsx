@@ -47,24 +47,17 @@ export const LayoutGrid = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Add scroll position restoration
   useEffect(() => {
-    console.log("LayoutGrid: Component mounted");
     const savedPosition = sessionStorage.getItem("scrollPosition");
-    console.log("LayoutGrid: Retrieved saved position:", savedPosition);
-
     if (savedPosition) {
       // Use a small timeout to ensure the DOM is ready and images are loaded
       const timeoutId = setTimeout(() => {
         const scrollPosition = parseInt(savedPosition);
-        console.log("LayoutGrid: Attempting to scroll to:", scrollPosition);
         window.scrollTo({
           top: scrollPosition,
           behavior: "instant",
         });
-        console.log("LayoutGrid: Scroll complete, removing saved position");
         sessionStorage.removeItem("scrollPosition");
-        // Show content after scrolling
       }, 0);
 
       return () => clearTimeout(timeoutId);

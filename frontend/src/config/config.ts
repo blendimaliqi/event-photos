@@ -3,9 +3,6 @@ export const config = {
   API_BASE_URL: (() => {
     // Use environment variable if available
     if (import.meta.env.VITE_API_URL) {
-      console.log(
-        `Using VITE_API_URL from env: ${import.meta.env.VITE_API_URL}`
-      );
       return import.meta.env.VITE_API_URL;
     }
 
@@ -13,14 +10,10 @@ export const config = {
     if (import.meta.env.PROD) {
       // If we're in a browser environment
       if (typeof window !== "undefined") {
-        console.log(`Using window.location.origin: ${window.location.origin}`);
         return window.location.origin; // Use same origin as frontend
       }
       return ""; // Fallback to relative URLs
     }
-
-    // Development fallback
-    console.log("Using development fallback URL: http://localhost:5035");
     return "http://localhost:5035";
   })(),
 
@@ -33,7 +26,6 @@ export const config = {
         ? window.location.origin
         : "http://localhost:5035");
 
-    console.log(`API_ENDPOINT set to: ${baseUrl}/api`);
     return `${baseUrl}/api`;
   })(),
 
@@ -45,12 +37,9 @@ export const config = {
     try {
       // If the path already starts with http or https, it's already an absolute URL
       if (path.startsWith("http://") || path.startsWith("https://")) {
-        console.log(`IMAGE: Using absolute URL: ${path}`);
         return path;
       }
 
-      // FIXED: Always use the VITE_API_URL for uploads, regardless of the current origin
-      // This ensures all media requests go to the backend server where files are actually stored
       const baseUrl =
         import.meta.env.VITE_API_URL ||
         (import.meta.env.PROD
@@ -62,9 +51,7 @@ export const config = {
 
       // Use the full backend URL for all media paths
       const fullUrl = `${baseUrl}${normalizedPath}`;
-      console.log(`IMAGE: Constructed image URL: ${fullUrl}`);
 
-      // For debugging, add timestamp to bust cache during development
       if (!import.meta.env.PROD) {
         return `${fullUrl}?t=${Date.now()}`;
       }

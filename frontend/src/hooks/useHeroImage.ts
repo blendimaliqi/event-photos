@@ -12,16 +12,11 @@ export const useHeroImage = (heroPhotoUrl?: string) => {
     retry: 1, // Only retry once to avoid too many failed requests
     queryFn: async () => {
       if (!heroPhotoUrl) {
-        console.log("No hero photo URL provided, using fallback image");
         return fallbackImageUrl;
       }
 
       try {
-        console.log("Loading hero image from URL:", heroPhotoUrl);
         const url = config.getImageUrl(heroPhotoUrl);
-        console.log("Final hero image URL:", url);
-
-        // Check if the image exists before trying to load it
         const response = await fetch(url, { method: "HEAD" }).catch(() => ({
           ok: false,
         }));
