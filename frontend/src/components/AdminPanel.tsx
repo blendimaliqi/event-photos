@@ -164,7 +164,7 @@ export function AdminPanel({ eventId }: { eventId: number }) {
             Choose file
           </label>
           <span className="ml-3 text-sm text-gray-500">
-            {selectedFileName || "No file selected"}
+            {selectedFileName || ""}
           </span>
           <input
             id="hero-photo-upload"

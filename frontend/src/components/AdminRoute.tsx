@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
 import { DEMO_EVENT_ID } from "../App";
 import { useAuth } from "../contexts/AuthContext";
+import { Navigation } from "./Navigation";
+import { Layout } from "./Layout";
 
 import { LoadingSpinner } from "./LoadingSpinner";
 
@@ -20,16 +22,28 @@ function AdminRoute() {
 
   if (!isAdmin) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
-        <AdminLogin />
-      </Suspense>
+      <>
+        <div className="bg-gray-50">
+          <Navigation isLight={true} />
+        </div>
+        <Suspense fallback={<LoadingSpinner />}>
+          <AdminLogin />
+        </Suspense>
+      </>
     );
   }
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <AdminPanel eventId={DEMO_EVENT_ID} />
-    </Suspense>
+    <>
+      <div className="bg-gray-50">
+        <Navigation isLight={true} />
+      </div>
+      <Layout isAdminPage={true}>
+        <Suspense fallback={<LoadingSpinner />}>
+          <AdminPanel eventId={DEMO_EVENT_ID} />
+        </Suspense>
+      </Layout>
+    </>
   );
 }
 
